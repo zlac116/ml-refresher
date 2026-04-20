@@ -877,32 +877,38 @@ from sklearn.ensemble import RandomForestClassifier
 import xgboost as xgb
 import lightgbm as lgb
 
-tscv = TimeSeriesSplit(n_splits=5)
+tscv = TimeSeriesSplit(n_splits=3)
+
+# Subsample the training data for CV ONLY (every other row).
+# Final fit later uses the full training set.
+X_train_cv = X_train.iloc[::2].copy()
+y_train_cv = y_train.iloc[::2].copy()
+print(f"CV subsample: {len(X_train_cv)} rows (full train: {len(X_train)})")
 
 models = {
     "logreg": Pipeline([
         ("scaler", StandardScaler()),
-        ("clf", LogisticRegression(max_iter=2000, random_state=RANDOM_STATE)),
+        ("clf", LogisticRegression(max_iter=1000, random_state=RANDOM_STATE)),
     ]),
     "random_forest": RandomForestClassifier(
-        n_estimators=300, max_depth=8, min_samples_leaf=20,
+        n_estimators=200, max_depth=10, min_samples_leaf=20,
         n_jobs=-1, random_state=RANDOM_STATE),
     "xgboost": xgb.XGBClassifier(
-        n_estimators=300, max_depth=4, learning_rate=0.05,
+        n_estimators=200, max_depth=6, learning_rate=0.05,
         subsample=0.9, colsample_bytree=0.9,
         eval_metric="logloss", n_jobs=-1, random_state=RANDOM_STATE,
         tree_method="hist"),
     "lightgbm": lgb.LGBMClassifier(
-        n_estimators=300, max_depth=-1, num_leaves=31, learning_rate=0.05,
+        n_estimators=200, max_depth=6, num_leaves=31, learning_rate=0.05,
         subsample=0.9, colsample_bytree=0.9, n_jobs=-1,
         random_state=RANDOM_STATE, verbose=-1),
 }
 
 cv_results = []
 for name, model in models.items():
-    neg_ll = cross_val_score(model, X_train, y_train, cv=tscv,
+    neg_ll = cross_val_score(model, X_train_cv, y_train_cv, cv=tscv,
                              scoring="neg_log_loss", n_jobs=1).mean()
-    auc = cross_val_score(model, X_train, y_train, cv=tscv,
+    auc = cross_val_score(model, X_train_cv, y_train_cv, cv=tscv,
                           scoring="roc_auc", n_jobs=1).mean()
     cv_results.append({"model": name, "cv_log_loss": -neg_ll, "cv_auc": auc})
 
@@ -942,13 +948,13 @@ code("""
 solution(
     """from sklearn.calibration import CalibratedClassifierCV
 
-best_name = val_df.iloc[0]["model"]
-print(f"Calibrating: {best_name}")
-base = type(models[best_name])(**models[best_name].get_params()) if not isinstance(
-    models[best_name], Pipeline) else models[best_name]
-calibrated = CalibratedClassifierCV(base, method="sigmoid", cv=3).fit(X_train, y_train)
+best_name_local = val_df.iloc[0]["model"]
+print(f"Calibrating: {best_name_local}")
+base = type(models[best_name_local])(**models[best_name_local].get_params()) if not isinstance(
+    models[best_name_local], Pipeline) else models[best_name_local]
+calibrated = CalibratedClassifierCV(base, method="sigmoid", cv=2).fit(X_train, y_train)
 proba_cal = calibrated.predict_proba(X_val)[:, 1]
-proba_raw = fitted[best_name].predict_proba(X_val)[:, 1]
+proba_raw = fitted[best_name_local].predict_proba(X_val)[:, 1]
 print(f"Brier raw:        {brier_score_loss(y_val, proba_raw):.4f}")
 print(f"Brier calibrated: {brier_score_loss(y_val, proba_cal):.4f}")""",
     "GBMs often output overconfident probabilities. Sigmoid (Platt) calibration learns a "
@@ -997,17 +1003,17 @@ solution(
 stack = StackingClassifier(
     estimators=[
         ("logreg", Pipeline([("scaler", StandardScaler()),
-                              ("clf", LogisticRegression(max_iter=2000, random_state=RANDOM_STATE))])),
-        ("rf", RandomForestClassifier(n_estimators=200, max_depth=6,
+                              ("clf", LogisticRegression(max_iter=1000, random_state=RANDOM_STATE))])),
+        ("rf", RandomForestClassifier(n_estimators=100, max_depth=6,
                                        random_state=RANDOM_STATE, n_jobs=-1)),
-        ("xgb", xgb.XGBClassifier(n_estimators=200, max_depth=4, learning_rate=0.05,
+        ("xgb", xgb.XGBClassifier(n_estimators=100, max_depth=4, learning_rate=0.05,
                                    eval_metric="logloss", random_state=RANDOM_STATE,
                                    tree_method="hist", n_jobs=-1)),
     ],
-    final_estimator=LogisticRegression(max_iter=2000, random_state=RANDOM_STATE),
-    cv=TimeSeriesSplit(3),
+    final_estimator=LogisticRegression(max_iter=1000, random_state=RANDOM_STATE),
+    cv=TimeSeriesSplit(2),
     n_jobs=1,
-).fit(X_train, y_train)
+).fit(X_train_cv, y_train_cv)
 
 proba = stack.predict_proba(X_val)[:, 1]
 print(pd.Series(evaluate("stacking", y_val, proba)).round(4))""",
@@ -1032,7 +1038,7 @@ X_tr_sub = X_train.drop(columns=drop)
 X_va_sub = X_val.drop(columns=drop)
 
 xgb_sub = xgb.XGBClassifier(
-    n_estimators=300, max_depth=4, learning_rate=0.05,
+    n_estimators=200, max_depth=6, learning_rate=0.05,
     eval_metric="logloss", n_jobs=-1, random_state=RANDOM_STATE,
     tree_method="hist").fit(X_tr_sub, y_train)
 proba_sub = xgb_sub.predict_proba(X_va_sub)[:, 1]
@@ -1050,9 +1056,10 @@ print(f"XGB w/o cross-asset log_loss: {log_loss(y_val, np.clip(proba_sub,1e-6,1-
 md("""
 ## 7. Hyperparameter Tuning with Optuna
 
-We pick the best of XGB/LGBM (whichever won val log loss) and tune ~30 trials with
-**Optuna** optimising **CV log loss** under TimeSeriesSplit. Optuna's TPE sampler is much
-more sample-efficient than random search.
+We pick the best of XGB/LGBM (whichever won val log loss) and tune ~20 trials with
+**Optuna** optimising **CV log loss** under TimeSeriesSplit, plus a `MedianPruner` to kill
+clearly-bad trials early. Optuna's TPE sampler is much more sample-efficient than random
+search.
 
 Smaller search budget = faster notebook. In production you would run 200-500+ trials.
 """)
@@ -1070,8 +1077,8 @@ print(f"Tuning: {best_name}")
 def objective(trial):
     if best_name == "xgboost":
         params = dict(
-            n_estimators=trial.suggest_int("n_estimators", 100, 500),
-            max_depth=trial.suggest_int("max_depth", 3, 7),
+            n_estimators=trial.suggest_int("n_estimators", 100, 300),
+            max_depth=trial.suggest_int("max_depth", 3, 6),
             learning_rate=trial.suggest_float("learning_rate", 1e-3, 0.2, log=True),
             subsample=trial.suggest_float("subsample", 0.6, 1.0),
             colsample_bytree=trial.suggest_float("colsample_bytree", 0.5, 1.0),
@@ -1082,8 +1089,8 @@ def objective(trial):
                                   random_state=RANDOM_STATE, tree_method="hist", **params)
     else:
         params = dict(
-            n_estimators=trial.suggest_int("n_estimators", 100, 500),
-            num_leaves=trial.suggest_int("num_leaves", 15, 127),
+            n_estimators=trial.suggest_int("n_estimators", 100, 300),
+            num_leaves=trial.suggest_int("num_leaves", 15, 63),
             learning_rate=trial.suggest_float("learning_rate", 1e-3, 0.2, log=True),
             subsample=trial.suggest_float("subsample", 0.6, 1.0),
             colsample_bytree=trial.suggest_float("colsample_bytree", 0.5, 1.0),
@@ -1093,13 +1100,17 @@ def objective(trial):
         model = lgb.LGBMClassifier(n_jobs=-1, random_state=RANDOM_STATE,
                                     verbose=-1, **params)
 
-    scores = cross_val_score(model, X_train, y_train, cv=tscv,
+    # Use the same CV subsample as model selection to keep runtime bounded
+    scores = cross_val_score(model, X_train_cv, y_train_cv, cv=tscv,
                              scoring="neg_log_loss", n_jobs=1)
-    return -scores.mean()
+    score = -scores.mean()
+    trial.report(score, step=0)
+    return score
 
 sampler = optuna.samplers.TPESampler(seed=RANDOM_STATE)
-study = optuna.create_study(direction="minimize", sampler=sampler)
-study.optimize(objective, n_trials=30, show_progress_bar=False)
+pruner = optuna.pruners.MedianPruner(n_startup_trials=5)
+study = optuna.create_study(direction="minimize", sampler=sampler, pruner=pruner)
+study.optimize(objective, n_trials=20, show_progress_bar=False)
 
 print("Best CV log loss:", round(study.best_value, 5))
 print("Best params:", study.best_params)
@@ -1167,21 +1178,21 @@ def objective_pruned(trial):
         common["verbose"] = -1
     else:
         common.update(eval_metric="logloss", tree_method="hist")
-    splits = list(TimeSeriesSplit(5).split(X_train))
+    splits = list(TimeSeriesSplit(3).split(X_train_cv))
     fold_scores = []
     for i, (tr, va) in enumerate(splits):
-        m = model_cls(**common, **params).fit(X_train.iloc[tr], y_train.iloc[tr])
-        p = m.predict_proba(X_train.iloc[va])[:, 1]
-        fold_scores.append(log_loss(y_train.iloc[va], np.clip(p, 1e-6, 1 - 1e-6)))
+        m = model_cls(**common, **params).fit(X_train_cv.iloc[tr], y_train_cv.iloc[tr])
+        p = m.predict_proba(X_train_cv.iloc[va])[:, 1]
+        fold_scores.append(log_loss(y_train_cv.iloc[va], np.clip(p, 1e-6, 1 - 1e-6)))
         trial.report(np.mean(fold_scores), step=i)
         if trial.should_prune():
             raise optuna.TrialPruned()
     return float(np.mean(fold_scores))
 
 study_pruned = optuna.create_study(direction="minimize",
-                                   pruner=optuna.pruners.MedianPruner(n_startup_trials=5),
+                                   pruner=optuna.pruners.MedianPruner(n_startup_trials=3),
                                    sampler=optuna.samplers.TPESampler(seed=RANDOM_STATE))
-study_pruned.optimize(objective_pruned, n_trials=30, show_progress_bar=False)
+study_pruned.optimize(objective_pruned, n_trials=15, show_progress_bar=False)
 print(f"Best (pruned): {study_pruned.best_value:.5f}")
 print(f"Pruned trials: {sum(1 for t in study_pruned.trials if t.state.name == 'PRUNED')} / {len(study_pruned.trials)}")""",
     "MedianPruner stops a trial early if its intermediate score is worse than the median of "
@@ -1203,8 +1214,8 @@ solution(
     """def objective_extended(trial):
     if best_name == "xgboost":
         params = dict(
-            n_estimators=trial.suggest_int("n_estimators", 100, 500),
-            max_depth=trial.suggest_int("max_depth", 3, 7),
+            n_estimators=trial.suggest_int("n_estimators", 100, 300),
+            max_depth=trial.suggest_int("max_depth", 3, 6),
             learning_rate=trial.suggest_float("learning_rate", 1e-3, 0.2, log=True),
             min_child_weight=trial.suggest_int("min_child_weight", 1, 100),
             colsample_bytree=trial.suggest_float("colsample_bytree", 0.5, 1.0),
@@ -1213,19 +1224,19 @@ solution(
                                   random_state=RANDOM_STATE, tree_method="hist", **params)
     else:
         params = dict(
-            n_estimators=trial.suggest_int("n_estimators", 100, 500),
-            num_leaves=trial.suggest_int("num_leaves", 15, 127),
+            n_estimators=trial.suggest_int("n_estimators", 100, 300),
+            num_leaves=trial.suggest_int("num_leaves", 15, 63),
             learning_rate=trial.suggest_float("learning_rate", 1e-3, 0.2, log=True),
             min_child_samples=trial.suggest_int("min_child_samples", 1, 100),
             colsample_bytree=trial.suggest_float("colsample_bytree", 0.5, 1.0),
         )
         model = lgb.LGBMClassifier(n_jobs=-1, random_state=RANDOM_STATE, verbose=-1, **params)
-    return -cross_val_score(model, X_train, y_train, cv=tscv,
+    return -cross_val_score(model, X_train_cv, y_train_cv, cv=tscv,
                              scoring="neg_log_loss", n_jobs=1).mean()
 
 study2 = optuna.create_study(direction="minimize",
                               sampler=optuna.samplers.TPESampler(seed=RANDOM_STATE))
-study2.optimize(objective_extended, n_trials=20, show_progress_bar=False)
+study2.optimize(objective_extended, n_trials=10, show_progress_bar=False)
 print(f"Best extended: {study2.best_value:.5f}")
 print(study2.best_params)""",
     "min_child_weight (XGB) and min_child_samples (LGBM) control the minimum data per leaf — "
@@ -1248,8 +1259,8 @@ from scipy.stats import loguniform, randint, uniform
 
 if best_name == "xgboost":
     search_space = {
-        "n_estimators": randint(100, 500),
-        "max_depth": randint(3, 8),
+        "n_estimators": randint(100, 300),
+        "max_depth": randint(3, 7),
         "learning_rate": loguniform(1e-3, 0.2),
         "subsample": uniform(0.6, 0.4),
         "colsample_bytree": uniform(0.5, 0.5),
@@ -1258,17 +1269,17 @@ if best_name == "xgboost":
                               random_state=RANDOM_STATE, tree_method="hist")
 else:
     search_space = {
-        "n_estimators": randint(100, 500),
-        "num_leaves": randint(15, 127),
+        "n_estimators": randint(100, 300),
+        "num_leaves": randint(15, 63),
         "learning_rate": loguniform(1e-3, 0.2),
         "subsample": uniform(0.6, 0.4),
         "colsample_bytree": uniform(0.5, 0.5),
     }
     base = lgb.LGBMClassifier(n_jobs=-1, random_state=RANDOM_STATE, verbose=-1)
 
-rs = RandomizedSearchCV(base, search_space, n_iter=30, cv=tscv,
+rs = RandomizedSearchCV(base, search_space, n_iter=10, cv=tscv,
                          scoring="neg_log_loss", random_state=RANDOM_STATE, n_jobs=1)
-rs.fit(X_train, y_train)
+rs.fit(X_train_cv, y_train_cv)
 print(f"RandomSearch best CV log loss: {-rs.best_score_:.5f}")
 print(f"Optuna       best CV log loss: {study.best_value:.5f}")""",
     "TPE typically beats random search by 20-50% in budget efficiency on smooth landscapes "
