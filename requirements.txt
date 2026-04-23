@@ -1,0 +1,45 @@
+# ML Revision — requirements for classification, regression, time-series notebooks.
+# Tested on Python 3.12 (miniconda). Install with:
+#   pip install -r requirements.txt
+#
+# Using compatible-release (~=) specifiers: minor patches are allowed,
+# major-version jumps are blocked (since sklearn/shap/xgboost do break API on majors).
+
+# --- Core numerics & data ---
+numpy~=2.4
+pandas~=2.2
+scipy~=1.17
+pyarrow~=16.1              # parquet backend for pandas
+
+# --- Plotting ---
+matplotlib~=3.10
+seaborn~=0.13
+
+# --- Classical ML ---
+scikit-learn~=1.8
+statsmodels~=0.14          # ARIMA, ETS, ADF, seasonal_decompose
+
+# --- Gradient boosting ---
+xgboost~=3.2
+lightgbm~=4.6
+
+# --- Interpretability & tuning ---
+shap~=0.51
+optuna~=4.7
+
+# --- Persistence ---
+joblib~=1.5
+
+# --- Data fetch (run once via data/fetch_crypto.py; notebooks read the cached parquet) ---
+ccxt~=4.5
+
+# --- Deployment demo cells (FastAPI snippets; not launched from notebooks) ---
+fastapi~=0.135
+pydantic~=2.12
+uvicorn~=0.32              # needed only if you actually `uvicorn app:app` the deploy snippet
+
+# --- Jupyter runtime ---
+notebook~=7.5
+nbformat~=5.10
+nbconvert~=7.16
+ipykernel~=7.1
