@@ -173,7 +173,7 @@ def execute_notebook(nb, cwd: Path) -> None:
     """
     client = NotebookClient(
         nb,
-        timeout=600,
+        timeout=3600,
         kernel_name="python3",
         resources={"metadata": {"path": str(cwd)}},
         allow_errors=True,
