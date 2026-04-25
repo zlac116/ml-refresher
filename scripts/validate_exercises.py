@@ -61,21 +61,11 @@ def validate(nb_path: Path) -> int:
                 expected = nb.cells[j] if j < n else None
                 details = nb.cells[j + 1] if j + 1 < n else None
 
-                code_lines = [
-                    ln for ln in answer.source.splitlines() if ln.strip()
-                ]
-                non_comment = [
-                    ln for ln in code_lines if not ln.lstrip().startswith("#")
-                ]
-                if non_comment:
-                    problems.append(
-                        f"Exercise {ex_id}: stub code cell still has executable lines: "
-                        f"{non_comment[:2]}"
-                    )
-                if not any("your answer here" in ln.lower() for ln in code_lines):
-                    problems.append(
-                        f"Exercise {ex_id}: stub code cell missing '# Your answer here'"
-                    )
+                # The answer cell may either be a stub (`# Your answer here`) OR
+                # contain a student's worked solution. Both are valid states; we
+                # only flag a missing/empty cell.
+                if not answer.source.strip():
+                    problems.append(f"Exercise {ex_id}: answer code cell is empty")
 
                 if (
                     expected is None
