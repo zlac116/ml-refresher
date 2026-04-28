@@ -27,6 +27,11 @@ with hidden solutions and a `check()` helper that prints ✅/❌.
 mirroring the official docs structure. See `llm-pipeline/README.md` for the extra
 dependencies.
 
+**REST API** (`api/`) — `rest_api.ipynb`, a 13-stage walkthrough that takes a
+freshly trained model and ships it as a FastAPI service with Pydantic validation,
+API-key auth, ops endpoints, structured logging, and a Dockerfile. See
+`api/README.md`.
+
 ## Setup
 
 Requires Python 3.12.

@@ -33,10 +33,11 @@ joblib~=1.5
 # --- Data fetch (run once via data/fetch_crypto.py; notebooks read the cached parquet) ---
 ccxt~=4.5
 
-# --- Deployment demo cells (FastAPI snippets; not launched from notebooks) ---
+# --- Deployment / REST API (api/rest_api.ipynb runs FastAPI in-cell via TestClient) ---
 fastapi~=0.135
 pydantic~=2.12
 uvicorn~=0.32              # needed only if you actually `uvicorn app:app` the deploy snippet
+httpx~=0.28                # TestClient's transport; also used in async-endpoint example
 
 # --- Jupyter runtime ---
 notebook~=7.5
