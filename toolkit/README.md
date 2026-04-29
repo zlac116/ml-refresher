@@ -18,3 +18,9 @@ question → canonical pattern → why + common mistake.
 Each notebook starts with a single setup cell — run it once, then jump to whichever entry you need.
 
 Open any notebook with `make lab` (or `make notebook`) from the project root.
+
+## Practice projects (`exercises/`)
+
+Each cheatsheet has a matching practice project in `toolkit/exercises/` — a
+real quant question that forces 70-80% of the cheatsheet's patterns naturally.
+See `toolkit/exercises/README.md` for the full list and suggested sequence.
