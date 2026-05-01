@@ -19,6 +19,19 @@ Each notebook starts with a single setup cell — run it once, then jump to whic
 
 Open any notebook with `make lab` (or `make notebook`) from the project root.
 
+## EDA workflow (`eda_playbook.ipynb` + `eda_decisions.md`)
+
+Two companion artefacts for the *workflow* of exploratory analysis, sitting
+between the teaching pipelines and the library cheatsheets:
+
+| File | Purpose |
+|---|---|
+| `eda_playbook.ipynb` | Runnable 14-step checklist. One cell per check, one verdict per output. Demonstrated on `data/crypto_hourly.parquet`; swap the data path + columns to re-use on any dataset. |
+| `eda_decisions.md` | Printable wall-poster: the **finding → ML decision** table, ADF/KPSS verdict matrix, test → question lookup, p-value mnemonic, and bias rules for time series. |
+
+Run the playbook on any new dataset before touching modelling. Use the
+decision table to translate verdicts into actions.
+
 ## Practice projects (`exercises/`)
 
 Each cheatsheet has a matching practice project in `toolkit/exercises/` — a
