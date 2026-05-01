@@ -18,20 +18,21 @@ marked complete. See `EXPERT_REVIEWS.md` for the audit log.
 
 ## Curriculum
 
-### Tier 1 — Core (always asked at IB quant screens)
+### Tier 1 — Core (always asked at IB quant screens) ✅ COMPLETE
 
-| Notebook | Topic |
-|---|---|
-| `01_options/01_black_scholes.ipynb` | Black-Scholes from first principles + closed-form |
-| `01_options/02_greeks.ipynb` | Delta, gamma, vega, theta, rho — analytic + finite-diff |
-| `01_options/03_binomial_trees.ipynb` | CRR + Jarrow-Rudd; American-style early exercise |
-| `01_options/04_monte_carlo_pricing.ipynb` | MC + variance reduction (antithetic, control variates) |
-| `01_options/05_implied_vol_surface.ipynb` | Inversion via Brent; smile, skew, term structure |
-| `02_risk/01_var_methods.ipynb` | Parametric, historical, MC VaR — when each fails |
-| `02_risk/02_expected_shortfall.ipynb` | ES vs VaR; coherence; FRTB context |
-| `03_fixed_income/01_bond_pricing.ipynb` | YTM, dirty/clean price, accrued interest |
-| `03_fixed_income/02_duration_convexity_krd.ipynb` | Modified duration, convexity, key rate durations |
-| `04_portfolio/01_markowitz.ipynb` | Mean-variance optimisation with constraints |
+| Notebook | Topic | Status |
+|---|---|---|
+| `01_options/01_black_scholes.ipynb` | BS from first principles, PDE + risk-neutral derivations, IV, smile, Black-76 | ✅ expert-reviewed |
+| `01_options/02_bs_family_and_asset_classes.ipynb` | Bachelier, SABR, FX (Garman-Kohlhagen), Fixed Income (caplets, swaptions) | ✅ expert-reviewed |
+| `01_options/03_greeks.ipynb` | δ, γ, ν, θ, ρ + vanna/volga/charm; analytic + FD; gamma-theta P&L | ✅ |
+| `01_options/04_binomial_trees.ipynb` | CRR + trinomial; American puts; convergence to BS | ✅ |
+| `01_options/05_monte_carlo_pricing.ipynb` | MC + variance reduction (antithetic, control variates); Asian; barriers; pathwise Greeks | ✅ |
+| `01_options/06_implied_vol_surface.ipynb` | SVI parameterisation; arbitrage constraints; Breeden-Litzenberger density | ✅ |
+| `02_risk/01_var_methods.ipynb` | Parametric, historical, MC VaR; Kupiec backtest; non-subadditivity | ✅ |
+| `02_risk/02_expected_shortfall.ipynb` | ES coherence; FRTB 97.5%; Acerbi-Szekely backtest | ✅ |
+| `03_fixed_income/01_bond_pricing.ipynb` | YTM via Brent; dirty/clean; day-counts | ✅ |
+| `03_fixed_income/02_duration_convexity_krd.ipynb` | Macaulay/modified duration; convexity; KRDs; DV01 hedging | ✅ |
+| `04_portfolio/01_markowitz.ipynb` | Efficient frontier; tangency; MV instability; 1/N benchmark | ✅ |
 
 ### Tier 2 — Breadth (frequent at AM, structurer, risk roles)
 
