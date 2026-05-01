@@ -34,17 +34,29 @@ marked complete. See `EXPERT_REVIEWS.md` for the audit log.
 | `03_fixed_income/02_duration_convexity_krd.ipynb` | Macaulay/modified duration; convexity; KRDs; DV01 hedging | ✅ |
 | `04_portfolio/01_markowitz.ipynb` | Efficient frontier; tangency; MV instability; 1/N benchmark | ✅ |
 
+### T1 supplement — added based on user feedback
+
+| Notebook | Topic | Status |
+|---|---|---|
+| `03_fixed_income/03_curve_building.ipynb` | Bootstrap deposit + swap curve; forward rates; multi-curve world | ✅ |
+
 ### Tier 2 — Breadth (frequent at AM, structurer, risk roles)
+
+**Interview-critical T2 (DONE):**
+
+| Notebook | Topic | Status |
+|---|---|---|
+| `01_options/07_heston.ipynb` | Stochastic vol; Heston 1993 char-fn pricing; calibration; vs SABR / local vol | ✅ |
+| `02_risk/03_credit_merton.ipynb` | Structural credit; equity = call on assets; DD; equity-implied asset vol | ✅ |
+| `04_portfolio/02_black_litterman.ipynb` | Bayesian portfolio; implied returns; views; stability vs MV | ✅ |
+| `04_portfolio/04_factor_models.ipynb` | CAPM, FF3, Carhart 4F on real Ken-French + AAPL data; attribution; IR | ✅ |
+
+**T2 remaining:**
 
 | Notebook | Topic |
 |---|---|
-| `01_options/06_heston.ipynb` | Stochastic vol, calibration to surface |
-| `02_risk/03_credit_merton.ipynb` | Structural credit model — PD from equity vol |
-| `03_fixed_income/03_term_structure.ipynb` | Vasicek, CIR, Hull-White |
-| `03_fixed_income/04_swaps_swaptions.ipynb` | IRS pricing, Black-76 swaptions |
-| `04_portfolio/02_black_litterman.ipynb` | Bayesian portfolio construction |
-| `04_portfolio/04_factor_models.ipynb` | Fama-French + factor exposures |
-| `04_portfolio/05_performance_attribution.ipynb` | Brinson-Fachler attribution |
+| `03_fixed_income/04_swaps_swaptions.ipynb` | IRS pricing in detail, Black-76 swaptions, normal-vol calibration |
+| `04_portfolio/05_performance_attribution.ipynb` | Brinson-Fachler attribution (allocation vs selection) |
 | `05_volatility/01_garch.ipynb` | GARCH(1,1), EGARCH, GJR-GARCH |
 | `05_volatility/02_realized_vol.ipynb` | High-frequency vol estimation |
 | `06_stoch_calc/01_brownian_motion.ipynb` | BM, GBM, OU — simulation + properties |
