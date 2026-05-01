@@ -33,6 +33,13 @@ joblib~=1.5
 # --- Data fetch (run once via data/fetch_crypto.py; notebooks read the cached parquet) ---
 ccxt~=4.5
 
+# --- Quant finance (quant_finance/ notebooks) ---
+yfinance~=0.2              # equity, ETF, option-chain data
+pandas-datareader~=0.10    # FRED rates, Fama-French factors
+fredapi~=0.5               # direct FRED API (free key required for live pulls)
+arch~=7.2                  # GARCH/EGARCH/GJR-GARCH and bootstrap utilities
+QuantLib-Python~=1.34      # validation oracle ONLY (never the primary implementation)
+
 # --- Deployment / REST API (api/rest_api.ipynb runs FastAPI in-cell via TestClient) ---
 fastapi~=0.135
 pydantic~=2.12
