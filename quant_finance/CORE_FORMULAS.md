@@ -106,11 +106,25 @@ $$\text{DV01} = D_{\text{Mod}} \cdot P \cdot 0.0001$$
 
 $$f(t_1, t_2) = \frac{1}{t_2 - t_1} \ln\frac{P(0, t_1)}{P(0, t_2)}$$
 
+### Bond from forward LIBORs (telescoping product)
+
+$$P(t, T_n) = P(t, T_0) \prod_{i=0}^{n-1} \frac{1}{1 + \delta_i L_i(t)}, \qquad L_i(t) = \frac{1}{\delta_i}\!\left(\frac{P(t, T_i)}{P(t, T_{i+1})} - 1\right)$$
+
+The discrete analogue of $P(t, T) = \exp(-\int_t^T r(u)\,du)$ — replace integration over instantaneous short rates with a product over forward LIBORs. Used everywhere in fixed income: swap pricing, caplet payoffs, the LMM simulator, curve construction.
+
 ### Par swap rate (from discount curve)
 
 $$S = \frac{P(0, T_0) - P(0, T_n)}{\sum_{i=1}^n \tau_i \cdot P(0, T_i)}$$
 
 Numerator = floating leg PV, denominator = fixed leg PV01. Sets PV(swap) = 0 at inception.
+
+### LIBOR Market Model (LMM / BGM) — single-line specification
+
+$$dL_i(t) = \sigma_i(t)\, L_i(t)\, dW_i^{T_{i+1}}(t), \qquad i = 0, 1, \dots, N-1$$
+
+Each forward LIBOR is lognormal under its **own** $T_{i+1}$-forward measure. Caplets price by Black-76 with vol $\sigma_i$ — the model is calibrated to the cap-vol surface by construction.
+
+The drift adjustment when switching to a common measure (terminal $Q^{T_N}$ or spot $Q^B$) is **derived on the whiteboard from Girsanov + numeraire change** — don't memorise the index ranges and signs, derive them. See `03_fixed_income/05_libor_market_model.ipynb`.
 
 ---
 
@@ -225,6 +239,8 @@ These are reach-for material — know the name, know when they apply, look up th
 | Nelson-Siegel curve fit | `03_fixed_income/03_curve_building.ipynb` |
 | Heston, SABR, local vol calibration loss functions | their respective notebooks |
 | Specific quasi-MC scrambling schemes | `01_options/05_monte_carlo_pricing.ipynb` |
+| LMM drift formulas (terminal / spot LIBOR measure) — derive from Girsanov, don't memorise index ranges and signs | `03_fixed_income/05_libor_market_model.ipynb` |
+| Rebonato correlation parameterisation, predictor-corrector LMM scheme, LMM cap-vol bootstrap | `03_fixed_income/05_libor_market_model.ipynb` |
 
 ---
 
