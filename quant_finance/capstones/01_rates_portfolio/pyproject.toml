@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rates_capstone"
+version = "0.1.0"
+description = "Pre-built scaffolding for the rates portfolio capstone (calibration + FV P&L + B&R reconciliation)"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "scipy>=1.10",
+    "matplotlib>=3.7",
+    "pyarrow>=12.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]

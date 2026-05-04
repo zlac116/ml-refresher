@@ -1,0 +1,1 @@
+# Pricer modules. Each module exposes a single price() function for its product type.
