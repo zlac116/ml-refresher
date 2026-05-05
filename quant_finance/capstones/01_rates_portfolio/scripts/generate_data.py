@@ -221,15 +221,21 @@ def trades_to_dataframe(trades: list) -> pd.DataFrame:
 
 
 # ------------------------------------------------------------------
-# Curve generator (5 days of moves)
+# Curve generator (per-currency, 5 days of moves)
 # ------------------------------------------------------------------
 BASE_TENORS = np.array([0.083, 0.25, 0.5, 1.0, 2.0, 3.0, 5.0, 7.0, 10.0, 20.0, 30.0])
-BASE_ZERO_RATES = np.array([0.0428, 0.0420, 0.0410, 0.0395, 0.0380, 0.0370,
-                             0.0365, 0.0370, 0.0380, 0.0390, 0.0400])
+
+# USD SOFR-OIS curve (~4% range)
+BASE_ZERO_RATES_USD = np.array([0.0428, 0.0420, 0.0410, 0.0395, 0.0380, 0.0370,
+                                 0.0365, 0.0370, 0.0380, 0.0390, 0.0400])
+
+# EUR €STR-OIS curve — generally lower than USD post-2024 ECB cuts, slight curve inversion at front
+BASE_ZERO_RATES_EUR = np.array([0.0335, 0.0325, 0.0310, 0.0290, 0.0270, 0.0260,
+                                 0.0255, 0.0265, 0.0275, 0.0285, 0.0295])
 
 
-def curve_for_day(day: int) -> tuple[np.ndarray, np.ndarray]:
-    """Return (tenors_y, zero_rates) for trading day `day` ∈ {1..5}.
+def _apply_day_shock(base_rates: np.ndarray, day: int) -> np.ndarray:
+    """Apply the per-day shock pattern to a base curve.
 
     D1: base
     D2: bull steepener (front -10bp, long -2bp)
@@ -237,17 +243,29 @@ def curve_for_day(day: int) -> tuple[np.ndarray, np.ndarray]:
     D4: parallel +25bp crisis
     D5: partial reversion (D1 + 5bp parallel)
     """
-    rates = BASE_ZERO_RATES.copy()
+    rates = base_rates.copy()
     if day == 2:
-        # Bull steepener: linearly interp shock from -10bp at front to -2bp at long
         shock = np.interp(BASE_TENORS, [0, 30], [-0.0010, -0.0002])
         rates = rates + shock
     elif day == 4:
         rates = rates + 0.0025
     elif day == 5:
         rates = rates + 0.0005
-    # day 1, day 3 → base curve unchanged
-    return BASE_TENORS.copy(), rates
+    return rates
+
+
+def curve_for_day(day: int, currency: str = "USD") -> tuple[np.ndarray, np.ndarray]:
+    """Return (tenors_y, zero_rates) for trading day `day` ∈ {1..5} and currency.
+
+    Same daily shock pattern is applied to both USD and EUR base curves — banks see
+    correlated cross-currency moves on most days, with idiosyncratic moves layered on
+    top in real life. The capstone keeps it simple: one shock, applied to both.
+    """
+    if currency == "USD":
+        return BASE_TENORS.copy(), _apply_day_shock(BASE_ZERO_RATES_USD, day)
+    if currency == "EUR":
+        return BASE_TENORS.copy(), _apply_day_shock(BASE_ZERO_RATES_EUR, day)
+    raise ValueError(f"unsupported currency: {currency}")
 
 
 # ------------------------------------------------------------------
@@ -393,15 +411,20 @@ def main():
     print(f"  saved -> data/trades.parquet  ({len(df_trades)} rows)")
 
     # For B&R marks generation we need per-trade TRUE PVs (using the user's pricers).
-    # We compute these on D1 + simple offsets per day.
+    # We compute these per currency using the right curve.
     print("\nGenerating market data + B&R marks per day ...")
-    base_curve = Curve(*curve_for_day(1), name="OIS")
+
+    # Clean up legacy single-curve files if present
+    for old_path in md_dir.glob("curves_D*.parquet"):
+        if "_USD_" not in old_path.name and "_EUR_" not in old_path.name:
+            old_path.unlink()
 
     for day in range(1, 6):
-        # Curve
-        tenors, rates = curve_for_day(day)
-        df_curve = pd.DataFrame({"tenor_y": tenors, "zero_rate": rates})
-        df_curve.to_parquet(md_dir / f"curves_D{day}.parquet", index=False)
+        # Per-currency curves
+        for ccy in ("USD", "EUR"):
+            tenors, rates = curve_for_day(day, currency=ccy)
+            df_curve = pd.DataFrame({"tenor_y": tenors, "zero_rate": rates})
+            df_curve.to_parquet(md_dir / f"curves_{ccy}_D{day}.parquet", index=False)
 
         # Swaption cube
         df_cube = swaption_cube_for_day(day)
@@ -415,14 +438,20 @@ def main():
         df_credit = credit_spreads_for_day(day)
         df_credit.to_parquet(md_dir / f"credit_spreads_D{day}.parquet", index=False)
 
-        print(f"  day {day}: curves + cube + caps + credit -> data/market_data/*_D{day}.parquet")
+        print(f"  day {day}: curves(USD,EUR) + cube + caps + credit -> data/market_data/*_D{day}.parquet")
 
-        # Build a curve for this day to compute approximate true PVs for B&R
-        cv = Curve(tenors, rates, name="OIS")
-        # Compute PVs for vanilla trades only (closed-form). Bermudans/exotics get a
-        # placeholder approximation to make the B&R generator self-contained.
+        # Build per-currency curves for this day to compute approximate true PVs for B&R
+        curves_by_ccy = {
+            ccy: Curve(*curve_for_day(day, currency=ccy), name=f"OIS_{ccy}")
+            for ccy in ("USD", "EUR")
+        }
+
+        # Compute PVs for vanilla trades using the right curve per currency.
+        # Bermudans/exotics get a placeholder approximation (B&R generator self-contained).
         true_pvs = {}
         for t in trades:
+            ccy = getattr(t, "currency", "USD")
+            cv = curves_by_ccy.get(ccy, curves_by_ccy["USD"])
             try:
                 if t.type == "irs":
                     true_pvs[t.trade_id] = price_irs(t, cv)
