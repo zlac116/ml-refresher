@@ -1,0 +1,16 @@
+# Trade proposals written by the HITL flow — local only
+proposals/*
+!proposals/.gitkeep
+
+# SqliteSaver checkpoint (if you promote it back from "what got cut")
+*.db
+*.sqlite
+
+# Local notes
+ANALYSIS.md
+scratch/
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/

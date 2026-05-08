@@ -1,0 +1,12 @@
+# HuggingFace dataset cache + raw transcripts — regenerable
+data/*
+!data/.gitkeep
+
+# Local notes
+ANALYSIS.md
+scratch/
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/

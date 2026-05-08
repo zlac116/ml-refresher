@@ -1,0 +1,14 @@
+# Raw filings + persisted vector store — too large for git, regenerable from EDGAR
+data/filings/*
+data/chroma/*
+!data/filings/.gitkeep
+!data/chroma/.gitkeep
+
+# Local notes / scratch
+ANALYSIS.md
+scratch/
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/

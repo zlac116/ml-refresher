@@ -9,7 +9,7 @@
 numpy~=2.4
 pandas~=2.2
 scipy~=1.17
-pyarrow~=16.1              # parquet backend for pandas
+pyarrow~=24.0              # parquet backend for pandas; bumped from 16.1 to satisfy datasets>=4.8 (needs pyarrow>=21)
 
 # --- Plotting ---
 matplotlib~=3.10
@@ -38,13 +38,33 @@ yfinance~=0.2              # equity, ETF, option-chain data
 pandas-datareader~=0.10    # FRED rates, Fama-French factors
 fredapi~=0.5               # direct FRED API (free key required for live pulls)
 arch~=7.2                  # GARCH/EGARCH/GJR-GARCH and bootstrap utilities
-QuantLib-Python~=1.34      # validation oracle ONLY (never the primary implementation)
+QuantLib~=1.42             # validation oracle ONLY (never the primary implementation); the legacy 'QuantLib-Python' distribution is frozen at 1.18, the current SWIG bindings ship as 'QuantLib'
 
 # --- Deployment / REST API (api/rest_api.ipynb runs FastAPI in-cell via TestClient) ---
 fastapi~=0.135
 pydantic~=2.12
 uvicorn~=0.32              # needed only if you actually `uvicorn app:app` the deploy snippet
 httpx~=0.28                # TestClient's transport; also used in async-endpoint example
+
+# --- LLM pipeline (llm-pipeline/langchain_langgraph.ipynb) ---
+# The LangChain ecosystem moves fast; if a cell breaks, cross-reference the
+# linked docs page in the notebook. Pins may need bumping over time.
+langchain~=1.2
+langgraph~=1.1
+langchain-openai~=1.2          # init_chat_model('openai:...'), OpenAIEmbeddings
+langchain-anthropic~=1.4       # init_chat_model('anthropic:...')
+langchain-community~=0.4       # Chroma vectorstore wrapper used in RAG section
+langchain-mcp-adapters~=0.2    # MultiServerMCPClient for MCP servers
+langsmith~=0.8                 # tracing + evaluation
+chromadb~=1.5                  # vector store backing the RAG examples
+
+# --- LLM-pipeline capstones (llm-pipeline/capstones/) ---
+# Project-specific deps. Skip these if you're not running the capstones.
+sec-edgar-downloader~=5.1   # Capstone 1: pull 10-Ks from EDGAR
+beautifulsoup4~=4.14        # Capstone 1: HTML cleaning of raw filings
+lxml~=6.1                   # Capstone 1: BeautifulSoup parser backend
+fastmcp~=3.2                # Capstone 2: build the custom MCP server
+datasets~=4.8               # Capstone 3: HuggingFace earnings-call transcripts
 
 # --- Jupyter runtime ---
 notebook~=7.5

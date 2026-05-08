@@ -1,0 +1,25 @@
+What They’ll Work On
+    • You will design and build AI agents and agentic workflows powered by LLMs, combining retrieval (RAG), reasoning, and tool orchestration. 
+    • You will develop multi-step intelligent systems that incorporate planning, memory, and real-world tool usage to solve complex tasks. 
+    • You will work with MCP-style architectures (or equivalent patterns) to structure context, enable tool interoperability, and improve system reliability. 
+    • You will contribute to systems for recommendation, classification, and forecasting, applied to large-scale, real-world datasets. 
+    • You will help automate complex workflows and decision-making processes, delivering measurable improvements to business performance. 
+What They’ll Do
+    • You will own problems end-to-end, taking ideas from initial exploration through to production deployment and ongoing iteration. 
+    • You will design, build, and deploy AI agents that operate reliably in real-world environments, not just prototypes or demos. 
+    • You will integrate AI systems into products, APIs, and business processes, ensuring they are usable and scalable. 
+    • You will work closely with engineering teams to ensure systems are robust, observable, and maintainable in production. 
+    • You will make pragmatic decisions that balance model performance, system latency, and cost efficiency. 
+
+
+
+
+
+
+Core Requirements 
+    • You have strong Python skills and can write clean, production-grade code, with a solid understanding of system design principles. 
+    • You have proven experience shipping LLM-powered systems into production, with clear examples of real-world usage – Deployed LangChain/LangGraph solutions or similar
+    • You have hands-on experience building AI agents or agentic workflows, including tool use, orchestration, and multi-step reasoning. 
+    • You have designed and implemented RAG systems that deliver meaningful improvements, rather than simple prototypes. 
+    • You are familiar with MCP or similar orchestration patterns, enabling structured context handling and tool integration – FastMCP/FastAPI
+    • You understand LLM limitations and trade-offs, and can design systems that mitigate issues such as hallucination, latency, and cost. 
