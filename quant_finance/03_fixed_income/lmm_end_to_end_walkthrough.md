@@ -48,11 +48,17 @@ $$L_i(0) = \frac{1}{\delta_i}\!\left(\frac{P(0, T_i)}{P(0, T_{i+1})} - 1\right)$
 
 LMM caplet on $L_i$ has Black-76 closed form:
 
-$$\text{Caplet}_i = \delta_i\,P(0,T_{i+1})\,\text{Black-76}\big(L_i(0),\,K,\,T_i,\,\sigma_i^{\text{Black}}\big)$$
+$$\mathrm{Caplet}_i = \delta_i \, P(0, T_{i+1}) \cdot \mathrm{Black76}\!\left(L_i(0), K, T_i, \sigma_i^{\mathrm{Black}}\right)$$
 
 A **cap** = sum of caplets, all sharing one quoted flat Black vol. Bootstrap forward-by-forward by matching cumulative variance:
 
-$$\sigma_i^2\,T_i = (\sigma_i^{\text{Black}})^2 T_i \;\;\Longrightarrow\;\; \sigma_i = \sqrt{\frac{(\sigma_i^{\text{Black}})^2 T_i - \sum_{k<i}\sigma_k^2(T_k - T_{k-1})}{T_i - T_{i-1}}}$$
+Equate cumulative variances:
+
+$$\sigma_i^2 \, T_i = (\sigma_i^{\mathrm{Black}})^2 \, T_i$$
+
+then solve forward-by-forward:
+
+$$\sigma_i = \sqrt{\frac{(\sigma_i^{\mathrm{Black}})^2 \, T_i - \sum_{k<i} \sigma_k^2 (T_k - T_{k-1})}{T_i - T_{i-1}}}$$
 
 | Forward | $L_0$ | $L_1$ | $L_2$ | $L_3$ |
 |---|---|---|---|---|
@@ -60,7 +66,7 @@ $$\sigma_i^2\,T_i = (\sigma_i^{\text{Black}})^2 T_i \;\;\Longrightarrow\;\; \sig
 
 ### 3. Forward-forward correlation matrix $\rho_{ij}$ (Rebonato)
 
-$$\rho_{ij} = \exp\big(-\beta\,\lvert T_i - T_j\rvert\big), \qquad \beta = 0.1$$
+$$\rho_{ij} = \exp(-\beta \, |T_i - T_j|), \qquad \beta = 0.1$$
 
 |   | $L_0$ | $L_1$ | $L_2$ | $L_3$ |
 |---|---|---|---|---|
@@ -109,7 +115,7 @@ $$L_0(\tfrac{1}{12}) = 0.0435 \cdot \exp\!\left((-0.00843 - 0.5\cdot 0.30^2)\cdo
 | | $L_0$ | $L_1$ | $L_2$ | $L_3$ |
 |---|---|---|---|---|
 | $t = 0$ | 0.0435 | 0.0455 | 0.0476 | 0.0500 |
-| $t = \tfrac{1}{12}$ | 0.0452 | 0.0467 | 0.0490 | 0.0523 |
+| $t = \tfrac{1}{12}$ | 0.0452 | 0.0468 | 0.0496 | 0.0522 |
 
 ### Output
 
@@ -210,8 +216,8 @@ All three wait → flow $T_{e_2}$ PVs through to $t = 0$. Final price = mean of 
 | Concept | Formula |
 |---|---|
 | Forward from DFs | $L_i(0) = \frac{1}{\delta_i}\!\left(\frac{P(0,T_i)}{P(0,T_{i+1})} - 1\right)$ |
-| Cap-vol bootstrap | $\sigma_i^2(T_i - T_{i-1}) = (\sigma_i^{\text{Black}})^2 T_i - \sum_{k<i}\sigma_k^2(T_k - T_{k-1})$ |
-| Rebonato | $\rho_{ij} = \exp(-\beta\lvert T_i - T_j\rvert)$ |
+| Cap-vol bootstrap | $\sigma_i^2 (T_i - T_{i-1}) = (\sigma_i^{\mathrm{Black}})^2 T_i - \sum_{k<i} \sigma_k^2 (T_k - T_{k-1})$ |
+| Rebonato | $\rho_{ij} = \exp(-\beta \, |T_i - T_j|)$ |
 | Terminal-measure drift | $\mu_i = -\sigma_i\sum_{j>i}\frac{\delta_j L_j}{1+\delta_j L_j}\,\sigma_j\,\rho_{ij}$ |
 | Euler update | $L_i(t+\Delta t) = L_i(t)\exp\!\big((\mu_i - \tfrac{1}{2}\sigma_i^2)\Delta t + \sigma_i\sqrt{\Delta t}\,Z_i\big)$ |
 | Caplet | $\delta_i P(0,T_{i+1})\cdot\mathbb{E}\!\left[\max(L_i(T_i) - K, 0)\right]$ |

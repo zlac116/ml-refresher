@@ -262,19 +262,19 @@ if __name__ == "__main__":
     print("=" * 60); print("1. The Magic U-Curve (quadratic formula)"); print("=" * 60)
     draw_curve(1, -3, -4)
 
-    print("\n" + "=" * 60); print("2. Nature's Favourite Numbers"); print("=" * 60)
-    draw_fibonacci()
+    # print("\n" + "=" * 60); print("2. Nature's Favourite Numbers"); print("=" * 60)
+    # draw_fibonacci()
 
-    print("\n" + "=" * 60); print("3. Pocket Money Magic"); print("=" * 60)
-    pocket_money_demo()
+    # print("\n" + "=" * 60); print("3. Pocket Money Magic"); print("=" * 60)
+    # pocket_money_demo()
 
-    print("\n" + "=" * 60); print("4. Folding Paper to the Moon"); print("=" * 60)
-    paper_to_moon()
+    # print("\n" + "=" * 60); print("4. Folding Paper to the Moon"); print("=" * 60)
+    # paper_to_moon()
 
-    print("\n" + "=" * 60); print("5. The Backwards Question (logs)"); print("=" * 60)
-    logs_demo()
+    # print("\n" + "=" * 60); print("5. The Backwards Question (logs)"); print("=" * 60)
+    # logs_demo()
 
-    print("\nDone! Scroll up and look for 🌟 TRY THIS bits to play with.")
+    # print("\nDone! Scroll up and look for 🌟 TRY THIS bits to play with.")
 
 
 # ---------------------------------------------------------------------------
