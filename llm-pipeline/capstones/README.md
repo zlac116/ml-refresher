@@ -1,6 +1,6 @@
 # LLM-Pipeline Capstone Trilogy (1-Day Compressed Sprint)
 
-Three quant-finance LLM capstones compressed into a **single ~8h day** (~2.5h each + 30min setup). The goal is to **touch every line in `interview_requirements.txt`** in one sitting — not to ship production-grade systems. Trade-off: you'll have working demos and talking points, not the full eval-driven story.
+Three quant-finance LLM capstones compressed into a **single ~8h day** (~2.5h each + 30min setup). The goal is to practice the full range of LangChain/LangGraph patterns on real finance data in one sitting — not to ship production-grade systems.
 
 These are **briefs**, not scaffolds. The point is to build each demo end-to-end yourself.
 
@@ -44,15 +44,11 @@ These are **briefs**, not scaffolds. The point is to build each demo end-to-end 
 By end of day:
 - **One notebook per capstone**, each runnable end-to-end against a real input
 - **LangSmith traces** for at least 3 runs per capstone (tagged `capstone-1` / `capstone-2` / `capstone-3`)
-- **One paragraph of notes per project** — not the full `ANALYSIS.md`, but enough to talk through in interview
+- **One paragraph of notes per project** — what worked, one surprise, one thing you'd refactor
 
-## What this prepares you for
+## What you'll have covered
 
-You'll be able to say:
-
-> *"I've built RAG, agents with tools, an MCP server, and a multi-agent supervisor — all on quant data, all in LangChain 1.x. Each is a working demo, not a production system. Here's what I'd add to ship: an eval suite (Capstone 1's faithfulness judge), persistence + multi-server composition (Capstone 2's SqliteSaver), and a single-shot vs multi-agent cost comparison (Capstone 3)."*
-
-Naming the **gap** — what each capstone needs before production — is itself an interview signal that you understand the difference between a demo and a system.
+By the end of the day, working demos of: RAG, agents with tools, an MCP server, and a multi-agent supervisor — all on quant data, all in LangChain 1.x.
 
 ## Honest about the compression
 
@@ -62,7 +58,7 @@ A 1-day compressed run means you'll skip:
 - Single-shot baseline + cost engineering (Capstone 3's "when to multi-agent" lesson)
 - FastAPI deployment, prompt-injection tests, latency profiling, written `ANALYSIS.md`
 
-If you find yourself with extra hours after the wrap, **promote one item back from any project's "what got cut" list** — Capstone 1's eval set is the highest-value addition (it's the line in the role spec about *meaningful improvements rather than simple prototypes*).
+If you find yourself with extra hours after the wrap, **promote one item back from any project's "what got cut" list** — Capstone 1's eval set is the highest-value addition.
 
 ## Pre-requisites
 
@@ -79,6 +75,6 @@ cd llm-pipeline/capstones/01_filings_rag
 cat README.md          # 2.5h plan, quarter-hour milestones
 ```
 
-Don't slip past the 2.5h budget on any capstone — cut features, not the whole project. The interview value is in having touched all three patterns, not in any one being polished.
+Don't slip past the 2.5h budget on any capstone — cut features, not the whole project. The value is in having touched all three patterns, not in any one being polished.
 
 Good luck.

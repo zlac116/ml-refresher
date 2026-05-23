@@ -1,0 +1,17 @@
+NVIDIA Corporation 2024 Annual Report (Form 10-K) — selected excerpts
+
+Business overview. The Company is a pioneer of accelerated computing, with operations organised into two reportable segments: Compute & Networking (data centre platforms, automotive, embedded systems) and Graphics (GeForce, professional visualisation, automotive infotainment).
+
+Revenue mix. Data Center revenue grew materially driven by demand for AI training and inference platforms (Hopper architecture, Blackwell ramp). Data Center now represents the substantial majority of total revenue, dwarfing Gaming and other segments.
+
+Risk factors — customer concentration. A small number of cloud-service-provider and large-enterprise customers account for a significant portion of revenue. Loss of, or reduced demand from, any of these customers could materially impact results. Hyperscaler capex cycles and in-house custom silicon programmes (e.g. cloud-provider proprietary accelerators) present an ongoing demand risk.
+
+Risk factors — export controls. The Company's products and technologies are subject to extensive export-control regulations administered by the US government. Existing controls restrict sales of advanced data-centre GPUs to China and other specified destinations. Future controls may broaden in scope and could reduce addressable market for the highest-margin SKUs.
+
+Risk factors — supply chain. The Company is critically dependent on a small number of advanced-process-node foundry partners, primarily Taiwan Semiconductor Manufacturing Company. Concentration of leading-edge fabrication in Taiwan exposes the Company to geopolitical and natural-disaster risk. Recent capacity expansion in the US and Japan partially mitigates but does not eliminate this exposure.
+
+Risk factors — competitive landscape. Competition in AI accelerators is intensifying from incumbent semiconductor vendors (AMD), cloud-provider in-house silicon (Google TPU, AWS Trainium, Microsoft Maia, Meta MTIA), and emerging entrants. The CUDA software ecosystem and developer tooling represent a key moat that competitors are actively targeting.
+
+Capital allocation. The Company has returned capital via dividends and share repurchases while investing heavily in R&D, software ecosystem expansion (CUDA, networking, full-stack software), and strategic minority investments across the AI ecosystem.
+
+Forward outlook. Management identifies Blackwell platform ramp, expansion of software & services attached to hardware (DGX Cloud, AI Enterprise), networking (Spectrum-X, InfiniBand), and sovereign-AI partnerships as priority areas. Demand for data-centre AI infrastructure is expected to remain materially above supply through the medium term.

@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "equity-research-agent"
+version = "0.1.0"
+description = "Multi-agent equity research assistant — Capstone 4"
+requires-python = ">=3.12"
+dependencies = [
+    "langgraph>=0.3",
+    "langgraph-cli[inmem]>=0.2",
+    "langchain>=0.3",
+    "langchain-openai>=0.2",
+    "langchain-community>=0.3",
+    "langchain-chroma>=0.1",
+    "langchain-tavily>=0.1",
+    "yfinance>=0.2",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "python-dotenv>=1.0",
+    "pydantic>=2.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]

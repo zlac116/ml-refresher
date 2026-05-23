@@ -1,0 +1,15 @@
+Apple Inc. 2024 Annual Report (Form 10-K) — selected excerpts
+
+Business overview. The Company designs, manufactures and markets smartphones, personal computers, tablets, wearables and accessories, and sells a variety of related services. Products include iPhone, Mac, iPad, AirPods, Apple TV, Apple Watch, and HomePod. Services include AppleCare, advertising, cloud services (iCloud), digital content (App Store, Apple Arcade, Apple Music, Apple TV+, Apple News+, Apple Fitness+, Apple Books), and payment services (Apple Card, Apple Pay).
+
+Net sales by category. iPhone remained the largest revenue contributor at approximately 51% of net sales, with services revenue continuing to grow as a share of the mix to roughly 25%. Services revenue carries materially higher gross margins than products.
+
+Risk factors — competition. The markets for the Company's products and services are highly competitive and characterised by aggressive price competition, frequent product introductions, evolving design approaches, rapid adoption of technological advancements, price sensitivity on the part of consumers, and changing consumer preferences. The Company's ability to compete successfully depends heavily on its ability to ensure a continuing and timely flow of competitive products, services, and technologies to the marketplace.
+
+Risk factors — supply chain. Substantially all of the Company's manufacturing is performed in whole or in part by outsourcing partners primarily in China, India, Japan, South Korea, Taiwan and Vietnam. The Company has invested in tooling and manufacturing process equipment located at certain of its outsourcing partners. Concentration of manufacturing exposes the Company to risks associated with political instability, regional conflicts, and trade restrictions. Recent geopolitical developments have increased the Company's focus on geographic diversification of its supply chain.
+
+Risk factors — regulatory. The Company is subject to a wide variety of laws and regulations globally that may be implemented in inconsistent ways across jurisdictions. Of particular note: digital markets and competition regulation in the European Union (Digital Markets Act), antitrust litigation in the United States, and data protection regimes (GDPR, state-level US privacy laws). Outcomes of these matters could result in fines, changes to business practices in the App Store, and changes to default app behaviours.
+
+Capital return. The Company returned approximately $110 billion to shareholders through share repurchases and dividends in the fiscal year. The Board has authorised continued capital return at similar levels.
+
+Forward outlook. Management identifies the following as priority investment areas: artificial intelligence and machine learning integration across the platform (Apple Intelligence), services growth, India market expansion, and supply-chain diversification away from single-country concentration.
