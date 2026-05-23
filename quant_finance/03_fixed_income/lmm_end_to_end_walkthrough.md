@@ -38,7 +38,7 @@ Concrete numerical walkthrough of the full pipeline: **calibration → simulatio
 
 ### 1. Bootstrap forwards from discount factors
 
-$$L_i(0) = \frac{1}{\delta_i}\!\left(\frac{P(0, T_i)}{P(0, T_{i+1})} - 1\right)$$
+$$L_i(0) = \frac{1}{\delta_i}(\frac{P(0, T_i)}{P(0, T_{i+1})} - 1)$$
 
 | $P(0, T_i)$ | 0.96 | 0.92 | 0.88 | 0.84 | 0.80 |
 |---|---|---|---|---|---|
@@ -48,17 +48,17 @@ $$L_i(0) = \frac{1}{\delta_i}\!\left(\frac{P(0, T_i)}{P(0, T_{i+1})} - 1\right)$
 
 LMM caplet on $L_i$ has Black-76 closed form:
 
-$$\mathrm{Caplet}_i = \delta_i \, P(0, T_{i+1}) \cdot \mathrm{Black76}\!\left(L_i(0), K, T_i, \sigma_i^{\mathrm{Black}}\right)$$
+$$\mathrm{Caplet}_i = \delta_i   P(0, T_{i+1}) \cdot \mathrm{Black76}(L_i(0), K, T_i, \sigma_i^{\mathrm{Black}})$$
 
 A **cap** = sum of caplets, all sharing one quoted flat Black vol. Bootstrap forward-by-forward by matching cumulative variance:
 
 Equate cumulative variances:
 
-$$\sigma_i^2 \, T_i = (\sigma_i^{\mathrm{Black}})^2 \, T_i$$
+$$\sigma_i^2   T_i = (\sigma_i^{\mathrm{Black}})^2   T_i$$
 
 then solve forward-by-forward:
 
-$$\sigma_i = \sqrt{\frac{(\sigma_i^{\mathrm{Black}})^2 \, T_i - \sum_{k<i} \sigma_k^2 (T_k - T_{k-1})}{T_i - T_{i-1}}}$$
+$$\sigma_i = \sqrt{\frac{(\sigma_i^{\mathrm{Black}})^2   T_i - \sum_{k<i} \sigma_k^2 (T_k - T_{k-1})}{T_i - T_{i-1}}}$$
 
 | Forward | $L_0$ | $L_1$ | $L_2$ | $L_3$ |
 |---|---|---|---|---|
@@ -66,7 +66,7 @@ $$\sigma_i = \sqrt{\frac{(\sigma_i^{\mathrm{Black}})^2 \, T_i - \sum_{k<i} \sigm
 
 ### 3. Forward-forward correlation matrix $\rho_{ij}$ (Rebonato)
 
-$$\rho_{ij} = \exp(-\beta \, |T_i - T_j|), \qquad \beta = 0.1$$
+$$\rho_{ij} = \exp(-\beta   |T_i - T_j|), \qquad \beta = 0.1$$
 
 |   | $L_0$ | $L_1$ | $L_2$ | $L_3$ |
 |---|---|---|---|---|
@@ -81,11 +81,11 @@ $$\rho_{ij} = \exp(-\beta \, |T_i - T_j|), \qquad \beta = 0.1$$
 
 ### Model SDE (terminal measure $Q^{T_N}$, numeraire $= P(0, T_N)$)
 
-$$\frac{dL_i(t)}{L_i(t)} = \mu_i(t)\,dt + \sigma_i(t)\,dW_i(t)$$
+$$\frac{dL_i(t)}{L_i(t)} = \mu_i(t) dt + \sigma_i(t) dW_i(t)$$
 
 **Drift** under terminal measure:
 
-$$\mu_i(t) = -\sigma_i(t)\sum_{j=i+1}^{N-1}\frac{\delta_j L_j(t)}{1 + \delta_j L_j(t)}\,\sigma_j(t)\,\rho_{ij}$$
+$$\mu_i(t) = -\sigma_i(t)\sum_{j=i+1}^{N-1}\frac{\delta_j L_j(t)}{1 + \delta_j L_j(t)} \sigma_j(t) \rho_{ij}$$
 
 - $L_{N-1}$ (last forward) is a martingale: $\mu_{N-1} = 0$.
 - All earlier forwards have negative drift.
@@ -106,11 +106,11 @@ $t = 0$, $\Delta t = 1/12$, correlated shocks $Z = (0.5, 0.4, 0.6, 0.7)$.
 
 **Drift for $L_0$:**
 
-$$\mu_0 = -0.30 \times \left[\tfrac{0.0455}{1.0455}\cdot 0.28 \cdot 0.905 + \tfrac{0.0476}{1.0476}\cdot 0.25 \cdot 0.819 + \tfrac{0.0500}{1.0500}\cdot 0.22 \cdot 0.741\right] \approx -0.00843$$
+$$\mu_0 = -0.30 \times [\tfrac{0.0455}{1.0455}\cdot 0.28 \cdot 0.905 + \tfrac{0.0476}{1.0476}\cdot 0.25 \cdot 0.819 + \tfrac{0.0500}{1.0500}\cdot 0.22 \cdot 0.741] \approx -0.00843$$
 
 **Update:**
 
-$$L_0(\tfrac{1}{12}) = 0.0435 \cdot \exp\!\left((-0.00843 - 0.5\cdot 0.30^2)\cdot\tfrac{1}{12} + 0.30\cdot\sqrt{\tfrac{1}{12}}\cdot 0.5\right) \approx 0.0452$$
+$$L_0(\tfrac{1}{12}) = 0.0435 \cdot \exp((-0.00843 - 0.5\cdot 0.30^2)\cdot\tfrac{1}{12} + 0.30\cdot\sqrt{\tfrac{1}{12}}\cdot 0.5) \approx 0.0452$$
 
 | | $L_0$ | $L_1$ | $L_2$ | $L_3$ |
 |---|---|---|---|---|
@@ -215,10 +215,10 @@ All three wait → flow $T_{e_2}$ PVs through to $t = 0$. Final price = mean of 
 
 | Concept | Formula |
 |---|---|
-| Forward from DFs | $L_i(0) = \frac{1}{\delta_i}\!\left(\frac{P(0,T_i)}{P(0,T_{i+1})} - 1\right)$ |
+| Forward from DFs | $L_i(0) = \frac{1}{\delta_i}(\frac{P(0,T_i)}{P(0,T_{i+1})} - 1)$ |
 | Cap-vol bootstrap | $\sigma_i^2 (T_i - T_{i-1}) = (\sigma_i^{\mathrm{Black}})^2 T_i - \sum_{k<i} \sigma_k^2 (T_k - T_{k-1})$ |
-| Rebonato | $\rho_{ij} = \exp(-\beta \, |T_i - T_j|)$ |
-| Terminal-measure drift | $\mu_i = -\sigma_i\sum_{j>i}\frac{\delta_j L_j}{1+\delta_j L_j}\,\sigma_j\,\rho_{ij}$ |
-| Euler update | $L_i(t+\Delta t) = L_i(t)\exp\!\big((\mu_i - \tfrac{1}{2}\sigma_i^2)\Delta t + \sigma_i\sqrt{\Delta t}\,Z_i\big)$ |
-| Caplet | $\delta_i P(0,T_{i+1})\cdot\mathbb{E}\!\left[\max(L_i(T_i) - K, 0)\right]$ |
+| Rebonato | $\rho_{ij} = \exp(-\beta   |T_i - T_j|)$ |
+| Terminal-measure drift | $\mu_i = -\sigma_i\sum_{j>i}\frac{\delta_j L_j}{1+\delta_j L_j} \sigma_j \rho_{ij}$ |
+| Euler update | $L_i(t+\Delta t) = L_i(t)\exp((\mu_i - \tfrac{1}{2}\sigma_i^2)\Delta t + \sigma_i\sqrt{\Delta t} Z_i)$ |
+| Caplet | $\delta_i P(0,T_{i+1})\cdot\mathbb{E}[\max(L_i(T_i) - K, 0)]$ |
 | LSMC basis | $\widehat{\text{cont}}(x) = \beta_0 + \beta_1 x + \beta_2 x^2$, ITM only |

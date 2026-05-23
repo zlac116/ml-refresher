@@ -56,7 +56,7 @@ For our cell: **$\beta = 0.5$**. Don't try to fit it â€” SABR is over-parameteri
 
 Plug $K = F$ into Hagan's formula and impose $\sigma_{SABR}(F) = \sigma_{ATM}^{\mathrm{market}}$. The result is a **cubic in $\alpha$**:
 
-$$\frac{\alpha}{F^{1-\beta}} \left[1 + \left(\frac{(1-\beta)^2}{24} \cdot \frac{\alpha^2}{F^{2-2\beta}} + \frac{\rho \beta \nu \alpha}{4 \, F^{1-\beta}} + \frac{(2 - 3\rho^2)\nu^2}{24}\right) T \right] = \sigma_{ATM}^{\mathrm{market}}$$
+$$\frac{\alpha}{F^{1-\beta}} [1 + (\frac{(1-\beta)^2}{24} \cdot \frac{\alpha^2}{F^{2-2\beta}} + \frac{\rho \beta \nu \alpha}{4   F^{1-\beta}} + \frac{(2 - 3\rho^2)\nu^2}{24}) T ] = \sigma_{ATM}^{\mathrm{market}}$$
 
 Rearranged into standard form $A \alpha^3 + B \alpha^2 + C \alpha + D = 0$:
 
@@ -96,7 +96,7 @@ The cubic correction matters most for **long $T$** and **high vol-of-vol $\nu$**
 
 For the remaining 4 strikes (everything except ATM), minimise the squared error between market and SABR vols:
 
-$$\min_{\rho, \nu} \sum_{k \neq \mathrm{ATM}} \left(\sigma_k^{\mathrm{market}} - \sigma_{SABR}(K_k; \alpha(\rho, \nu), \beta, \rho, \nu)\right)^2$$
+$$\min_{\rho, \nu} \sum_{k \neq \mathrm{ATM}} (\sigma_k^{\mathrm{market}} - \sigma_{SABR}(K_k; \alpha(\rho, \nu), \beta, \rho, \nu))^2$$
 
 At each optimiser step:
 1. Re-solve the ATM cubic for $\alpha$ given the current $(\rho, \nu)$.
@@ -138,21 +138,21 @@ Hagan's formula has both a **lognormal version** (the classic) and a **normal ve
 
 **Black-76 form** (positive rates):
 
-$$\mathrm{Swaption}(K) = A(0) \cdot \mathrm{Black76}\!\left(F, K, T, \sigma_{LN}^{SABR}(K)\right)$$
+$$\mathrm{Swaption}(K) = A(0) \cdot \mathrm{Black76}(F, K, T, \sigma_{LN}^{SABR}(K))$$
 
-$$\mathrm{Black76\ payer} = F \, N(d_1) - K \, N(d_2), \qquad d_{1,2} = \frac{\ln(F/K) \pm 0.5 \, \sigma^2 T}{\sigma \sqrt{T}}$$
+$$\mathrm{Black76\ payer} = F   N(d_1) - K   N(d_2), \qquad d_{1,2} = \frac{\ln(F/K) \pm 0.5   \sigma^2 T}{\sigma \sqrt{T}}$$
 
 **Bachelier form** (low/negative rates):
 
-$$\mathrm{Swaption}(K) = A(0) \cdot \mathrm{Bachelier}\!\left(F, K, T, \sigma_n^{SABR}(K)\right)$$
+$$\mathrm{Swaption}(K) = A(0) \cdot \mathrm{Bachelier}(F, K, T, \sigma_n^{SABR}(K))$$
 
-$$\mathrm{Bachelier\ payer} = (F - K) \, N(d) + \sigma_n \sqrt{T} \, \phi(d), \qquad d = \frac{F - K}{\sigma_n \sqrt{T}}$$
+$$\mathrm{Bachelier\ payer} = (F - K)   N(d) + \sigma_n \sqrt{T}   \phi(d), \qquad d = \frac{F - K}{\sigma_n \sqrt{T}}$$
 
 where $\phi(\cdot)$ is the standard normal **density** (not CDF).
 
 **Conversion** (Hagan-Kennedy): you can convert between lognormal and normal vol via:
 
-$$\sigma_n \approx \sigma_{LN} \cdot F \cdot \left(1 - \frac{1}{24} \ln^2(F/K) + \ldots\right)$$
+$$\sigma_n \approx \sigma_{LN} \cdot F \cdot (1 - \frac{1}{24} \ln^2(F/K) + \ldots)$$
 
 so if SABR gives you $\sigma_{LN}$ but you need $\sigma_n$, convert rather than re-fit. Useful for rates books that flipped to Bachelier conventions during the negative-rate era (~2014-2022).
 
@@ -168,7 +168,7 @@ so if SABR gives you $\sigma_{LN}$ but you need $\sigma_n$, convert rather than 
 
    $$d_1 = \frac{\ln(F/K) + 0.5 \sigma^2 T}{\sigma \sqrt{T}}, \quad d_2 = d_1 - \sigma\sqrt{T}$$
 
-   $$\mathrm{Black76\ payer} = F \, N(d_1) - K \, N(d_2)$$
+   $$\mathrm{Black76\ payer} = F   N(d_1) - K   N(d_2)$$
 
 3. Multiply by annuity $A(0)$:
 
@@ -216,11 +216,11 @@ Market quotes: 0.310, 0.275, 0.250, 0.240, 0.245 (typical rates negative skew â€
 
 The closed-form vol approximation Hagan derived (Hagan et al. 2002):
 
-$$\sigma_{SABR}(K, F) \approx \frac{\alpha}{(FK)^{(1-\beta)/2}} \cdot \frac{1}{1 + \frac{(1-\beta)^2}{24}\ln^2(F/K) + \ldots} \cdot \frac{z}{x(z)} \cdot \left[1 + (\text{higher-order } T \text{ corrections})\right]$$
+$$\sigma_{SABR}(K, F) \approx \frac{\alpha}{(FK)^{(1-\beta)/2}} \cdot \frac{1}{1 + \frac{(1-\beta)^2}{24}\ln^2(F/K) + \ldots} \cdot \frac{z}{x(z)} \cdot [1 + (\text{higher-order } T \text{ corrections})]$$
 
 with
 
-$$z = \frac{\nu}{\alpha} (FK)^{(1-\beta)/2} \ln(F/K), \qquad x(z) = \ln\!\left(\frac{\sqrt{1 - 2\rho z + z^2} + z - \rho}{1 - \rho}\right)$$
+$$z = \frac{\nu}{\alpha} (FK)^{(1-\beta)/2} \ln(F/K), \qquad x(z) = \ln(\frac{\sqrt{1 - 2\rho z + z^2} + z - \rho}{1 - \rho})$$
 
 **What you need to know:**
 
@@ -248,13 +248,13 @@ They are **complementary**. SABR handles the smile on a single forward; LMM hand
 
 | Concept | Formula |
 |---|---|
-| SABR SDE | $dF = \alpha F^\beta dW$, $d\alpha = \nu \alpha dZ$, $d\langle W, Z \rangle = \rho \, dt$ |
+| SABR SDE | $dF = \alpha F^\beta dW$, $d\alpha = \nu \alpha dZ$, $d\langle W, Z \rangle = \rho   dt$ |
 | ATM vol (leading order) | $\sigma_{ATM} \approx \alpha / F^{1-\beta}$ |
 | Hagan $z$ | $z = (\nu/\alpha) (FK)^{(1-\beta)/2} \ln(F/K)$ |
-| Hagan $x(z)$ | $x(z) = \ln\!\left(\frac{\sqrt{1 - 2\rho z + z^2} + z - \rho}{1 - \rho}\right)$ |
+| Hagan $x(z)$ | $x(z) = \ln(\frac{\sqrt{1 - 2\rho z + z^2} + z - \rho}{1 - \rho})$ |
 | Cubic for $\alpha$ | $A\alpha^3 + B\alpha^2 + C\alpha + D = 0$ with $A=(1-\beta)^2 T/(24 F^{2-2\beta})$, $B=\rho\beta\nu T/(4 F^{1-\beta})$, $C=1+(2-3\rho^2)\nu^2 T/24$, $D=-\sigma_{ATM} F^{1-\beta}$ |
-| Black-76 payer | $A(0) \cdot \left[F \, N(d_1) - K \, N(d_2)\right]$, $d_{1,2} = \frac{\ln(F/K) \pm 0.5 \, \sigma^2 T}{\sigma \sqrt{T}}$ |
-| Bachelier payer | $A(0) \cdot \left[(F-K) N(d) + \sigma_n \sqrt{T} \phi(d)\right]$, $d = (F-K)/(\sigma_n \sqrt{T})$ |
+| Black-76 payer | $A(0) \cdot [F   N(d_1) - K   N(d_2)]$, $d_{1,2} = \frac{\ln(F/K) \pm 0.5   \sigma^2 T}{\sigma \sqrt{T}}$ |
+| Bachelier payer | $A(0) \cdot [(F-K) N(d) + \sigma_n \sqrt{T} \phi(d)]$, $d = (F-K)/(\sigma_n \sqrt{T})$ |
 | Per-cell calibration | (1) fix $\beta$, (2) solve $\alpha$ from ATM cubic, (3) fit $(\rho, \nu)$ by LSQ to wings |
 
 ---
