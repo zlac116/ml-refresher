@@ -53,7 +53,7 @@ You've succeeded if all six are true:
 ### Step 0 — Environment (5 min)
 
 ```bash
-cd /home/zlac116/Code/learning/ml-revision/llm-pipeline/capstones/04_equity_research_agent
+cd /home/zlac116/Code/learning/ml-revision/llm_pipeline/capstones/04_equity_research_agent
 cp .env.example .env
 # Edit .env: OPENAI_API_KEY, TAVILY_API_KEY, LANGSMITH_API_KEY, LANGSMITH_TRACING=true
 uv sync

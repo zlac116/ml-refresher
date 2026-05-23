@@ -71,7 +71,7 @@ If you find yourself with extra hours after the wrap, **promote one item back fr
 ## Getting started
 
 ```bash
-cd llm-pipeline/capstones/01_filings_rag
+cd llm_pipeline/capstones/01_filings_rag
 cat README.md          # 2.5h plan, quarter-hour milestones
 ```
 

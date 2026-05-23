@@ -44,7 +44,7 @@ areas.
 | Section | Why |
 |---|---|
 | Toolkit exercises (9 practice projects) | Excellent for fluency, but slow. Cut for time |
-| ML pipeline notebooks (classification, regression, time-series) | Not asked in pure quant-finance interviews |
+| ML pipeline notebooks (classification, regression, time_series) | Not asked in pure quant-finance interviews |
 | REST API notebook | Useful for ML-eng, not quant |
 | LLM pipeline cheatsheet | Skip unless interviewing at LLM-using fund |
 | Toolkit cheatsheet exercises beyond pandas/numpy/sklearn skim | Reference, not study material |

@@ -1,4 +1,4 @@
-# llm-pipeline — LangChain + LangGraph cheatsheet
+# llm_pipeline — LangChain + LangGraph cheatsheet
 
 Task-indexed reference covering the full LangChain / LangGraph / LangSmith Python documentation surface.
 

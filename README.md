@@ -6,9 +6,9 @@ Hands-on Jupyter notebooks for self-paced ML revision. Three layers:
 
 | Notebook | Task |
 |---|---|
-| `classification/classification.ipynb` | Direction classification — sign of BTC's next 4h return |
-| `regression/regression.ipynb`         | Volatility regression — BTC 24h-ahead realised vol |
-| `time-series/time_series.ipynb`       | Time-series forecasting — BTC hourly log returns (h=1..24) |
+| `ml/classification/classification.ipynb` | Direction classification — sign of BTC's next 4h return |
+| `ml/regression/regression.ipynb`         | Volatility regression — BTC 24h-ahead realised vol |
+| `ml/ml/time_series/time_series.ipynb`       | Time-series forecasting — BTC hourly log returns (h=1..24) |
 
 Each is structured as 10–17 **pipeline stages**. Every stage has the same shape:
 *Why we're here* → *30-second concept* → *runnable failure-mode demo* → *decisions* →
@@ -23,8 +23,8 @@ See `toolkit/README.md`.
 `physics`. Each topic has a short concept intro, a worked example, and exercises
 with hidden solutions and a `check()` helper that prints ✅/❌.
 
-**LLM pipeline** (`llm-pipeline/`) — task-indexed LangChain + LangGraph cheatsheet
-mirroring the official docs structure. See `llm-pipeline/README.md` for the extra
+**LLM pipeline** (`llm_pipeline/`) — task-indexed LangChain + LangGraph cheatsheet
+mirroring the official docs structure. See `llm_pipeline/README.md` for the extra
 dependencies.
 
 **REST API** (`api/`) — `rest_api.ipynb`, a 13-stage walkthrough that takes a

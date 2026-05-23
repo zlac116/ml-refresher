@@ -1,4 +1,4 @@
-# ML Revision — requirements for classification, regression, time-series notebooks.
+# ML Revision — requirements for classification, regression, time_series notebooks.
 # Tested on Python 3.12 (miniconda). Install with:
 #   pip install -r requirements.txt
 #
@@ -46,7 +46,7 @@ pydantic~=2.12
 uvicorn~=0.32              # needed only if you actually `uvicorn app:app` the deploy snippet
 httpx~=0.28                # TestClient's transport; also used in async-endpoint example
 
-# --- LLM pipeline (llm-pipeline/langchain_langgraph.ipynb) ---
+# --- LLM pipeline (llm_pipeline/langchain_langgraph.ipynb) ---
 # The LangChain ecosystem moves fast; if a cell breaks, cross-reference the
 # linked docs page in the notebook. Pins may need bumping over time.
 langchain~=1.2
@@ -58,7 +58,7 @@ langchain-mcp-adapters~=0.2    # MultiServerMCPClient for MCP servers
 langsmith~=0.8                 # tracing + evaluation
 chromadb~=1.5                  # vector store backing the RAG examples
 
-# --- LLM-pipeline capstones (llm-pipeline/capstones/) ---
+# --- LLM-pipeline capstones (llm_pipeline/capstones/) ---
 # Project-specific deps. Skip these if you're not running the capstones.
 sec-edgar-downloader~=5.1   # Capstone 1: pull 10-Ks from EDGAR
 beautifulsoup4~=4.14        # Capstone 1: HTML cleaning of raw filings
