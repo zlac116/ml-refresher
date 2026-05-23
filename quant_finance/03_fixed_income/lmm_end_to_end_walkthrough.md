@@ -58,7 +58,7 @@ $$\sigma_i^2   T_i = (\sigma_i^{\mathrm{Black}})^2   T_i$$
 
 then solve forward-by-forward:
 
-$$\sigma_i = \sqrt{\frac{(\sigma_i^{\mathrm{Black}})^2   T_i - \sum_{k<i} \sigma_k^2 (T_k - T_{k-1})}{T_i - T_{i-1}}}$$
+$$\sigma_i = \sqrt{\frac{(\sigma_i^{\mathrm{Black}})^2   T_i - \sum_{k=0}^{i-1} \sigma_k^2 (T_k - T_{k-1})}{T_i - T_{i-1}}}$$
 
 | Forward | $L_0$ | $L_1$ | $L_2$ | $L_3$ |
 |---|---|---|---|---|
@@ -216,7 +216,7 @@ All three wait → flow $T_{e_2}$ PVs through to $t = 0$. Final price = mean of 
 | Concept | Formula |
 |---|---|
 | Forward from DFs | $L_i(0) = \frac{1}{\delta_i}(\frac{P(0,T_i)}{P(0,T_{i+1})} - 1)$ |
-| Cap-vol bootstrap | $\sigma_i^2 (T_i - T_{i-1}) = (\sigma_i^{\mathrm{Black}})^2 T_i - \sum_{k<i} \sigma_k^2 (T_k - T_{k-1})$ |
+| Cap-vol bootstrap | $\sigma_i^2 (T_i - T_{i-1}) = (\sigma_i^{\mathrm{Black}})^2 T_i - \sum_{k=0}^{i-1} \sigma_k^2 (T_k - T_{k-1})$ |
 | Rebonato | $\rho_{ij} = \exp(-\beta   |T_i - T_j|)$ |
 | Terminal-measure drift | $\mu_i = -\sigma_i\sum_{j>i}\frac{\delta_j L_j}{1+\delta_j L_j} \sigma_j \rho_{ij}$ |
 | Euler update | $L_i(t+\Delta t) = L_i(t)\exp((\mu_i - \tfrac{1}{2}\sigma_i^2)\Delta t + \sigma_i\sqrt{\Delta t} Z_i)$ |
