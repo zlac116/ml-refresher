@@ -17,21 +17,23 @@ Implement 8 Python files in the order below. Each file is a stub with a docstrin
 | # | File | What you implement | Skill from your courses |
 |---|---|---|---|
 | 1 | `scripts/ingest_filings.py` | Read `data/filings/*.txt`, chunk, embed, persist to Chroma | RAG ingestion |
-| 2 | `src/tools/market_data.py` | Two `@tool` functions calling `yfinance` | LangChain `@tool` |
-| 3 | `src/tools/retriever.py` | `@tool` that queries Chroma, filtered by ticker | RAG retrieval |
-| 4 | `src/agents/fundamentals.py` | `create_react_agent` bound to market_data tools | ReAct agent |
-| 5 | `src/agents/news.py` | `create_react_agent` bound to `TavilySearch` | Web search inside an agent |
-| 6 | `src/agents/filings.py` | `create_react_agent` bound to `retrieve_filings` | RAG inside an agent |
-| 7 | `src/graph.py` | Supervisor + sub-agent nodes + HITL `interrupt()` + `MemorySaver` | **Multi-agent + HITL + memory (the main piece)** |
-| 8 | `src/api.py` | FastAPI with `POST /research` + `POST /research/approve` | LangGraph in a service |
+| 2 | `src/equity_research/tools/market_data.py` | Two `@tool` functions calling `yfinance` | LangChain `@tool` |
+| 3 | `src/equity_research/tools/retriever.py` | `@tool` that queries Chroma, filtered by ticker | RAG retrieval |
+| 4 | `src/equity_research/agents/fundamentals.py` | `create_agent` bound to market_data tools | Agent w/ tools |
+| 5 | `src/equity_research/agents/news.py` | `create_agent` bound to `TavilySearch` | Web search inside an agent |
+| 6 | `src/equity_research/agents/filings.py` | `create_agent` bound to `retrieve_filings` | RAG inside an agent |
+| 7 | `src/equity_research/graph.py` | Supervisor + sub-agent nodes + HITL `interrupt()` + `MemorySaver` | **Multi-agent + HITL + memory (the main piece)** |
+| 8 | `src/equity_research/api.py` | FastAPI with `POST /research` + `POST /research/approve` | LangGraph in a service |
 
-**Files I've provided so you don't burn time on boilerplate** (don't modify):
+**Files provided so you don't burn time on boilerplate** (don't modify):
 
 - `pyproject.toml`, `.env.example`, `langgraph.json` — config
-- `src/state.py` — the shared `ResearchState` TypedDict your nodes read/write
-- `src/prompts.py` — starter prompts (refine if you like)
+- `src/equity_research/__init__.py` — loads `.env` once on first import (centralised)
+- `src/equity_research/configuration.py` — `Configuration` dataclass: model choices, tool budgets, flags
+- `src/equity_research/state.py` — `ResearchState` TypedDict (per-run mutable state)
+- `src/equity_research/prompts.py` — starter prompts for all four roles
 - `data/filings/{AAPL,MSFT,NVDA}.txt` — sample 10-K excerpts
-- `tests/test_smoke.py` — run after building to verify
+- `tests/integration_tests/test_smoke.py` — run after building to verify
 
 ---
 
@@ -42,8 +44,8 @@ You've succeeded if all six are true:
 1. ✅ `uv run langgraph dev` opens Studio and shows the graph (supervisor + 3 sub-agents + finalise).
 2. ✅ A query in Studio pauses at the HITL `interrupt()` before issuing the recommendation; approving with `{"approved": true}` resumes it.
 3. ✅ Using the same `thread_id` for a follow-up question reuses prior state.
-4. ✅ `uv run uvicorn src.api:app` exposes both endpoints; both work from http://127.0.0.1:8000/docs.
-5. ✅ LangSmith traces exist for runs on AAPL, MSFT, NVDA.
+4. ✅ `uv run uvicorn equity_research.api:app` exposes both endpoints; both work from http://127.0.0.1:8000/docs.
+5. ✅ LangSmith traces exist for runs on AAPL, MSFT, NVDA (project `equity-research-agent`, **Traces** tab).
 6. ✅ `uv run pytest -v` is green.
 
 ---
@@ -55,11 +57,13 @@ You've succeeded if all six are true:
 ```bash
 cd /home/zlac116/Code/learning/ml-revision/llm_pipeline/capstones/04_equity_research_agent
 cp .env.example .env
-# Edit .env: OPENAI_API_KEY, TAVILY_API_KEY, LANGSMITH_API_KEY, LANGSMITH_TRACING=true
+# Edit .env: OPENAI_API_KEY, TAVILY_API_KEY, LANGSMITH_API_KEY
+#            LANGSMITH_TRACING=true
+#            LANGSMITH_PROJECT=equity-research-agent
 uv sync
 ```
 
-Verify: `uv run python -c "import langgraph; print('ok')"` prints `ok`.
+Verify: `uv run python -c "from equity_research.configuration import Configuration; print('ok')"` prints `ok`.
 
 ### Step 1 — RAG ingestion (20 min) → builds file #1
 
@@ -73,15 +77,15 @@ uv run python scripts/ingest_filings.py
 
 ### Step 2 — Tools (15 min) → builds files #2 and #3
 
-Open `src/tools/market_data.py` and `src/tools/retriever.py`. Read each docstring. Implement.
+Open `src/equity_research/tools/market_data.py` and `src/equity_research/tools/retriever.py`. Read each docstring. Implement.
 
 Quick test:
 
 ```python
-from src.tools.market_data import get_price_summary
+from equity_research.tools.market_data import get_price_summary
 print(get_price_summary.invoke({"ticker": "AAPL"}))
 
-from src.tools.retriever import retrieve_filings
+from equity_research.tools.retriever import retrieve_filings
 print(retrieve_filings.invoke({"ticker": "AAPL", "query": "supply chain risk"}))
 ```
 
@@ -89,12 +93,12 @@ print(retrieve_filings.invoke({"ticker": "AAPL", "query": "supply chain risk"}))
 
 ### Step 3 — Three sub-agents (15 min) → builds files #4, #5, #6
 
-Open each of the three agent files. Read each docstring. Implement using `create_react_agent` from `langgraph.prebuilt`.
+Open each of the three agent files. Read each docstring. Implement using `create_agent` from `langchain.agents` (the LangChain 1.x canonical agent factory).
 
 Quick test:
 
 ```python
-from src.agents.fundamentals import fundamentals_agent
+from equity_research.agents.fundamentals import fundamentals_agent
 from langchain_core.messages import HumanMessage
 result = fundamentals_agent.invoke({"messages": [HumanMessage("Ticker: AAPL. Get fundamentals.")]})
 print(result["messages"][-1].content)
@@ -104,7 +108,7 @@ print(result["messages"][-1].content)
 
 ### Step 4 — Supervisor graph (60 min) → builds file #7 (the main piece)
 
-Open `src/graph.py`. **Read the docstring carefully** — it lists every node, every edge, and the four LangGraph patterns to implement:
+Open `src/equity_research/graph.py`. **Read the docstring carefully** — it lists every node, every edge, and the four LangGraph patterns to implement:
 
 1. Supervisor node that picks the next sub-agent (or `finalise`)
 2. Conditional edges driven by `state["next_step"]`
@@ -121,10 +125,10 @@ In Studio, run a query. It **must** pause at the HITL interrupt. Resume with `{"
 
 ### Step 5 — FastAPI service (30 min) → builds file #8
 
-Open `src/api.py`. Read the docstring. Implement the two endpoints.
+Open `src/equity_research/api.py`. Read the docstring. Implement the two endpoints.
 
 ```bash
-uv run uvicorn src.api:app --reload --port 8000
+uv run uvicorn equity_research.api:app --reload --port 8000
 ```
 
 Open http://127.0.0.1:8000/docs.
@@ -144,7 +148,7 @@ Three queries in Studio (each on its own `thread_id`):
 2. `MSFT` — "What does the latest 10-K say about cloud growth risks?"
 3. `NVDA` — "Recommendation given news sentiment and supply-chain risk?"
 
-Capture LangSmith trace URL for each. Then:
+Capture LangSmith trace URL for each (Traces tab, project `equity-research-agent`). Then:
 
 ```bash
 uv run pytest -v
@@ -154,33 +158,75 @@ Add a 5-line reflection at the bottom of this README: which step took longest, w
 
 ---
 
-## FILES
+## STRUCTURE
+
+Production-style layout matching the canonical LangGraph CLI template (`langgraph new`):
 
 ```
 04_equity_research_agent/
 ├── README.md
-├── pyproject.toml
+├── pyproject.toml                              # name = "equity-research-agent"
+├── langgraph.json                              # graph = ./src/equity_research/graph.py:graph
 ├── .env.example
-├── langgraph.json
 ├── src/
-│   ├── state.py                ← provided
-│   ├── prompts.py              ← provided
-│   ├── graph.py                ← YOU BUILD  (step 4)
-│   ├── api.py                  ← YOU BUILD  (step 5)
-│   ├── agents/
-│   │   ├── fundamentals.py     ← YOU BUILD  (step 3)
-│   │   ├── news.py             ← YOU BUILD  (step 3)
-│   │   └── filings.py          ← YOU BUILD  (step 3)
-│   └── tools/
-│       ├── market_data.py      ← YOU BUILD  (step 2)
-│       └── retriever.py        ← YOU BUILD  (step 2)
+│   └── equity_research/                        # the importable package
+│       ├── __init__.py                         # load_dotenv on import (centralised)
+│       ├── configuration.py                    # Configuration dataclass (per-run config)
+│       ├── state.py                            # ResearchState TypedDict (per-run mutable state)
+│       ├── prompts.py                          # all system prompts
+│       ├── graph.py                            # supervisor — YOU BUILD (step 4)
+│       ├── api.py                              # FastAPI    — YOU BUILD (step 5)
+│       ├── agents/
+│       │   ├── fundamentals.py                 # YOU BUILD (step 3)
+│       │   ├── news.py                         # YOU BUILD (step 3)
+│       │   └── filings.py                      # YOU BUILD (step 3)
+│       └── tools/
+│           ├── market_data.py                  # YOU BUILD (step 2)
+│           └── retriever.py                    # YOU BUILD (step 2)
 ├── scripts/
-│   └── ingest_filings.py       ← YOU BUILD  (step 1)
+│   └── ingest_filings.py                       # YOU BUILD (step 1)
 ├── data/
-│   └── filings/                ← provided
+│   ├── filings/                                # sample 10-Ks (provided)
+│   └── chroma/                                 # built by step 1
 └── tests/
-    └── test_smoke.py           ← provided
+    ├── unit_tests/                             # deterministic — no live LLM calls
+    └── integration_tests/                      # live — gated by pytest marker
+        └── test_smoke.py
 ```
+
+**Why this layout** (production best practice, not opinion):
+
+- `src/<package_name>/` (not bare `src/`) — matches the `langgraph new` template; lets the project install as a real package; eliminates the `sys.path` hacks bare `src/` requires.
+- **State vs configuration separation** — `state.py` holds what changes during a run (messages, intermediate notes); `configuration.py` holds what's fixed at invocation (model name, tool budgets, feature flags). LangGraph 0.3+ treats them as different concepts via `Runtime[Context]`.
+- **`load_dotenv()` in package `__init__.py`** — runs once when the package is first imported, before any LangChain module resolves API keys. No scattered `load_dotenv()` calls in every file.
+- **Tests split into `unit_tests/` and `integration_tests/`** — unit tests must be deterministic (mock the LLM); integration tests can hit live LLMs but are gated by a marker.
+- **Functions, not classes** — the LangGraph canonical pattern. Nodes are pure functions of state; OOP appears only in Pydantic/dataclass data containers (`Configuration`, `ResearchState`). No agent classes, service classes, or manager classes.
+
+---
+
+## CONFIGURATION USAGE
+
+Read configuration inside a graph node:
+
+```python
+from langgraph.runtime import Runtime
+from equity_research.configuration import Configuration
+
+def supervisor_node(state, runtime: Runtime[Configuration]):
+    model_name = runtime.context.supervisor_model
+    ...
+```
+
+Override at invocation:
+
+```python
+graph.invoke(
+    {"ticker": "AAPL", ...},
+    config={"configurable": {"subagent_model": "openai:gpt-5-mini"}},
+)
+```
+
+This is what separates an "experiment" from a "system" — config knobs are explicit, not hard-coded across modules.
 
 ---
 
@@ -189,7 +235,7 @@ Add a 5-line reflection at the bottom of this README: which step took longest, w
 Not part of the 4-hour build. Add if you spend a second day:
 
 - Eval suite for briefing quality
-- Persistent checkpointer (`SqliteSaver` / `PostgresSaver`)
+- Persistent checkpointer (`SqliteSaver` / `PostgresSaver`) — currently in-memory
 - Cost controls / token budgets
 - Prompt-injection hardening on news content
 - Failover when OpenAI / Tavily is unavailable
@@ -200,6 +246,6 @@ Not part of the 4-hour build. Add if you spend a second day:
 ## PRE-REQUISITES
 
 - Python 3.12+, `uv` installed
-- `.env` with `OPENAI_API_KEY`, `TAVILY_API_KEY`, `LANGSMITH_API_KEY`, `LANGSMITH_TRACING=true`
+- `.env` with `OPENAI_API_KEY`, `TAVILY_API_KEY`, `LANGSMITH_API_KEY`, `LANGSMITH_TRACING=true`, `LANGSMITH_PROJECT=equity-research-agent`
 
 Don't overshoot 4h — cut scope, not the project.

@@ -20,20 +20,17 @@ References:
       https://python.langchain.com/docs/how_to/retrievers_chroma/
 """
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
 from pathlib import Path
 from langchain_core.tools import tool
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
+from equity_research.configuration import Configuration
 
 
-CHROMA_DIR = Path(__file__).resolve().parents[2] / "data" / "chroma"
+CHROMA_DIR = Path(__file__).resolve().parents[3] / "data" / "chroma"
 
 @tool
-def retrieve_filings(ticker: str, query: str, k: int = 4) -> list[dict]:
+def retrieve_filings(ticker: str, query: str, k: int = Configuration.filings_top_k) -> list[dict]:
     """
     Use this tool to retrieve filing chunks relevant to the query and ticker.
     1. Load the Chroma index from CHROMA_DIR, using OpenAIEmbeddings.
@@ -43,7 +40,7 @@ def retrieve_filings(ticker: str, query: str, k: int = 4) -> list[dict]:
     # Instantiate the Chroma vector store
     vector_store = Chroma(
       collection_name='filings',
-      embedding_function=OpenAIEmbeddings(model="text-embedding-3-small"),
+      embedding_function=OpenAIEmbeddings(model=Configuration.openai_embedding_model),
       persist_directory=str(CHROMA_DIR)
     )
     

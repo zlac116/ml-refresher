@@ -32,7 +32,7 @@ Run:
 # from fastapi import FastAPI
 # from langchain_core.messages import HumanMessage
 # from langgraph.types import Command
-# from src.graph import graph
+# from equity_research.graph import graph
 
 
 # TODO: build the FastAPI app

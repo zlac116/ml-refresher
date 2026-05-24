@@ -49,11 +49,11 @@ References:
 # from langgraph.checkpoint.memory import MemorySaver
 # from langgraph.types import interrupt
 #
-# from src.state import ResearchState
-# from src.prompts import SUPERVISOR_PROMPT, FINALISE_PROMPT
-# from src.agents.fundamentals import fundamentals_agent
-# from src.agents.news import news_agent
-# from src.agents.filings import filings_agent
+# from equity_research.state import ResearchState
+# from equity_research.prompts import SUPERVISOR_PROMPT, FINALISE_PROMPT
+# from equity_research.agents.fundamentals import fundamentals_agent
+# from equity_research.agents.news import news_agent
+# from equity_research.agents.filings import filings_agent
 
 
 # TODO: build the graph and export `graph` at module level

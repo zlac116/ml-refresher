@@ -1,7 +1,7 @@
 {
   "dependencies": ["."],
   "graphs": {
-    "equity_research": "./src/graph.py:graph"
+    "equity_research": "./src/equity_research/graph.py:graph"
   },
   "env": ".env"
 }
