@@ -36,6 +36,8 @@ def get_price_summary(ticker: str) -> dict:
     try:
         t = yf.Ticker(ticker)
         history = t.history(period="1y")
+        if history.empty:
+            return {"error": f"No data for ticker '{ticker}'"}
         info = t.info
     except Exception as e:
         return {'error': f"Error fetching data for {ticker}: {str(e)}"}

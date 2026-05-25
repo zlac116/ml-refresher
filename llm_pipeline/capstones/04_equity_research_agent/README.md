@@ -22,7 +22,7 @@ Implement 8 Python files in the order below. Each file is a stub with a docstrin
 | 4 | `src/equity_research/agents/fundamentals.py` | `create_agent` bound to market_data tools | Agent w/ tools |
 | 5 | `src/equity_research/agents/news.py` | `create_agent` bound to `TavilySearch` | Web search inside an agent |
 | 6 | `src/equity_research/agents/filings.py` | `create_agent` bound to `retrieve_filings` | RAG inside an agent |
-| 7 | `src/equity_research/graph.py` | Supervisor + sub-agent nodes + HITL `interrupt()` + `MemorySaver` | **Multi-agent + HITL + memory (the main piece)** |
+| 7 | `src/equity_research/graph.py` | Intent extractor + supervisor + sub-agent nodes + HITL `interrupt()` + `MemorySaver` | **Multi-agent + HITL + memory + structured-output intent extraction (the main piece)** |
 | 8 | `src/equity_research/api.py` | FastAPI with `POST /research` + `POST /research/approve` | LangGraph in a service |
 
 **Files provided so you don't burn time on boilerplate** (don't modify):
@@ -106,22 +106,23 @@ print(result["messages"][-1].content)
 
 **Done when:** each of the three agents runs end-to-end and returns a sensible answer.
 
-### Step 4 — Supervisor graph (60 min) → builds file #7 (the main piece)
+### Step 4 — Graph (60 min) → builds file #7 (the main piece)
 
-Open `src/equity_research/graph.py`. **Read the docstring carefully** — it lists every node, every edge, and the four LangGraph patterns to implement:
+Open `src/equity_research/graph.py`. **Read the docstring carefully** — it lists every node, every edge, and the five LangGraph patterns to implement:
 
-1. Supervisor node that picks the next sub-agent (or `finalise`)
-2. Conditional edges driven by `state["next_step"]`
-3. Finalise node that calls `interrupt()` for human approval
-4. `MemorySaver` checkpointer so the same `thread_id` keeps state
+1. **Intent extractor node** that reads the latest `HumanMessage` and populates `state["ticker"]` + `state["question"]` via structured output. This is the **entry adapter** — translates chat-UI input (messages only) into the typed state fields the rest of the graph relies on. Without it, Studio sends *"Analyse AAPL"* and the sub-agents search for a ticker called `"None"`.
+2. **Supervisor node** that picks the next sub-agent (or `finalise`) — LLM with structured output for the routing decision.
+3. **Sub-agent nodes** (fundamentals / news / filings) that invoke each pre-built agent and write notes back to state.
+4. **Finalise node** that calls `interrupt()` for human approval; branches on approve vs feedback (revises with feedback + original draft in context).
+5. **`MemorySaver` checkpointer** so the same `thread_id` keeps state.
 
 ```bash
 uv run langgraph dev
 ```
 
-In Studio, run a query. It **must** pause at the HITL interrupt. Resume with `{"approved": true}` → final recommendation appears.
+In Studio, type a query like *"Analyse AAPL"*. The intent extractor turns it into `ticker="AAPL"`. The sub-agents loop, the supervisor routes, and the run **must** pause at the HITL interrupt. Resume with `{"approved": true}` → final recommendation appears. Try *"Send me feedback"*-style resume too to exercise the revision branch.
 
-**Done when:** Studio shows the graph, a run pauses at HITL, resumes correctly, returns a final briefing.
+**Done when:** Studio shows the graph, the chat-UI input populates state correctly, a run pauses at HITL, both approve and feedback resume paths work, and a follow-up question on the same `thread_id` reuses prior state.
 
 ### Step 5 — FastAPI service (30 min) → builds file #8
 
