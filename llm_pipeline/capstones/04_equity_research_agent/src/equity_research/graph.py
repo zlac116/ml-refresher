@@ -58,32 +58,65 @@ References:
     - Structured output: https://python.langchain.com/docs/concepts/structured_outputs/
 """
 
-from typing import Literal
+from typing import Literal, Optional
 from langchain.messages import HumanMessage, SystemMessage
 from langchain.chat_models import init_chat_model
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.types import interrupt, Command
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from equity_research.state import ResearchState
-from equity_research.prompts import SUPERVISOR_PROMPT, FINALISE_PROMPT
+from equity_research.prompts import SUPERVISOR_PROMPT, FINALISE_PROMPT, INTENT_PROMPT
 from equity_research.agents.fundamentals import fundamentals_agent
 from equity_research.agents.news import news_agent
 from equity_research.agents.filings import filings_agent
 from equity_research.configuration import Configuration
 
+class IntentSchema(BaseModel):
+    ticker: Optional[str] = Field(description="The US-equity ticker symbol (1-5 uppercase letters) mentioned in the user's message. None if no ticker can be confidently identified.")
+    question: str = Field(description="The research question or analysis the user wants answered, rewritten as a clear directive.")
+
 # Output schema for supervisor node
-class SupervisorOutput(BaseModel):
+class SupervisorSchema(BaseModel):
     next_step: Literal["fundamentals", "news", "filings", "finalise"]
 
 MEMORY = InMemorySaver()
 
 # Node functions
+def extract_intent_node(state: ResearchState) -> ResearchState:
+    """Extract ticker and question from user query."""
+    
+    llm = init_chat_model(model=Configuration.intent_model).with_structured_output(IntentSchema)
+    
+    messages = state.get("messages") or []
+    if not messages:
+        return {"ticker": "", "question": ""}
+    
+    user_text = messages[-1].content
+    
+    prompt = f"""Extract the ticker and question from the following user query:
+    
+    user query: {user_text}
+    """
+    
+    response = llm.invoke([SystemMessage(content=INTENT_PROMPT), HumanMessage(content=prompt)])
+    
+    return {
+        "ticker": response.ticker,
+        "question": response.question
+    }
+
 def supervisor_node(state: ResearchState) -> Command[Literal["fundamentals_node", "news_node", "filings_node", "finalise_node"]]:
     """Look at state and decide which node to go to next."""
     
-    llm = init_chat_model(model=Configuration.supervisor_model).with_structured_output(SupervisorOutput)
+    if not state.get("ticker"):
+        return Command(
+            update={"next_step": "finalise"},
+            goto="finalise_node"
+        )
+    
+    llm = init_chat_model(model=Configuration.supervisor_model).with_structured_output(SupervisorSchema)
     
     structured_response = llm.invoke([
         SystemMessage(content=SUPERVISOR_PROMPT), 
@@ -97,7 +130,7 @@ def supervisor_node(state: ResearchState) -> Command[Literal["fundamentals_node"
         ])
     
     next_step = structured_response.next_step
-    
+        
     return Command(
         update={"next_step": next_step},
         goto=next_step + "_node"
@@ -159,6 +192,7 @@ def finalise_node(state: ResearchState) -> ResearchState:
 
 # Add Nodes
 builder = StateGraph(ResearchState)
+builder.add_node("extract_intent_node", extract_intent_node)
 builder.add_node("supervisor_node", supervisor_node)
 builder.add_node("fundamentals_node", fundamentals_node)
 builder.add_node("news_node", news_node)
@@ -166,7 +200,8 @@ builder.add_node("filings_node", filings_node)
 builder.add_node("finalise_node", finalise_node)
 
 # Add Edges
-builder.add_edge(START, "supervisor_node")
+builder.add_edge(START, "extract_intent_node")
+builder.add_edge("extract_intent_node", "supervisor_node")
 builder.add_edge("filings_node", "supervisor_node")
 builder.add_edge("news_node", "supervisor_node")
 builder.add_edge("fundamentals_node", "supervisor_node")
@@ -175,3 +210,15 @@ builder.add_edge("finalise_node", END)
 # TODO: build the graph and export `graph` at module level
 graph = builder.compile() #checkpointer=MEMORY)
 
+if __name__ == "__main__":
+    
+    query = "Is $AAPL a good investment right now?"
+    
+    from IPython.display import Image, display
+    
+    print(graph.get_graph().draw_ascii())
+    
+    # messages = [HumanMessage(content=query)]
+    # messages = graph.invoke({"messages": messages})
+    # for m in messages["messages"]:
+    #     m.pretty_print()

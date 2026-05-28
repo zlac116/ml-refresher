@@ -18,6 +18,7 @@ class Configuration:
     subagent_model: str = "openai:gpt-5-nano"
     supervisor_model: str = "openai:gpt-5-mini"
     finaliser_model: str = "openai:gpt-5"
+    intent_model: str = "openai:gpt-5-mini"
     openai_embedding_model: str = "text-embedding-3-small"
 
     # Tool budgets

@@ -1,0 +1,6 @@
+# Generated model artifacts from running the capstone
+*.pt
+*.joblib
+
+# sklearn dataset cache (if it lands here)
+scikit_learn_data/

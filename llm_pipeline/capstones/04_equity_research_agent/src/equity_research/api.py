@@ -29,11 +29,13 @@ Run:
     Open http://127.0.0.1:8000/docs to try it interactively.
 """
 
-# from fastapi import FastAPI
+from fastapi import FastAPI
 # from langchain_core.messages import HumanMessage
 # from langgraph.types import Command
 # from equity_research.graph import graph
 
 
 # TODO: build the FastAPI app
-app = None
+app = FastAPI()
+
+

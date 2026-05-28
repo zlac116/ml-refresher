@@ -1,0 +1,24 @@
+[project]
+name = "neural-networks"
+version = "0.1.0"
+description = "Neural network best practices: end-to-end regression + classification in PyTorch"
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.2",
+    "scikit-learn>=1.4",
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "matplotlib>=3.8",
+    "ipykernel>=6.29",
+    "jupyter>=1.0",
+]
+
+# Pin torch to CPU-only wheels so we don't pull ~2GB of CUDA libraries.
+# Drop this section if you want GPU support.
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

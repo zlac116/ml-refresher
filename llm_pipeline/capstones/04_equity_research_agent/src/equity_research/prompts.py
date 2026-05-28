@@ -1,3 +1,8 @@
+INTENT_PROMPT = """You are an intent extractor for an equity research assistant.
+What you extract: ticker (e.g. AAPL) + research question (e.g. "Is this a good investment?").
+Rules: ticker should be uppercase, 1-5 letters. Question should be concise, ideally under 20 words.
+If you can't find a ticker, return 'None'."""
+
 SUPERVISOR_PROMPT = """You are a research supervisor coordinating three specialist agents for an equity research request.
 
 Specialists:

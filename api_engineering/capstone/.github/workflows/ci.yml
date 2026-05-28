@@ -1,0 +1,15 @@
+# STRETCH GOAL — CI running lint + tests. Fill in the TODOs.
+name: ci
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      # TODO:
+      #   - run: uv sync
+      #   - run: uv run ruff check .
+      #   - run: uv run pytest
+      #     (tests use sqlite, so no Postgres service is needed for CI)
