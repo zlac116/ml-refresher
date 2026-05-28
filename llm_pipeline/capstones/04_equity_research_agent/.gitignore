@@ -1,0 +1,5 @@
+# LangGraph runtime state (checkpoints, ops, store, retry counter) — regenerated at runtime
+.langgraph_api/
+
+# Chroma vector store (rebuilt from source documents) — sqlite + embedding segment binaries
+data/chroma/
