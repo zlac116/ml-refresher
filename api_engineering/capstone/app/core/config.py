@@ -39,4 +39,4 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Cached settings singleton (also usable as a FastAPI dependency)."""
     # TODO: return Settings()  -- lru_cache makes this a process-wide singleton.
-    raise NotImplementedError
+    return Settings()

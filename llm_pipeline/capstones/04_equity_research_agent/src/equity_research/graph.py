@@ -208,7 +208,7 @@ builder.add_edge("fundamentals_node", "supervisor_node")
 builder.add_edge("finalise_node", END)
 
 # TODO: build the graph and export `graph` at module level
-graph = builder.compile(checkpointer=MEMORY)
+graph = builder.compile() # builder.compile(checkpointer=MEMORY)
 
 if __name__ == "__main__":
     

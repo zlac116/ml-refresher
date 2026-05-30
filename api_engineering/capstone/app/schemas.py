@@ -1,16 +1,26 @@
-"""Pydantic v2 schemas for request/response validation.
+"""Pydantic v2 schemas — validate JSON IN (requests) and shape JSON OUT (responses).
 
-Rules to follow:
-  - Request models validate input with constraints (quantity > 0, price > 0,
-    side is a valid enum). Bad input is rejected at the boundary -> 422.
-  - Response models NEVER expose password_hash or any other user's data
-    (OWASP API3). Use model_config = ConfigDict(from_attributes=True) to read
-    from ORM objects.
-  - Use distinct Create / Update / Read models; do not reuse the ORM model.
+WHAT THIS FILE IS — the contract at the HTTP boundary. A *request* model auto-rejects
+bad input with a 422 (e.g. negative quantity). A *response* model controls exactly
+which fields go OUT — never expose password_hash (OWASP API3).
+
+FIELD PATTERNS:
+    field: type                       # required
+    field: type = Field(gt=0)         # required + constraint
+    field: type | None = None         # optional
+    # response models read straight off ORM objects with:
+    model_config = ConfigDict(from_attributes=True)
+
+DOCS: https://docs.pydantic.dev/latest/concepts/models/   (Field: .../fields/)
+
+TEST IN ISOLATION (after filling a model):
+  uv run python -c "from app.schemas import TradeCreate; \
+    print(TradeCreate(symbol='AAPL', side='buy', quantity=10, entry_price=190.5))"
 """
+from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel  # also: ConfigDict, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class Side(str, Enum):
@@ -25,43 +35,62 @@ class TradeStatus(str, Enum):
 
 # ----- auth -----
 class RegisterRequest(BaseModel):
-    # TODO: email: EmailStr ; password: str = Field(min_length=8)
-    pass
+    # TODO:
+    email: EmailStr
+    password: str = Field(min_length=8)
 
 
 class Token(BaseModel):
-    # TODO: access_token: str ; token_type: str = "bearer"
-    pass
+    # TODO:
+    access_token: str
+    token_type: str = "bearer"
 
 
 class UserRead(BaseModel):
-    # TODO: id, email, created_at. NO password_hash. ConfigDict(from_attributes=True).
-    pass
+    # TODO:
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    email: EmailStr
+    created_at: datetime
 
 
 # ----- trades -----
 class TradeCreate(BaseModel):
-    # TODO: symbol: str ; side: Side ; quantity: float = Field(gt=0) ;
-    #       entry_price: float = Field(gt=0)
-    pass
-
+    # TODO:
+    symbol: str
+    side: Side
+    quantity: float = Field(gt=0)
+    entry_price: float = Field(gt=0)
 
 class TradeUpdate(BaseModel):
-    # TODO: optional fields patchable on an OPEN trade (all Optional / default None).
-    pass
+    # TODO — all optional (only the provided fields get patched on an OPEN trade):
+    symbol: str | None = None
+    quantity: float | None = Field(default=None, gt=0)
+    entry_price: float | None = Field(default=None, gt=0)
 
 
 class TradeClose(BaseModel):
-    # TODO: exit_price: float = Field(gt=0)
-    pass
+    # TODO:
+    exit_price: float = Field(gt=0)
 
 
 class TradeRead(BaseModel):
-    # TODO: id, symbol, side, quantity, entry_price, exit_price, status,
-    #       opened_at, closed_at, realised_pnl. ConfigDict(from_attributes=True).
-    pass
+    # TODO:
+    model_config = ConfigDict(from_attributes=True)
+    id: int ; symbol: str ; side: Side ; quantity: float ; entry_price: float
+    exit_price: float | None ; status: TradeStatus
+    opened_at: datetime ; closed_at: datetime | None
+    realised_pnl: float | None = None     # computed on close; None while open
 
 
 class PortfolioSummary(BaseModel):
-    # TODO: open_positions: int ; gross_exposure: float ; realised_pnl: float ; ...
-    pass
+    # TODO (stretch — only needed for GET /portfolio/summary):
+    open_positions: int
+    gross_exposure: float
+    realised_pnl: float
+
+# Test
+# if __name__ == "__main__":
+    
+#     print(TradeClose(exit_price=0.89))
+#     print(TradeCreate(symbol="MON", side="buy", quantity=20000, entry_price=0.0234))

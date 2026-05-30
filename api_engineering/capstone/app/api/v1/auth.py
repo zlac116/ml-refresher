@@ -11,7 +11,8 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @router.post("/register", response_model=schemas.UserRead, status_code=201)
 async def register(data: schemas.RegisterRequest, service=Depends(get_auth_service)):
     # TODO: user = await service.register(data); return user
-    raise NotImplementedError
+    user = await service.register(data)
+    return user
 
 
 @router.post("/login", response_model=schemas.Token)
@@ -26,10 +27,11 @@ async def login(
     """
     # TODO: token = await service.authenticate(form.username, form.password)
     #       return schemas.Token(access_token=token, token_type="bearer")
-    raise NotImplementedError
+    token = await service.authenticate(form.username, form.password)
+    return schemas.Token(access_token=token, token_type="bearer")
 
 
 @router.get("/me", response_model=schemas.UserRead)
 async def me(user=Depends(get_current_user)):
     # TODO: return user
-    raise NotImplementedError
+    return user

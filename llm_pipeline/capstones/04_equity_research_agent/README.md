@@ -250,3 +250,13 @@ Not part of the 4-hour build. Add if you spend a second day:
 - `.env` with `OPENAI_API_KEY`, `TAVILY_API_KEY`, `LANGSMITH_API_KEY`, `LANGSMITH_TRACING=true`, `LANGSMITH_PROJECT=equity-research-agent`
 
 Don't overshoot 4h — cut scope, not the project.
+
+## Demo runs (langsmith traces)
+- AAPL: https://smith.langchain.com/public/4146d51c-df2f-49fb-9fb3-06796e4980fc/r
+- MSFT: https://smith.langchain.com/public/a462fafc-2403-42ec-a536-d16ffba357eb/r
+- NVDA: https://smith.langchain.com/public/15902668-a29e-4fa7-b736-f488ac576869/r
+
+## Reflection
+1. Longest step: extract_intent, news, fundamental, filings
+2. Design choice I'd change: Unsure
+3. Not done yet: Unsure

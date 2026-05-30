@@ -29,6 +29,8 @@ from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings
 
+from src.equity_research.configuration import Configuration
+
 MAIN_DIR = Path(__file__).parent.parent
 CHROMA_DIR = MAIN_DIR.joinpath("data", "chroma")
 DATA_DIR = MAIN_DIR.joinpath("data", "filings")
@@ -36,7 +38,7 @@ DATA_DIR = MAIN_DIR.joinpath("data", "filings")
 def main() -> None:
     
     # Create Chroma vector store with OpenAI embeddings
-    openai_embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+    openai_embeddings = OpenAIEmbeddings(model=Configuration.openai_embedding_model)
     vector_store = Chroma(
         collection_name='filings',
         embedding_function=openai_embeddings,

@@ -16,8 +16,8 @@ stack: async DB, auth, ownership/authorization, observability, containerisation,
 and tests.
 
 > ### ⏱️ Time budget: ~2 hours (hard cap)
-> The **CORE** (the requirements marked _Core_ below, and milestones 1–6) is sized
-> to fit in about **2 hours**. Everything marked **Stretch** — close/patch/delete
+> The **CORE** (the requirements marked _Core_ below, and the Build order section) is
+> sized to fit in about **2 hours**. Everything marked **Stretch** — close/patch/delete
 > trades, structured logging, portfolio, OpenTelemetry, rate limiting, Alembic,
 > Docker, CI — is **optional** and beyond the budget. The skeleton ships the
 > stretch files too (clearly labelled) so the structure is complete; do **not**
@@ -116,17 +116,15 @@ The 2023 list is still current in May 2026. Satisfy at least these:
 
 ```bash
 cd api_engineering/capstone
-cp .env.example .env          # fill in a SECRET_KEY and DB url
+cp .env.example .env          # set SECRET_KEY; for the CORE use a SQLite URL:
+                              #   DATABASE_URL=sqlite+aiosqlite:///./dev.db
 uv sync                       # install all deps (+ dev group)
 ```
 
-Run Postgres + API:
+Run the API (core — SQLite, tables auto-created on startup):
 
 ```bash
-docker compose up --build     # once your Dockerfile/compose are implemented
-# or, against a local/compose Postgres:
-uv run alembic upgrade head   # apply migrations
-uv run uvicorn app.main:app --reload
+uv run uvicorn app.main:app --reload     # docs at http://localhost:8000/docs
 ```
 
 Run the tests:
@@ -135,27 +133,59 @@ Run the tests:
 uv run pytest
 ```
 
-Interactive docs once running: http://localhost:8000/docs
+> **Stretch deployment only** (after the core works): switch `DATABASE_URL` to
+> Postgres and either `uv run alembic upgrade head` or `docker compose up --build`.
+> Don't do this for the 2-hour core.
 
 ---
 
-## Suggested milestones (~2-hour core)
+## How to approach this build
 
-Implement in this order; the estimates sum to roughly 2 hours.
+**Mental model — a request flows down through layers, and each file is one layer:**
 
-| # | Milestone | Est. |
-|---|-----------|------|
-| 1 | **Config + app boot** — `core/config.py`, `main.py` assembles, `/health` returns 200 (SQLite + dev `create_all`). | 15 min |
-| 2 | **DB layer** — `db/session.py`, `models.py` (User, Trade). | 15 min |
-| 3 | **Auth** — `core/security.py` (Argon2 hash + JWT), register/login/me, `deps.get_current_user`. | 40 min |
-| 4 | **Trades core** — schemas → repository → service (**ownership check!**) → routes for POST / GET list / GET one. | 35 min |
-| 5 | **Error handling** — exception handlers (NotFound→404, Auth→401). | 10 min |
-| 6 | **Tests** — auth-required + the **BOLA test**. | 20 min |
+```
+HTTP request
+  → api/v1/*.py        route: receive the request, call a service
+    → services.py      business logic + the ownership (BOLA) check
+      → repositories.py    the actual DB queries
+        → models.py          the ORM tables
+  schemas.py     validates the JSON in/out at the route boundary
+  core/          config (settings) + security (JWT + password hashing)
+  db/session.py  the shared async DB connection
+  main.py        wires everything together — assembled LAST
+```
 
-**Stretch (do NOT start within the 2 hours):** close/patch/delete + P&L →
-structured logging + correlation ids → rate limiting → `/ready` + `/metrics` +
-OpenTelemetry → Alembic on Postgres → Dockerfile + compose → CI →
-`/portfolio/summary`.
+Once that clicks, each file has **one job** and you fill them **bottom-up**.
+
+**Ignore these for the core (they're stretch — don't open them yet):**
+`core/observability.py`, `Dockerfile`, `docker-compose.yml`, `migrations/`,
+`.github/`, and the `/ready`, `/metrics`, `PATCH`, `/close`, `DELETE`,
+`/portfolio/summary` routes.
+
+## Build order (~2 hours)
+
+Build in this sequence — each step unblocks the next, and **`main.py` comes last**
+because it imports everything else. (This is the one canonical order; ignore any
+other sequencing.)
+
+| # | File — its one job | Est. |
+|---|--------------------|------|
+| 1 | `core/config.py` — settings + `get_settings()` | ✅ done |
+| 2 | `db/session.py` — async engine + `SessionLocal` + `get_session` (import `get_settings`; SQLite URL) | 15 min |
+| 3 | `models.py` — `User` + `Trade` ORM columns | 10 min |
+| 4 | `schemas.py` — Pydantic request/response models | 10 min |
+| 5 | `core/security.py` — hash/verify password + create/decode JWT | 15 min |
+| 6 | `exceptions.py` — `register_exception_handlers` (map each error → HTTP status) | 10 min |
+| 7 | `repositories.py` — the user + trade DB queries | 10 min |
+| 8 | `services.py` — `AuthService` + `TradeService` (`_get_owned` BOLA check, open/get/list) | 20 min |
+| 9 | `api/deps.py` — `get_current_user` (decode token → load user) | 10 min |
+| 10 | `api/v1/auth.py` + `trades.py` + `ops.py` (`/health`) — wire routes to services | 15 min |
+| 11 | `main.py` — `create_app`: FastAPI + exception handlers + routers + `lifespan` (`create_all`) | 10 min |
+| 12 | `tests/` — auth-required + the **BOLA** test; `uv run pytest` | 15 min |
+
+**Stretch (do NOT start within the 2 hours):** more trade ops (`PATCH` / `close`+P&L /
+`DELETE`) → structured logging + correlation ids → rate limiting → `/ready` + `/metrics`
++ OpenTelemetry → Alembic on Postgres → Dockerfile + compose → CI → `/portfolio/summary`.
 
 ## Success criteria (core)
 

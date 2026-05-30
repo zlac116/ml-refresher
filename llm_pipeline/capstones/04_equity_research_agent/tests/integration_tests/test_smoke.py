@@ -25,7 +25,7 @@ def test_graph_imports():
 def test_graph_runs_to_hitl():
     """End-to-end: graph should pause at the HITL interrupt before finalise."""
     from equity_research.graph import graph
-    from langchain_core.messages import HumanMessage
+    from langchain.messages import HumanMessage
 
     config = {"configurable": {"thread_id": "smoke-test"}}
     result = graph.invoke(
@@ -43,3 +43,18 @@ def test_graph_runs_to_hitl():
         config=config,
     )
     assert "__interrupt__" in result or result.get("draft_report")
+
+
+def test_extract_intent():
+    """Validate intent extraction"""
+    
+    from equity_research.graph import graph
+    from langchain.messages import HumanMessage
+    
+    config = {"configurable": {"thread_id": "extract-intent-test"}}
+    prompt = HumanMessage(content="Analyse MSFT: Is this worth investing?")
+    
+    result = graph.invoke({"messages": [prompt]}, config=config)
+    
+    assert result["ticker"] == "MSFT"
+    assert result["question"] is not None

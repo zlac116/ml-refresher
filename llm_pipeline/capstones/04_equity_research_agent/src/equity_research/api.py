@@ -32,11 +32,13 @@ Run:
 from fastapi import FastAPI, HTTPException
 from langchain_core.messages import HumanMessage
 from langgraph.types import Command
-from equity_research.graph import graph
+from langgraph.checkpoint.memory import InMemorySaver
+from equity_research.graph import builder
 
-
-# TODO: build the FastAPI app
+# build the FastAPI app
 app = FastAPI()
+
+graph = builder.compile(checkpointer=InMemorySaver())
 
 @app.post("/research")
 def start_research(ticker: str, question: str, thread_id: str = None):
@@ -64,7 +66,7 @@ def approve_research(approved: bool, thread_id: str=None, feedback: str = None):
     
     if not state.next:
         raise HTTPException(
-            status=409,
+            status_code=409,
             detail=f"No run awaiting approval for thread_id:{thread_id}"
         )
         

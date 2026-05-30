@@ -7,7 +7,7 @@ dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.34",
     "gunicorn>=23.0",
-    "pydantic>=2.10",
+    "pydantic[email]>=2.10",
     "pydantic-settings>=2.7",
     "sqlalchemy[asyncio]>=2.0",
     "asyncpg>=0.30",
@@ -20,6 +20,7 @@ dependencies = [
     "opentelemetry-sdk>=1.29",
     "opentelemetry-instrumentation-fastapi>=0.50b0",
     "opentelemetry-instrumentation-sqlalchemy>=0.50b0",
+    "python-multipart>=0.0.29",
 ]
 
 # Dev dependencies (uv installs these by default; disable with --no-dev).

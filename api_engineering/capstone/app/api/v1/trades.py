@@ -19,7 +19,7 @@ async def open_trade(
     service=Depends(get_trade_service),
 ):
     # TODO: return await service.open_trade(user.id, data)
-    raise NotImplementedError
+    return await service.open_trade(user.id, data)
 
 
 @router.get("/trades", response_model=list[schemas.TradeRead])
@@ -33,7 +33,13 @@ async def list_trades(
 ):
     # TODO: return await service.list_trades(user.id, status=status, symbol=symbol,
     #                                        limit=limit, offset=offset)
-    raise NotImplementedError
+    return await service.list_trades(
+        user.id,
+        status=status,
+        symbol=symbol,
+        limit=limit,
+        offset=offset
+    )
 
 
 @router.get("/trades/{trade_id}", response_model=schemas.TradeRead)
@@ -43,7 +49,7 @@ async def get_trade(
     service=Depends(get_trade_service),
 ):
     # TODO: return await service.get_trade(trade_id, user.id)  # 404 if not owned
-    raise NotImplementedError
+    return await service.get_trade(trade_id, user.id)  # 404 if not owned
 
 
 @router.patch("/trades/{trade_id}", response_model=schemas.TradeRead)
@@ -54,7 +60,7 @@ async def update_trade(
     service=Depends(get_trade_service),
 ):
     # TODO: return await service.update_trade(trade_id, user.id, data)
-    raise NotImplementedError
+    return await service.update_trade(trade_id, user.id, data)
 
 
 @router.post("/trades/{trade_id}/close", response_model=schemas.TradeRead)
@@ -65,7 +71,7 @@ async def close_trade(
     service=Depends(get_trade_service),
 ):
     # TODO: return await service.close_trade(trade_id, user.id, data)
-    raise NotImplementedError
+    return await service.close_trade(trade_id, user.id, data)
 
 
 @router.delete("/trades/{trade_id}", status_code=204)
@@ -75,7 +81,7 @@ async def delete_trade(
     service=Depends(get_trade_service),
 ):
     # TODO: await service.delete_trade(trade_id, user.id)
-    raise NotImplementedError
+    await service.delete_trade(trade_id, user.id)
 
 
 @router.get("/portfolio/summary", response_model=schemas.PortfolioSummary)
@@ -84,4 +90,4 @@ async def portfolio_summary(
     service=Depends(get_trade_service),
 ):
     # TODO: return await service.portfolio_summary(user.id)   # stretch
-    raise NotImplementedError
+    return await service.portfolio_summary(user.id)   # stretch
