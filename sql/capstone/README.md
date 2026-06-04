@@ -24,10 +24,11 @@ orders(seller_id, ordered_at, net_amount)  -- ordered_at is TEXT 'YYYY-MM-DD HH:
 
 ## Run it
 ```bash
-docker run -d --name sqlcap -e POSTGRES_PASSWORD=pw -e POSTGRES_DB=cap -p 5432:5432 postgres:17
+# Map host port 55432 -> container's 5432 to avoid clashing with any local Postgres on 5432.
+docker run -d --name sqlcap -e POSTGRES_PASSWORD=pw -e POSTGRES_DB=cap -p 55432:5432 postgres:17
 sleep 5
-psql postgresql://postgres:pw@localhost:5432/cap -f schema.sql
-psql postgresql://postgres:pw@localhost:5432/cap -f tasks.sql      # your answers
+psql postgresql://postgres:pw@localhost:55432/cap -f schema.sql
+psql postgresql://postgres:pw@localhost:55432/cap -f tasks.sql      # your answers
 # teardown: docker rm -f sqlcap
 ```
 (Or `psql -d <yourdb> -f schema.sql` against your own Postgres.)
