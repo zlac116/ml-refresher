@@ -40,6 +40,7 @@ EXTENSION CHALLENGES (once the base version works):
 ------------------------------------------------------------------------------
 """
 import argparse
+from dataclasses import dataclass
 
 import numpy as np
 import torch
@@ -52,11 +53,20 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score, f1_score
 
+@dataclass
+class DataSet:
+    X_tr: np.array
+    X_va: np.array
+    X_te: np.array
+    y_tr: np.array
+    y_va: np.array
+    y_te: np.array
 
 def set_seed(seed: int) -> None:
     """Make the run reproducible across numpy and torch."""
     # TODO: seed numpy and torch.
-    raise NotImplementedError
+    np.random.seed(seed); torch.manual_seed(seed)
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def load_data(seed: int):
@@ -73,7 +83,17 @@ def load_data(seed: int):
       - n_features = number of columns; n_classes = number of distinct labels.
     """
     # TODO: implement per the docstring.
-    raise NotImplementedError
+    X, y = load_wine(return_X_y=True)
+    X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, random_state=seed, stratify=y)
+    X_tr, X_va, y_tr, y_va = train_test_split(X_tr, y_tr, test_size=0.2, random_state=seed, stratify=y_tr)
+    
+    sc = StandardScaler().fit(X_tr)
+    X_tr, X_va, X_te = sc.transform(X_tr), sc.transform(X_va), sc.transform(X_te)
+    
+    ds = DataSet(X_tr=X_tr, X_va=X_va, X_te=X_te, y_tr=y_tr, y_va=y_va, y_te=y_te)
+        
+    return ds, sc, X.shape[1], len(np.unique(y))
+    
 
 
 def make_loaders(X_tr, y_tr, X_va, y_va, batch_size: int):
@@ -86,8 +106,14 @@ def make_loaders(X_tr, y_tr, X_va, y_va, batch_size: int):
     Returns: train_loader, val_loader
     """
     # TODO: implement per the docstring.
-    raise NotImplementedError
-
+    ds_tr = TensorDataset(torch.tensor(X_tr, dtype=torch.float32), torch.tensor(y_tr, dtype=torch.int64))
+    ds_va = TensorDataset(torch.tensor(X_va, dtype=torch.float32), torch.tensor(y_va, dtype=torch.int64))
+    
+    tr_loader = DataLoader(ds_tr, batch_size=batch_size, shuffle=True)
+    va_loader = DataLoader(ds_va, batch_size=batch_size, shuffle=False)
+    
+    return tr_loader, va_loader
+    
 
 def build_model(n_features: int, n_classes: int, hidden: list[int]) -> nn.Module:
     """Build an MLP: [n_features] -> hidden... -> [n_classes] logits.
@@ -99,7 +125,15 @@ def build_model(n_features: int, n_classes: int, hidden: list[int]) -> nn.Module
       - nn.Sequential(*layers) is a convenient way to assemble it.
     """
     # TODO: build and return the model.
-    raise NotImplementedError
+    layers = []
+    prev = n_features
+    for h in hidden:
+        layers.append(nn.Linear(prev, h))
+        layers.append(nn.ReLU())
+        prev = h
+    layers.append(nn.Linear(prev, n_classes))
+    
+    return nn.Sequential(*layers)
 
 
 def train(model, train_loader, val_loader, loss_fn, optimizer, epochs, device):
@@ -114,7 +148,37 @@ def train(model, train_loader, val_loader, loss_fn, optimizer, epochs, device):
     Returns: history dict with 'train' and 'val' loss lists.
     """
     # TODO: implement the loop (this is the core thing the capstone tests).
-    raise NotImplementedError
+    
+    history = {"train": [], "val": []}
+
+    for epoch in range(epochs):
+        model.train()
+        running_train_loss = 0.0
+        for xb, yb in train_loader:
+            xb, yb = xb.to(device), yb.to(device)   # move batch to device location: no op if CPU
+            optimizer.zero_grad()                   # gradients accumulate - must clear them each step
+            loss = loss_fn(model(xb), yb)           # predict + compute loss
+            loss.backward()                         # backprop
+            optimizer.step()                        # update weights
+            running_train_loss += loss.item() * xb.size(0)
+        train_loss = running_train_loss / len(train_loader.dataset)
+        
+        # Validation pass
+        model.eval()
+        running_val_loss = 0.0
+        with torch.no_grad():
+            for xb, yb in val_loader:
+                xb, yb = xb.to(device), yb.to(device)
+                loss = loss_fn(model(xb), yb)       # compute val loss but do NOT backprop or step
+                running_val_loss += loss.item() * xb.size(0)
+        val_loss = running_val_loss / len(val_loader.dataset)
+        
+        history["train"].append(train_loss)
+        history["val"].append(val_loss)
+        if (epoch + 1) % max(1, epochs // 10) == 0:
+            print(f"epoch {epoch+1:3d} | train {train_loss:.4f} | val {val_loss:.4f}")
+    
+    return history
 
 
 def evaluate(model, X_te, y_te, device):
@@ -126,7 +190,16 @@ def evaluate(model, X_te, y_te, device):
       - Use accuracy_score and f1_score(..., average='macro').
     """
     # TODO: implement per the docstring.
-    raise NotImplementedError
+    model.eval()
+    with torch.no_grad():
+        X_te_t = torch.tensor(X_te, dtype=torch.float32).to(device)
+        y_pred = model(X_te_t).argmax(1).cpu().numpy()  # move back to CPU and convert to numpy for sklearn
+        acc = accuracy_score(y_te, y_pred)
+        f1 = f1_score(y_te, y_pred, average="macro")
+    
+    print(f"Test accuracy: {acc:.4%} | Test macro F1: {f1:.4%}")
+    
+    return acc, f1
 
 
 def main():
@@ -151,7 +224,26 @@ def main():
     #   8. acc, f1 = evaluate(...); print them
     #   9. save model state_dict (torch.save) AND the scaler (joblib.dump) --
     #      you need both to predict on new raw data later.
-    raise NotImplementedError
+    
+    set_seed(args.seed)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # Load data
+    ds, scaler, n_features, n_classes = load_data(args.seed)
+    # Tensor + data loaders
+    tr_loader, va_loader = make_loaders(ds.X_tr, ds.y_tr, ds.X_va, ds.y_va, batch_size=args.batch_size)
+    # Build model
+    model = build_model(n_features, n_classes, args.hidden).to(device)
+    # Loss fn and optimizer
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    # Train
+    history = train(model, tr_loader, va_loader, loss_fn, optimizer, args.epochs, device)
+    # Evaluate
+    acc, f1 = evaluate(model, ds.X_te, ds.y_te, device)
+    # Save model and scaler
+    torch.save(model.state_dict(), args.out)
+    joblib.dump(scaler, args.out.replace(".pt", "_scaler.joblib"))
+    print(f"Model and scaler saved to {args.out} and {args.out.replace('.pt', '_scaler.joblib')}")
 
 
 if __name__ == "__main__":

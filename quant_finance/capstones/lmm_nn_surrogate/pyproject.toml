@@ -1,0 +1,23 @@
+[project]
+name = "lmm-nn-surrogate"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.12"
+dependencies = [
+    "joblib>=1.5.3",
+    "numpy>=2.4.6",
+    "pandas>=3.0.3",
+    "scikit-learn>=1.9.0",
+    "scipy>=1.17.1",
+    "torch>=2.12.0",
+]
+
+# Pin torch to CPU-only wheels so we don't pull ~2GB of CUDA libraries.
+# Drop this section if you want GPU support.
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

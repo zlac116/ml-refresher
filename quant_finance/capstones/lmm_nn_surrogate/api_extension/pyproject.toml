@@ -1,0 +1,38 @@
+[project]
+name = "lmm-nn-surrogate-api"
+version = "0.1.0"
+description = "MLflow registry + FastAPI extension on the LMM NN surrogate capstone."
+requires-python = ">=3.11"
+dependencies = [
+    "mlflow>=2.12",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.27",
+    "pydantic>=2.6",
+    "pydantic-settings>=2.2",
+    "numpy>=1.26",
+    "scipy>=1.12",
+    "pandas>=2.2",
+    "joblib>=1.3",
+    "torch>=2.2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "httpx>=0.27",
+]
+
+# CPU-only torch — avoids the multi-GB CUDA wheel on training boxes that
+# don't need it. Remove this block (and let torch resolve normally) if you
+# want CUDA acceleration.
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
