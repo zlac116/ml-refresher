@@ -368,4 +368,5 @@ The phase structure (bootstrap → data → split → model → train → infer 
 
 **Related toolkit docs:**
 - EDA / model selection upstream: `toolkit/eda_decisions.md`
+- MLflow API patterns (tracking, registry, pyfunc): `toolkit/mlflow_cheatsheet.md`
 - Deployment downstream: `toolkit/deployment.ipynb`
