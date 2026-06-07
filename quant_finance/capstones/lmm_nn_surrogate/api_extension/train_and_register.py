@@ -88,7 +88,9 @@ def main() -> None:
     # HINT: mlflow.set_tracking_uri(args.tracking_uri)
     #       mlflow.set_experiment(args.experiment)
     # ------------------------------------------------------------------
-    raise NotImplementedError("TODO 1: set_tracking_uri + set_experiment")
+    # raise NotImplementedError("TODO 1: set_tracking_uri + set_experiment")
+    mlflow.set_tracking_uri(args.tracking_uri)
+    mlflow.set_experiment(args.experiment)
 
     # ------------------------------------------------------------------
     # TODO 2 — Train the surrogate (delegate to the parent capstone).
@@ -104,7 +106,12 @@ def main() -> None:
     #         model, X_tr, y_tr, X_va, y_va, args.epochs, args.lr, device
     #     )
     # ------------------------------------------------------------------
-    raise NotImplementedError("TODO 2: train the surrogate")
+    torch.manual_seed(args.seed)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    X, y = generate_data(args.n_data, args.seed)
+    X_tr, y_tr, X_va, y_va = split_train_val(X, y, args.val_frac, args.seed)
+    model = Surrogate(N_FEATURES, tuple(args.hidden)).to(device)
+    history = train_surrogate(model, X_tr, y_tr, X_va, y_va, args.epochs, device)
 
     # ------------------------------------------------------------------
     # TODO 3 — Open a tracked run + log everything.
@@ -128,7 +135,23 @@ def main() -> None:
     #         mlflow.log_metric("final_val_mse",   history["val"][-1])
     #         mlflow.log_metric("best_val_mse",    min(history["val"]))
     # ------------------------------------------------------------------
-    raise NotImplementedError("TODO 3: open a run + log params + per-epoch metrics")
+    # raise NotImplementedError("TODO 3: open a run + log params + per-epoch metrics")
+    with mlflow.start_run(run_name=f"surrogate-{args.seed}") as run:
+        mlflow.log_params({
+            "n_data": args.n_data,
+            "hidden": args.hidden,
+            "lr": args.lr,
+            "epochs": args.epochs,
+            "val_frac": args.val_frac,
+            "seed": args.seed,
+        })
+        
+        for epoch, (tr, va) in enumerate(zip(history["train"], history["val"])):
+            mlflow.log_metric("train_mse", tr, step=epoch)
+            mlflow.log_metric("val_mse", va, step=epoch)
+        mlflow.log_metric("final_train_mse", history["train"][-1])
+        mlflow.log_metric("final_val_mse", history["val"][-1])
+        mlflow.log_metric("best_val_mse", min(history["train"]))
 
     # ------------------------------------------------------------------
     # TODO 4 — Log the trained model AND register it in one call.
