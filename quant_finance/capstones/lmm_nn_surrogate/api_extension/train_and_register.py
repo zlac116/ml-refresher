@@ -42,7 +42,7 @@ from mlflow.models import infer_signature  # noqa: E402
 from lmm_nn_capstone import (        # noqa: E402  (parent capstone)
     LMM_PARAM_HI,
     LMM_PARAM_LO,
-    N_FEATURES,
+    NFEATURES,
     Surrogate,
     generate_data,
     split_train_val,
@@ -64,7 +64,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--tracking-uri",
         type=str,
-        default="./mlruns",
+        default="sqlite:///mlflow.db",
         help="MLflow tracking URI. Default './mlruns' is file-backed. "
              "For a sqlite-backed server use 'http://localhost:5000'.",
     )
@@ -89,6 +89,7 @@ def main() -> None:
     #       mlflow.set_experiment(args.experiment)
     # ------------------------------------------------------------------
     # raise NotImplementedError("TODO 1: set_tracking_uri + set_experiment")
+    
     mlflow.set_tracking_uri(args.tracking_uri)
     mlflow.set_experiment(args.experiment)
 
@@ -110,8 +111,8 @@ def main() -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     X, y = generate_data(args.n_data, args.seed)
     X_tr, y_tr, X_va, y_va = split_train_val(X, y, args.val_frac, args.seed)
-    model = Surrogate(N_FEATURES, tuple(args.hidden)).to(device)
-    history = train_surrogate(model, X_tr, y_tr, X_va, y_va, args.epochs, device)
+    model = Surrogate(NFEATURES, tuple(args.hidden)).to(device)
+    history = train_surrogate(model, X_tr, y_tr, X_va, y_va, args.epochs, args.lr, device)
 
     # ------------------------------------------------------------------
     # TODO 3 — Open a tracked run + log everything.
@@ -151,7 +152,7 @@ def main() -> None:
             mlflow.log_metric("val_mse", va, step=epoch)
         mlflow.log_metric("final_train_mse", history["train"][-1])
         mlflow.log_metric("final_val_mse", history["val"][-1])
-        mlflow.log_metric("best_val_mse", min(history["train"]))
+        mlflow.log_metric("best_val_mse", min(history["val"]))
 
     # ------------------------------------------------------------------
     # TODO 4 — Log the trained model AND register it in one call.
@@ -176,16 +177,27 @@ def main() -> None:
     #
     #     mlflow.pytorch.log_model(
     #         pytorch_model=model,
-    #         artifact_path="model",
+    #         name="model",                                    # MLflow 3.x — `artifact_path` is deprecated
     #         registered_model_name=MODEL_NAME,
     #         signature=signature,
     #         input_example=x_example,
+    #         serialization_format="pt2",                      # safer than cloudpickle (no arb-code on load)
     #     )
     # ------------------------------------------------------------------
-    raise NotImplementedError(
-        "TODO 4: mlflow.pytorch.log_model with signature + registered_model_name"
-    )
-
+        x_example = X_tr[:5]
+        with torch.no_grad():
+            y_example = model(torch.tensor(x_example, dtype=torch.float32).to(device)).cpu().numpy()
+        signature = infer_signature(x_example, y_example)
+        
+        mlflow.pytorch.log_model(
+            pytorch_model=model,
+            name="model",                                # MLflow 3.x — `artifact_path` is deprecated
+            registered_model_name=MODEL_NAME,
+            signature=signature,
+            input_example=x_example,
+            serialization_format="pt2",                  # safer than cloudpickle default
+        )
+    
     # ------------------------------------------------------------------
     # TODO 5 — Tag the new version with @candidate (NOT @production).
     # WHY: aliases are the modern MLflow way to point at "the model to
@@ -211,7 +223,17 @@ def main() -> None:
     #     )
     #     print(f"Registered {MODEL_NAME} v{latest_version} @{CANDIDATE_ALIAS}")
     # ------------------------------------------------------------------
-    raise NotImplementedError("TODO 5: tag latest version as @candidate")
+    client = MlflowClient()
+    latest_version = max(
+        int(mv.version)
+        for mv in client.search_model_versions(f"name='{MODEL_NAME}'")
+    )
+    client.set_registered_model_alias(
+        name=MODEL_NAME,
+        alias=CANDIDATE_ALIAS,
+        version=str(latest_version)
+    )
+    print(f"Registered {MODEL_NAME} v{latest_version} @{CANDIDATE_ALIAS}")
 
 
 if __name__ == "__main__":

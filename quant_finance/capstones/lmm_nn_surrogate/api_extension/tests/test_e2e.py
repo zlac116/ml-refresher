@@ -65,7 +65,7 @@ def trained_registry(tmp_path_factory) -> Path:
         with mlflow.start_run():
             mlflow.pytorch.log_model(
                 pytorch_model=model,
-                artifact_path="model",
+                name="model",                            # MLflow 3.x — `artifact_path` is deprecated
                 registered_model_name=MODEL_NAME,
             )
 

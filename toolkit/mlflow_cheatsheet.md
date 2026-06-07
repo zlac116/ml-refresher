@@ -22,9 +22,15 @@ mlflow.set_experiment("my-experiment")                       # created on first 
 
 | URI | When |
 |---|---|
-| `./mlruns` (default) | Local dev. Zero infra. |
-| `sqlite:///mlflow.db` | Single-user, needs registry (default file backend has limited registry support). |
-| `http://server:5000` | Team / prod. Run `mlflow server --backend-store-uri ...`. |
+| ❌ `./mlruns` (file-store) | **Deprecated** in MLflow 3.x — refuses to start without `MLFLOW_ALLOW_FILE_STORE=true`. Aliases / new features won't work. |
+| ✅ `sqlite:///mlflow.db` | Single-user / dev — the new default. Zero infra, full feature support. |
+| ✅ `postgresql://user:pass@host/db` | Team / prod backend store. |
+| ✅ `http://server:5000` | Centralised, behind `mlflow server --backend-store-uri postgresql://...`. |
+
+**Critical**: relative URIs (`sqlite:///mlflow.db`) resolve from CWD. Use
+`sqlite:////absolute/path/mlflow.db` (four slashes) or pin
+`MLFLOW_TRACKING_URI` to an absolute path so script + server + UI all
+agree.
 
 **Env var override** (don't hard-code URIs):
 ```bash
@@ -95,7 +101,7 @@ signature = infer_signature(X_tr[:5], pred)
 
 mlflow.sklearn.log_model(
     sk_model=pipeline,
-    artifact_path="model",
+    name="model",                                   # `artifact_path=` is deprecated in MLflow 3.x
     registered_model_name="my-classifier",   # auto-registers + new version
     signature=signature,
     input_example=X_tr[:5],
@@ -122,17 +128,22 @@ signature = infer_signature(x_example, y_example)
 
 mlflow.pytorch.log_model(
     pytorch_model=model,
-    artifact_path="model",
+    name="model",                                   # `artifact_path=` is deprecated in MLflow 3.x
     registered_model_name="my-nn",
     signature=signature,
     input_example=x_example,
 )
 ```
 
-**Why**: `mlflow.pytorch` saves architecture + state_dict together via
-cloudpickle. Loading later doesn't need the class definition in scope
-(unlike `torch.save(model)` which does).
-**Trap**: training Python version must match inference Python version (cloudpickle embeds bytecode).
+**Why**: `mlflow.pytorch` saves architecture + state_dict together. Loading
+later doesn't need the class definition in scope (unlike `torch.save(model)`).
+**Best practice (MLflow 3.x)**: pass `serialization_format="pt2"` — saves
+via PyTorch's safe graph format. The default (cloudpickle) executes
+arbitrary code on load, which MLflow now warns about explicitly.
+**Trap**: torch installed from the CPU-only index has a `+cpu` local
+version label; MLflow strips it to make the requirement PyPI-installable.
+If that breaks your inference env, pass `pip_requirements=["torch==2.12.0+cpu", ...]`
+explicitly to `log_model(...)`.
 
 ---
 
@@ -160,7 +171,7 @@ that matches the library — don't `pickle` it manually.
 import mlflow.transformers
 mlflow.transformers.log_model(
     transformers_model={"model": hf_model, "tokenizer": hf_tokenizer},
-    artifact_path="model",
+    name="model",                                   # `artifact_path=` is deprecated in MLflow 3.x
     task="text-classification",                 # required for the right pipeline at load
     registered_model_name="bert-sentiment",
 )
@@ -196,7 +207,7 @@ class MyWrapper(mlflow.pyfunc.PythonModel):
         return self.model.predict(X_scaled)
 
 mlflow.pyfunc.log_model(
-    artifact_path="wrapped",
+    name="wrapped",                              # `artifact_path=` is deprecated in MLflow 3.x
     python_model=MyWrapper(),
     artifacts={
         "scaler": "outputs/scaler.joblib",      # paths to files; copied into the model
@@ -437,6 +448,9 @@ For Docker: `mlflow models build-docker -m "models:/..." -n my-image`.
 | Smell | What to do |
 |---|---|
 | `Stage="Production"` / `transition_model_version_stage(...)` | Use **aliases** (`set_registered_model_alias`) |
+| `artifact_path="model"` in `log_model(...)` | `name="model"` — `artifact_path` is **deprecated in MLflow 3.x** |
+| `mlflow.pytorch.log_model(...)` without `serialization_format="pt2"` | Pass `pt2` — cloudpickle default executes arbitrary code on load |
+| File-store backend `./mlruns` for tracking URI | `sqlite:///mlflow.db` — file-store is **maintenance-mode in MLflow 3.x**; aliases won't work properly |
 | `pickle.dump(model, "model.pkl")` + `log_artifact(...)` | Use the flavour's `log_model` — gives signature, env, loader |
 | `mlflow.tracking.MlflowClient` | `from mlflow import MlflowClient` (modern re-export) |
 | `mlflow.start_run(...)` without `with` | Always context-manage; runs leak otherwise |
@@ -499,7 +513,7 @@ with mlflow.start_run(run_name="logreg-v1") as run:
     sig = infer_signature(X_tr[:5], pipe.predict(X_tr[:5]))
     mlflow.sklearn.log_model(
         sk_model=pipe,
-        artifact_path="model",
+        name="model",                                   # `artifact_path=` is deprecated in MLflow 3.x
         registered_model_name="iris-classifier",
         signature=sig,
         input_example=X_tr[:5],

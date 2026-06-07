@@ -208,3 +208,40 @@ __marimo__/
 
 # data files
 *.parquet
+
+# ----------------------------------------------------------------------------
+# ML / AI runtime artifacts — per-machine, large, regenerable. Never commit.
+# ----------------------------------------------------------------------------
+
+# MLflow tracking + artifact stores
+mlflow.db
+mlflow.db-journal
+mlruns/
+mlartifacts/
+
+# Trained model artifacts (outputs of training, not source)
+*.pt
+*.pth
+*.safetensors
+*.onnx
+*.gguf
+*.joblib
+*.pkl
+
+# Common per-run output dirs (from train_and_register, evaluation scripts, etc.)
+model_outputs/
+out/
+outputs/
+runs/
+
+# LangGraph runtime state (checkpointer pickles, retry counters, ops state)
+.langgraph_api/
+
+# ChromaDB persistence (vector stores)
+chroma.sqlite3
+chroma.sqlite3-*
+data/chroma/
+
+# Other vector store indices
+*.faiss
+*.index
