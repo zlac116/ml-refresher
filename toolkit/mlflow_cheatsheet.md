@@ -11,6 +11,92 @@ implementation see
 
 ---
 
+## 0. The general pattern — every MLflow run, every framework
+
+Internalise this skeleton; everything else in this doc is a variation on
+it. The pattern is the same regardless of framework (PyTorch, sklearn,
+XGBoost, LightGBM, custom pyfunc).
+
+```
+SETUP (process-level — once per script)
+  1. set_tracking_uri          where does metadata go? (sqlite/postgres/server)
+  2. set_experiment            which experiment folder groups this run?
+
+INSIDE the run  (with mlflow.start_run() as run:)
+  3. log_params                what HYPERPARAMETERS defined this experiment? (one-shot)
+  4. <do the work>             train / fit / build
+  5. log_metric × N            what was the PROGRESS + final result? (can use step=)
+  6. log_model                 save artifact + signature + auto-register in one call
+
+AFTER the run  (with block has exited)
+  7. (run is now FINISHED — visible in UI)
+  8. set_registered_model_alias        tag the new version (@candidate / @production)
+```
+
+**Critical distinction**: `log_params`, `log_metric`, `log_model` live
+**inside** the run — they're tied to *this execution*. Registry operations
+(`set_registered_model_alias`) live **outside** because they act on the
+registry, not the run. Aliasing inside works mechanically but is
+semantically wrong — you can't roll back to a previous version's alias
+from inside a different run's context.
+
+**Params vs metrics** (often confused):
+
+| | log_param | log_metric |
+|---|---|---|
+| Captures | **inputs** (knobs that defined the run) | **outputs** (results) |
+| Examples | `lr`, `hidden`, `seed`, `n_data` | `train_loss`, `val_accuracy` |
+| Mutable? | NO — set once per run (re-set raises) | YES — `step=` makes a time series |
+| Type | str / int / float / bool | float only |
+
+Canonical skeleton (PyTorch — adapt the flavour for sklearn/xgboost/etc):
+
+```python
+import mlflow, mlflow.pytorch
+from mlflow import MlflowClient
+from mlflow.models import infer_signature
+
+# 1+2. SETUP
+mlflow.set_tracking_uri("sqlite:///mlflow.db")
+mlflow.set_experiment("my-experiment")
+
+# 3-6. INSIDE THE RUN
+with mlflow.start_run(run_name="my-run") as run:
+    mlflow.log_params({"lr": 1e-3, "hidden": str([64, 64]), "seed": 0})
+
+    model, history = train(...)
+
+    for epoch, (tr, va) in enumerate(zip(history["train"], history["val"])):
+        mlflow.log_metric("train_loss", tr, step=epoch)
+        mlflow.log_metric("val_loss",   va, step=epoch)
+
+    sig = infer_signature(X_tr[:5], predict(model, X_tr[:5]))
+    mlflow.pytorch.log_model(
+        pytorch_model=model,
+        name="model",                              # MLflow 3.x — not artifact_path=
+        registered_model_name="my-model",
+        signature=sig,
+        input_example=X_tr[:5],
+        serialization_format="pt2",                # PyTorch-specific safety
+    )
+
+# 7+8. AFTER THE RUN — registry operation, not a run operation
+client = MlflowClient()
+latest = max(int(mv.version) for mv in client.search_model_versions("name='my-model'"))
+client.set_registered_model_alias("my-model", "candidate", str(latest))
+```
+
+**Variations** (all explained below):
+- Autolog (sklearn/xgboost/lightgbm/lightning): replaces steps 3 + 5 with one line.
+- Nested runs (HPO): `start_run(nested=True)` inside an outer `start_run`.
+- Skip `registered_model_name=` if you don't want the model in the registry.
+- Multiple `log_model` calls per run = ensembles; use different `name=`.
+
+The rest of this doc fills in the details for each step + the per-flavour
+specifics for step 6.
+
+---
+
 ## 1. Setup
 
 ```python
@@ -519,14 +605,16 @@ with mlflow.start_run(run_name="logreg-v1") as run:
         input_example=X_tr[:5],
     )
 
-# Promote:
+# Promote (AFTER the run closes — registry op, not a run op):
 from mlflow import MlflowClient
-MlflowClient().set_registered_model_alias("iris-classifier", "production", str(run.info.run_id))
-# (or version number — see §10)
+client = MlflowClient()
+latest = max(int(mv.version) for mv in client.search_model_versions("name='iris-classifier'"))
+client.set_registered_model_alias("iris-classifier", "production", str(latest))
 ```
 
 This is the spine. Adapt for every other flavour by swapping
-`mlflow.sklearn.log_model` for the right one.
+`mlflow.sklearn.log_model` for the right one. See **§0** for the abstract
+pattern explained step-by-step.
 
 ---
 
