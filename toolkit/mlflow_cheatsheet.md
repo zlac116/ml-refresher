@@ -231,10 +231,18 @@ later doesn't need the class definition in scope (unlike `torch.save(model)`).
 **Best practice (MLflow 3.x)**: pass `serialization_format="pt2"` — saves
 via PyTorch's safe graph format. The default (cloudpickle) executes
 arbitrary code on load, which MLflow now warns about explicitly.
-**Trap**: torch installed from the CPU-only index has a `+cpu` local
-version label; MLflow strips it to make the requirement PyPI-installable.
-If that breaks your inference env, pass `pip_requirements=["torch==2.12.0+cpu", ...]`
-explicitly to `log_model(...)`.
+**Trap (`.eval()` on a pt2-loaded model)**: pt2 returns an `ExportedProgram`,
+not a `nn.Module` — `.eval()` raises `NotImplementedError: Calling eval() is
+not supported yet.` Unwrap to a `GraphModule` after load:
+```python
+loaded = mlflow.pytorch.load_model(uri)
+model = loaded.module() if hasattr(loaded, "module") else loaded
+model.eval()                              # works on GraphModule
+```
+**Trap (torch `+cpu` label)**: torch installed from the CPU-only index has
+a `+cpu` local version label; MLflow strips it to make the requirement
+PyPI-installable. If that breaks your inference env, pass
+`pip_requirements=["torch==2.12.0+cpu", ...]` explicitly to `log_model(...)`.
 
 ---
 

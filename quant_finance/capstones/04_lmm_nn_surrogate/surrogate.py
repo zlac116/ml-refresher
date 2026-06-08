@@ -299,7 +299,7 @@ def nn_iv(model: nn.Module, params: np.ndarray, instruments: list[tuple], device
             return model(x).cpu().numpy()
     """
     # TODO: implement per the docstring.
-    feats = [[*params, T_, np.log(K_/F_), F_] for T_, K_, F_ in instruments]
+    feats = [[*params, T, np.log(K/F), F] for T, K, F in instruments]
     X = torch.tensor(feats, dtype=torch.float32).to(device)
     
     model.eval()

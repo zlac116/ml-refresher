@@ -25,7 +25,8 @@ def list_models_endpoint(settings: SettingsDep) -> ModelsListResponse:
         return ModelsListResponse(name=settings.model_name, versions=versions)
     """
     # TODO 16 — implement per the docstring.
-    raise NotImplementedError("TODO 16: GET /models")
+    versions = list_versions(settings.model_name)
+    return ModelsListResponse(name=settings.model_name, versions=versions)
 
 
 @router.post("/{name}/promote", response_model=PromoteResponse)
@@ -50,4 +51,12 @@ def promote_endpoint(
         return PromoteResponse(name=name, version=req.version, alias=req.alias)
     """
     # TODO 17 — implement per the docstring.
-    raise NotImplementedError("TODO 17: POST /models/{name}/promote")
+    if name != settings.model_name:
+        raise HTTPException(404, f"Unknown model: {name}")
+
+    try:
+        set_alias(name=name, version=req.version, alias=req.alias)
+    except Exception as e:
+        raise HTTPException(400, f"Failed to set alias: {e}") from e
+
+    return PromoteResponse(name=name, version=req.version, alias=req.alias)

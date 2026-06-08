@@ -47,8 +47,18 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     #     app.state.model         = model
     #     app.state.model_version = version
     #     print(f"Loaded {settings.model_name} v{version} @{settings.model_alias}")
-    yield
+    # yield
     # No shutdown cleanup — torch frees on process exit.
+    settings = get_settings()
+    mlflow.set_tracking_uri(settings.mlflow_tracking_uri)
+    model, version = load_model_by_alias(
+        settings.model_name, settings.model_alias
+    )
+    app.state.model         = model
+    app.state.model_version = version
+    print(f"Loaded {settings.model_name} v{version} @{settings.model_alias}")
+    
+    yield
 
 
 def create_app() -> FastAPI:
@@ -67,6 +77,11 @@ def create_app() -> FastAPI:
     #     app.include_router(models.router)
 
     # A tiny root endpoint — useful for liveness probes / curl smoke tests.
+    
+    app.include_router(calibrate.router)
+    app.include_router(price.router)
+    app.include_router(models.router)
+    
     @app.get("/", tags=["meta"])
     def root() -> dict:
         return {

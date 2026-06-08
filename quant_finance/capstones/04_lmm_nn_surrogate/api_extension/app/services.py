@@ -73,7 +73,17 @@ def run_pricing(
         return ivs.tolist()
     """
     # TODO 11 — implement per the docstring.
-    raise NotImplementedError("TODO 11: run_pricing")
+    # raise NotImplementedError("TODO 11: run_pricing")
+    device = _device(model)
+    ivs = nn_iv(
+        model,
+        params.as_array(),
+        _instruments_to_tuples(instruments),
+        device
+    )
+    
+    return ivs.tolist()
+    
 
 
 # =============================================================================
@@ -117,7 +127,24 @@ def run_calibration(
         }
     """
     # TODO 12 — implement per the docstring.
-    raise NotImplementedError("TODO 12: run_calibration")
+    device = _device(model)
+    tuples = _instruments_to_tuples(instruments)
+    ivs_np = np.asarray(market_ivs, dtype=np.float64)
+    x0 = (LMM_PARAM_LO + LMM_PARAM_HI) / 2
+    bounds = (LMM_PARAM_LO, LMM_PARAM_HI)
+    
+    res = calibrate(model, tuples, ivs_np, x0, bounds, device)
+    theta_star = res.x
+    
+    verify_rep = _build_verify_report(model, theta_star, tuples, ivs_np, device)
+    
+    return {
+        "theta_star": dict(zip(LMM_PARAM_NAMES, theta_star.tolist())),
+        "cost": float(res.cost),
+        "success": bool(res.success),
+        "message": str(res.message),
+        "verify": verify_rep,
+    }
 
 
 def _build_verify_report(
@@ -159,4 +186,26 @@ def _build_verify_report(
         )
     """
     # TODO 13 — implement per the docstring.
-    raise NotImplementedError("TODO 13: _build_verify_report")
+    iv_nn = nn_iv(model, theta_star, instruments, device)
+    iv_mc = np.array([
+        black76_implied_vol(mock_lmm_price(theta_star, T, K, F), F, K, T)
+        for (T, K, F) in instruments
+    ])
+    calib_bp     = (market_ivs - iv_mc) * 1e4
+    surrogate_bp = (iv_nn      - iv_mc) * 1e4
+
+    rows = [
+        VerifyRow(
+            instrument=f"T={T:.2f} K={K:.4f} F={F:.4f}",
+            market=float(m), nn=float(n), mc=float(c),
+            calib_bp=float(cb), surrogate_bp=float(sb),
+        )
+        for (T, K, F), m, n, c, cb, sb in zip(
+            instruments, market_ivs, iv_nn, iv_mc, calib_bp, surrogate_bp
+        )
+    ]
+    return VerifyReport(
+        rows=rows,
+        rmse_calib_bp=float(np.sqrt(np.mean(calib_bp**2))),
+        rmse_surrogate_bp=float(np.sqrt(np.mean(surrogate_bp**2))),
+    )

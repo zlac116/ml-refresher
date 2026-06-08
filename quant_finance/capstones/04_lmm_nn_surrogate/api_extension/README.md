@@ -4,6 +4,10 @@ A **3-hour** extension to the LMM NN surrogate capstone. Wraps the trained
 surrogate in a production-shaped workflow: train + register via MLflow, serve
 inference + calibration via FastAPI, manage versions through a small REST API.
 
+> **New to this project?** Read [`NAVIGATION.md`](NAVIGATION.md) — a guided
+> 60-minute VSCode walkthrough that takes you from "I just cloned this" to
+> "I can step through a live `POST /calibrate` request in the debugger."
+
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │ CLI:  train_and_register.py                                  │

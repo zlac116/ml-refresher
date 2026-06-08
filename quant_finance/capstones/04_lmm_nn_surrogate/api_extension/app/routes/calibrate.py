@@ -33,4 +33,14 @@ def calibrate_endpoint(
         )
     """
     # TODO 14 — implement per the docstring.
-    raise NotImplementedError("TODO 14: /calibrate route")
+    model, model_version = model_and_version
+    result = run_calibration(model, req.instruments, req.market_ivs)
+    return CalibrateResponse(
+        theta_star=Params(**result["theta_star"]),
+        cost=result["cost"],
+        success=result["success"],
+        message=result["message"],
+        model_version=model_version,
+        verify=result["verify"],
+    )
+    

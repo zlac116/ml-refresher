@@ -23,6 +23,7 @@ Run from `api_extension/`. The script adds the parent capstone directory
 to sys.path so it can re-use generate_data / Surrogate / train_surrogate.
 """
 import argparse
+import shutil
 import sys
 from textwrap import dedent
 from pathlib import Path
@@ -190,14 +191,20 @@ def main() -> None:
             y_example = model(torch.tensor(x_example, dtype=torch.float32).to(device)).cpu().numpy()
         signature = infer_signature(x_example, y_example)
         
-        mlflow.pytorch.log_model(
-            pytorch_model=model,
-            name="model",                                # MLflow 3.x — `artifact_path` is deprecated
-            registered_model_name=MODEL_NAME,
-            signature=signature,
-            input_example=x_example,
-            serialization_format="pt2",                  # safer than cloudpickle default
-        )
+        local_copy = Path(__file__).parent / "surrogate.py"
+        shutil.copy(Path(__file__).parent.parent / "surrogate.py", local_copy)
+        
+        try:
+            mlflow.pytorch.log_model(
+                pytorch_model=model,
+                name="model",                                # MLflow 3.x — `artifact_path` is deprecated
+                registered_model_name=MODEL_NAME,
+                signature=signature,
+                input_example=x_example,
+                code_paths=["surrogate.py"],
+            )
+        finally:
+            local_copy.unlink(missing_ok=True)                 # delete the temp copy
     
     # ------------------------------------------------------------------
     # TODO 5 — Tag the new version with @candidate (NOT @production).

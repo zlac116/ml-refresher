@@ -79,6 +79,26 @@ class Instrument(BaseModel):
     #             )
     #         return self
     # ------------------------------------------------------------------
+    @field_validator("T")
+    @classmethod
+    def _check_T(cls, value: float) -> float:
+        if not (T_LO <= value <= T_HI):
+            raise ValueError(f"T={value} outside training range [{T_LO}, {T_HI}]")
+        return value
+    
+    @field_validator("F")
+    @classmethod
+    def _check_F(cls, value: float) -> float:
+        if not (F_LO <= value <= F_HI):
+            raise ValueError(f"F={value} outside training range [{F_LO}, {F_HI}]")
+        return value
+    
+    @model_validator(mode="after")
+    def _check_moneyness(self) -> Self:
+        lm = float(np.log(self.K / self.F))
+        if not (LOG_M_LO <= lm <= LOG_M_HI):
+            raise ValueError(f"log(K/F)={lm:.3f} outside [{LOG_M_LO}, {LOG_M_HI}]")
+        return self
 
 
 class Params(BaseModel):
@@ -116,6 +136,14 @@ class Params(BaseModel):
             [self.sig_a, self.sig_c, self.sabr_alpha, self.rho_inf],
             dtype=np.float64,
         )
+        
+    @model_validator(mode="after")
+    def _check_bounds(self) -> Self:
+        vec = np.array([self.sig_a, self.sig_c, self.sabr_alpha, self.rho_inf])
+        for name, val, lo, hi in zip(LMM_PARAM_NAMES, vec, LMM_PARAM_LO, LMM_PARAM_HI):
+            if not (lo <= val <= hi):
+                raise ValueError(f"{name}={val} outside [{lo}, {hi}]")
+        return self
 
 
 # =============================================================================
@@ -141,7 +169,15 @@ class CalibrateRequest(BaseModel):
     #             )
     #         return self
     # ------------------------------------------------------------------
-
+    @model_validator(mode="after")
+    def _check_length_match(self) -> Self:
+        if len(self.instruments) != len(self.market_ivs):
+            raise ValueError(
+                f"len(instruments)={len(self.instruments)} != "
+                f"len(market_ivs)={len(self.market_ivs)}"
+            )
+        return self
+    
 
 class VerifyRow(BaseModel):
     instrument:   str
@@ -214,3 +250,6 @@ class PromoteResponse(BaseModel):
         "PREVIOUSLY-loaded model — restart the service to pick up the new "
         "alias target."
     )
+
+# if __name__ == "__main__":
+#     print(Params(sig_a=0.1, sig_c=0.3, sabr_alpha=0.01, rho_inf=0.1))

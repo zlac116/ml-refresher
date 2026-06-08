@@ -24,4 +24,6 @@ def price_endpoint(
         return PriceResponse(ivs=ivs, model_version=model_version)
     """
     # TODO 15 — implement per the docstring.
-    raise NotImplementedError("TODO 15: /price route")
+    model, model_version = model_and_version
+    ivs = run_pricing(model, req.params, req.instruments)
+    return PriceResponse(ivs=ivs, model_version=model_version)

@@ -53,9 +53,10 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     # MLflow
-    mlflow_tracking_uri: str = "./mlruns"
+    # NB: ./mlruns (file-store) is deprecated in MLflow 3.x — must be sqlite or HTTP server.
+    mlflow_tracking_uri: str = "sqlite:///mlflow.db"
     model_name:          str = "lmm-surrogate"
-    model_alias:         str = "production"
+    model_alias:         str = "candidate"     # ← was 'production'; you have @candidate, not @production
 
     # App
     api_title:   str = "LMM Surrogate API"
