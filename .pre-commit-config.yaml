@@ -1,0 +1,64 @@
+# Pre-commit hooks — defence in depth against accidental bad commits.
+# Install once (uv-native):
+#   uv tool install pre-commit
+#   pre-commit install
+#
+# Manual run on all files:
+#   pre-commit run --all-files
+
+repos:
+  # ---------------------------------------------------------------------------
+  # Standard hygiene + security checks
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      # PRIMARY GUARD: refuse to commit files > 10 MB. The main reason this
+      # file exists. Without this, a stray `.pt` or `.parquet` that slips past
+      # .gitignore can balloon the repo permanently.
+      - id: check-added-large-files
+        args: ['--maxkb=10240']            # 10 MB hard cap
+
+      # Catch merge-conflict markers (>>>>>>>, <<<<<<<, =======)
+      - id: check-merge-conflict
+
+      # Catch private keys (RSA / SSH / PGP) accidentally committed
+      - id: detect-private-key
+
+      # Reject filenames that differ only by case (breaks on case-insensitive FS)
+      - id: check-case-conflict
+
+      # Basic syntax checks
+      - id: check-yaml
+        args: ['--allow-multiple-documents']
+      - id: check-toml
+      - id: check-json
+
+      # Whitespace hygiene
+      - id: trailing-whitespace
+        exclude: '\.md$'                   # markdown trailing-space = line break — keep it
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+
+      # Catch broken symlinks
+      - id: check-symlinks
+      - id: destroyed-symlinks
+
+  # ---------------------------------------------------------------------------
+  # Python linting + formatting (ruff — fast, all-in-one)
+  # Optional: comment out if you don't want auto-fix on commit
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      - id: ruff
+        args: ['--fix']
+      - id: ruff-format
+
+# Notes
+# -----
+# - To bypass for a SPECIFIC commit (do this sparingly): `git commit --no-verify`
+# - To update hook versions: `pre-commit autoupdate`
+# - Hooks run on STAGED files only — fast even on large repos.
+# - First-time install is slow (downloads each hook's env); subsequent runs are cached.

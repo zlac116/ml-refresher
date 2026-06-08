@@ -39,10 +39,10 @@ import torch                         # noqa: E402
 from mlflow import MlflowClient      # noqa: E402  modern re-export
 from mlflow.models import infer_signature  # noqa: E402
 
-from lmm_nn_capstone import (        # noqa: E402  (parent capstone)
+from surrogate import (        # noqa: E402  (parent capstone)
     LMM_PARAM_HI,
     LMM_PARAM_LO,
-    NFEATURES,
+    N_FEATURES,
     Surrogate,
     generate_data,
     split_train_val,
@@ -111,7 +111,7 @@ def main() -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     X, y = generate_data(args.n_data, args.seed)
     X_tr, y_tr, X_va, y_va = split_train_val(X, y, args.val_frac, args.seed)
-    model = Surrogate(NFEATURES, tuple(args.hidden)).to(device)
+    model = Surrogate(N_FEATURES, tuple(args.hidden)).to(device)
     history = train_surrogate(model, X_tr, y_tr, X_va, y_va, args.epochs, args.lr, device)
 
     # ------------------------------------------------------------------

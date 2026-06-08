@@ -10,8 +10,8 @@ The workflow is the real thing; only the labels are toy. From the NN's
 perspective there is no difference.
 
 The conceptual write-up + a runnable single-file demo live next to this folder:
-- `../lmm_nn_surrogate.md` — the cheatsheet (read sections 1–4 before starting)
-- `../lmm_nn_surrogate_example.py` — an 80-line illustrative demo
+- `../notes.md` — the cheatsheet (read sections 1–4 before starting)
+- `../example.py` — an 80-line illustrative demo
 
 This capstone elevates that demo into a properly structured pipeline with
 clean function boundaries, train/val split, saved artifacts, and an instrument-level
@@ -204,9 +204,9 @@ cd quant_finance/projects/lmm_nn_surrogate/capstone
 
 # Use the existing NN-capstone uv env:
 /home/zlac116/Code/learning/ml-revision/ml/neural_networks/.venv/bin/python \
-    lmm_nn_capstone.py                                     # defaults
+    surrogate.py                                     # defaults
 /home/zlac116/Code/learning/ml-revision/ml/neural_networks/.venv/bin/python \
-    lmm_nn_capstone.py --n-data 20000 --epochs 3000
+    surrogate.py --n-data 20000 --epochs 3000
 ```
 
 Or set up a dedicated uv project for this capstone if you prefer

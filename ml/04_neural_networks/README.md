@@ -9,7 +9,7 @@ scikit-learn datasets.
 | File | What it is |
 |------|------------|
 | `neural_networks.ipynb` | The main notebook. Best-practices + framework discussion, then two end-to-end experiments (California Housing regression, Breast Cancer classification), every section explained. |
-| `capstone/capstone_tabular_nn.py` | **Your exercise.** A skeleton (function signatures + docstrings + TODOs) to implement: a CLI that applies the recipe to a new task (multiclass Wine classification). Extension challenges in the docstring. |
+| `capstone/train.py` | **Your exercise.** A skeleton (function signatures + docstrings + TODOs) to implement: a CLI that applies the recipe to a new task (multiclass Wine classification). Extension challenges in the docstring. |
 | `pyproject.toml` / `uv.lock` | uv-managed environment (CPU-only PyTorch). |
 
 ## Setup (uv)
@@ -36,13 +36,13 @@ Execute cells top to bottom — each builds on the previous.
 
 ## Capstone (your exercise)
 
-`capstone/capstone_tabular_nn.py` is a **skeleton** (~2-hour budget) — each
+`capstone/train.py` is a **skeleton** (~2-hour budget) — each
 function raises `NotImplementedError` with a docstring + TODOs describing what to
 build. Work through it yourself (multiclass Wine classifier), then run:
 
 ```bash
-uv run python capstone/capstone_tabular_nn.py
-uv run python capstone/capstone_tabular_nn.py --epochs 150 --lr 5e-4 --hidden 64 32
+uv run python capstone/train.py
+uv run python capstone/train.py --epochs 150 --lr 5e-4 --hidden 64 32
 ```
 
 When complete it should train, evaluate on a held-out test set, print accuracy +

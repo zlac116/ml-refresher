@@ -1,6 +1,6 @@
 """Capstone (YOUR exercise): NN regression with EARLY STOPPING.
 
-A direct sibling of capstone_tabular_nn.py — same skeleton style, same training
+A direct sibling of train.py — same skeleton style, same training
 loop pattern. Two genuinely new things:
 
   1. REGRESSION on a continuous target (California Housing — predict median house
@@ -26,8 +26,8 @@ Fill in every function marked `# TODO` (each currently raises
 NotImplementedError) and wire them together in main(). When it's working you
 should be able to run:
 
-    uv run python capstone_regression_nn.py
-    uv run python capstone_regression_nn.py --epochs 300 --patience 20 --hidden 128 64
+    uv run python train.py
+    uv run python train.py --epochs 300 --patience 20 --hidden 128 64
 
 Target to beat: ~0.79+ test R² (≈$53k RMSE) is very achievable on California Housing
 with a small MLP — the same number the notebook achieved with the basic loop.
@@ -230,7 +230,7 @@ def train_with_early_stopping(
     optimizer.step(). With deepcopy, you freeze a true snapshot in memory.
     """
     # TODO: implement the loop (re-use the inner train/val pass pattern from
-    # capstone_tabular_nn.py and ADD the early-stopping bookkeeping above).
+    # train.py and ADD the early-stopping bookkeeping above).
     best_val = float("inf")
     best_state = None
     epochs_without_improvement = 0

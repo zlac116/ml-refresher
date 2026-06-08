@@ -20,7 +20,7 @@ import torch
 PARENT_DIR = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PARENT_DIR))
 
-from lmm_nn_capstone import (  # noqa: E402
+from surrogate import (  # noqa: E402
     LMM_PARAM_HI,
     LMM_PARAM_LO,
     black76_implied_vol,

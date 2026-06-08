@@ -7,7 +7,7 @@ models. Modern API only (aliases, not stages).
 For phase-by-phase ML pipeline patterns see
 [`ml_project_methodology.md`](ml_project_methodology.md). For a worked
 implementation see
-[`../quant_finance/capstones/lmm_nn_surrogate/api_extension/`](../quant_finance/capstones/lmm_nn_surrogate/api_extension/).
+[`../quant_finance/capstones/04_lmm_nn_surrogate/api_extension/`](../quant_finance/capstones/04_lmm_nn_surrogate/api_extension/).
 
 ---
 
@@ -621,7 +621,7 @@ pattern explained step-by-step.
 ## 21. Cross-references
 
 - Production wrapping example (FastAPI + MLflow alias serving):
-  [`../quant_finance/capstones/lmm_nn_surrogate/api_extension/`](../quant_finance/capstones/lmm_nn_surrogate/api_extension/)
+  [`../quant_finance/capstones/04_lmm_nn_surrogate/api_extension/`](../quant_finance/capstones/04_lmm_nn_surrogate/api_extension/)
 - ML pipeline patterns (phase-by-phase):
   [`ml_project_methodology.md`](ml_project_methodology.md)
 - Deployment downstream: [`deployment.ipynb`](deployment.ipynb)

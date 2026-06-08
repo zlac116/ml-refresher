@@ -7,12 +7,12 @@ Trained a neural network to replace the Monte-Carlo LMM pricer **inside the cali
 
 ## How to run the worked example
 
-An 80-line runnable demo lives next to this doc: [`lmm_nn_surrogate_example.py`](./lmm_nn_surrogate_example.py).
+An 80-line runnable demo lives next to this doc: [`example.py`](./example.py).
 It mocks the slow LMM MC pricer with a toy vol-surface function, trains a 64-unit MLP, runs Levenberg–Marquardt calibration with the NN inside the loop, then verifies with Black inversion — completes in ~3 s on CPU and reproduces the three-way `market | NN(θ*) | MC(θ*)` comparison from §4 below.
 
 ```bash
 pip install numpy torch scipy
-python lmm_nn_surrogate_example.py
+python example.py
 ```
 
 Expected output (last few lines):

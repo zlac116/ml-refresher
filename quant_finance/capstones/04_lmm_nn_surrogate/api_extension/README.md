@@ -113,7 +113,7 @@ api_extension/
 ```
 
 A short `sys.path` shim at the top of `train_and_register.py` lets it
-`from lmm_nn_capstone import generate_data, Surrogate, ...` — the parent
+`from surrogate import generate_data, Surrogate, ...` — the parent
 capstone stays untouched.
 
 ---

@@ -13,8 +13,8 @@ Fill in every function marked `# TODO` (each currently raises
 NotImplementedError) and wire them together in main(). When it's working you
 should be able to run:
 
-    uv run python capstone_tabular_nn.py
-    uv run python capstone_tabular_nn.py --epochs 150 --lr 5e-4 --hidden 64 32
+    uv run python train.py
+    uv run python train.py --epochs 150 --lr 5e-4 --hidden 64 32
 
 Target to beat: ~0.95+ test accuracy is very achievable on Wine.
 

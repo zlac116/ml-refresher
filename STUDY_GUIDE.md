@@ -113,7 +113,7 @@ Goal: by Friday you've at least skimmed every notebook in the repo. Recognition-
 | **Mon** | 4 | `04_portfolio/04_factor_models.ipynb` (Fama-French, attribution) + `05_performance_attribution.ipynb` |
 | **Tue** | 4 | **Skim only** `06_stoch_calc/01_brownian_motion.ipynb` + `02_ito_and_gbm.ipynb`. Read the math + interview Q&A. Don't run code |
 | **Wed** | 4 | **Skim only** `05_volatility/01_garch.ipynb` + `02_realized_vol.ipynb`. Concepts + Q&A only |
-| **Thu** | 4 | ML pipeline skim: read Stage 0 + main concept of each stage in `classification.ipynb`, `regression.ipynb`, `time_series.ipynb`. **Skip exercises** |
+| **Thu** | 4 | ML pipeline skim: read Stage 0 + main concept of each stage in `ml/02_classification/classification.ipynb`, `ml/01_regression/regression.ipynb`, `ml/03_time_series/time_series.ipynb`. **Skip exercises** |
 | **Fri** | 4 | T3 skim: `04_portfolio/03_risk_parity.ipynb`, `05_volatility/03_local_vol_dupire.ipynb`, `02_risk/04_cva_intro.ipynb`, `06_stoch_calc/03_lsmc_american.ipynb`. Read interview Q&A on each (1 hr each) |
 
 **End-of-week checkpoint**:

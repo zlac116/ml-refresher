@@ -29,7 +29,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 # =============================================================================
-# Training-region bounds (mirror lmm_nn_capstone.py — KEEP IN SYNC)
+# Training-region bounds (mirror surrogate.py — KEEP IN SYNC)
 # =============================================================================
 LMM_PARAM_NAMES = ("sig_a", "sig_c", "sabr_alpha", "rho_inf")
 LMM_PARAM_LO = np.array([0.10, 0.30, 0.005, 0.10])

@@ -1,7 +1,7 @@
 # Regression NN (California Housing + early stopping) — Lessons (code-first)
 
 Canonical patterns from this build. Each section: code → why → trap.
-For phase-by-phase generic playbook: [`toolkit/ml_project_methodology.md`](../../../toolkit/ml_project_methodology.md).
+For phase-by-phase generic playbook: [`toolkit/ml_project_methodology.md`](../../../../toolkit/ml_project_methodology.md).
 
 ---
 
@@ -189,6 +189,6 @@ artifacts** for two.
 
 ---
 
-Related: [`LESSONS_tabular_nn.md`](LESSONS_tabular_nn.md) ·
-[`LESSONS.md` (LMM)](../../../quant_finance/capstones/lmm_nn_surrogate/LESSONS.md) ·
-[`toolkit/ml_project_methodology.md`](../../../toolkit/ml_project_methodology.md)
+Related: [`LESSONS.md` (tabular NN)](../01_tabular_classifier_wine/LESSONS.md) ·
+[`LESSONS.md` (LMM)](../../../../quant_finance/capstones/04_lmm_nn_surrogate/LESSONS.md) ·
+[`toolkit/ml_project_methodology.md`](../../../../toolkit/ml_project_methodology.md)

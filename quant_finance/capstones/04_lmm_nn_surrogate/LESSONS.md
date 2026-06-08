@@ -234,6 +234,6 @@ at a glance.
 
 ---
 
-Related: [`LESSONS_tabular_nn.md`](../../../ml/neural_networks/capstone/LESSONS_tabular_nn.md) ·
-[`LESSONS_regression_nn.md`](../../../ml/neural_networks/capstone/LESSONS_regression_nn.md) ·
+Related: [`LESSONS.md` (tabular NN)](../../../ml/04_neural_networks/capstones/01_tabular_classifier_wine/LESSONS.md) ·
+[`LESSONS.md` (regression NN)](../../../ml/04_neural_networks/capstones/02_regression_california_housing/LESSONS.md) ·
 [`toolkit/ml_project_methodology.md`](../../../toolkit/ml_project_methodology.md)

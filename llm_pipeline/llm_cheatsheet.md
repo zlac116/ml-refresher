@@ -958,7 +958,7 @@ long-term = across conversations (store, searchable by semantic similarity).
 
 ## 15. Cross-references
 
-- Worked tutorial: `langchain_langgraph.ipynb`
+- Worked tutorial: `llm_pipeline.ipynb`
 - Capstones: `capstones/01_filings_rag/`, `02_desk_copilot_mcp/`, `03_earnings_supervisor/`, `04_equity_research_agent/`
 - API serving patterns: `../api_engineering/api_engineering_cheatsheet.md`
 - MLflow tracking for LLM apps: `../toolkit/mlflow_cheatsheet.md` (use `mlflow.langchain.log_model` to register chains)

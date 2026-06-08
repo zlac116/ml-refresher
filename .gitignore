@@ -168,46 +168,71 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-# PyCharm
-#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
-#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
-#  and can be added to the global gitignore or merged into this file.  For a more nuclear
-#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#.idea/
+# ----------------------------------------------------------------------------
+# Editors / IDEs — local-only, never commit
+# ----------------------------------------------------------------------------
+.idea/                       # JetBrains
+.vscode/                     # VS Code (uncomment if your team commits a shared .vscode/)
+.fleet/                      # JetBrains Fleet
+.zed/                        # Zed
+*.iml                        # JetBrains module files
+*.swp                        # vim swap
+*.swo                        # vim swap
+*~                           # vim backup
+\#*\#                        # Emacs autosave
+.\#*                         # Emacs lock files
+.netrwhist                   # vim netrw history
 
-# Abstra
-# Abstra is an AI-powered process automation framework.
-# Ignore directories containing user credentials, local state, and settings.
-# Learn more at https://abstra.io/docs
-.abstra/
-
-# Visual Studio Code
-#  Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore 
-#  that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
-#  and can be added to the global gitignore or merged into this file. However, if you prefer, 
-#  you could uncomment the following to ignore the entire vscode folder
-# .vscode/
-
-# Ruff stuff:
-.ruff_cache/
-
-# PyPI configuration file
-.pypirc
-
-# Cursor
-#  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
-#  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
-#  refer to https://docs.cursor.com/context/ignore-files
-.cursorignore
+# ----------------------------------------------------------------------------
+# AI tooling — user/session-specific, never commit
+# ----------------------------------------------------------------------------
+.claude/                     # Claude Code session state
+.cursor/                     # Cursor IDE
+.cursorignore                # Cursor ignore rules (local pref)
 .cursorindexingignore
+.aider*                      # Aider AI
+.continue/                   # Continue.dev
+.copilot/                    # GitHub Copilot local config
+.github/copilot-instructions.md   # if it's user-specific
 
-# Marimo
+# ----------------------------------------------------------------------------
+# OS-specific cruft
+# ----------------------------------------------------------------------------
+.DS_Store                    # macOS
+.AppleDouble
+.LSOverride
+Thumbs.db                    # Windows
+Thumbs.db:encryptable
+ehthumbs.db
+desktop.ini                  # Windows
+
+# ----------------------------------------------------------------------------
+# Misc tooling
+# ----------------------------------------------------------------------------
+.abstra/
+.ruff_cache/
+.pypirc
 marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-# data files
+# ----------------------------------------------------------------------------
+# Large data file types — too big to track in git; rebuild from source
+# ----------------------------------------------------------------------------
 *.parquet
+*.h5
+*.hdf5
+*.arrow
+*.feather
+*.npy
+*.npz
+*.csv.gz
+*.json.gz
+*.tar.gz
+*.zip
+*.7z
+*.rar
+*.iso
 
 # ----------------------------------------------------------------------------
 # ML / AI runtime artifacts — per-machine, large, regenerable. Never commit.

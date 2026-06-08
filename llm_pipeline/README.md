@@ -23,7 +23,7 @@ export LANGSMITH_PROJECT=my-project
 
 ## Contents
 
-`langchain_langgraph.ipynb` — 14 sections mirroring the LangChain Python docs structure:
+`llm_pipeline.ipynb` — 14 sections mirroring the LangChain Python docs structure:
 
 1. **Quickstart** — minimal `create_react_agent` in 10 lines
 2. **Models** — `init_chat_model`, structured output, provider switching

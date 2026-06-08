@@ -14,7 +14,7 @@ workflow runs in seconds. From the NN's perspective the difference is invisible 
 it just learns whatever function maps inputs to outputs.
 
 Read the cheatsheet at ../lmm_nn_surrogate.md and the demo at
-../lmm_nn_surrogate_example.py for context. You can A/B against the demo as
+../example.py for context. You can A/B against the demo as
 you go (intentional: same conventions, same ranges, same target).
 
 Time budget: ~3 hours.
@@ -23,8 +23,8 @@ Fill in every function marked `# TODO` (each raises NotImplementedError) and
 wire them together in main(). Run from this folder using the existing
 ml/neural_networks uv env (or any env with numpy/torch/scipy/joblib):
 
-    <repo>/ml/neural_networks/.venv/bin/python lmm_nn_capstone.py
-    <repo>/ml/neural_networks/.venv/bin/python lmm_nn_capstone.py \
+    <repo>/ml/neural_networks/.venv/bin/python surrogate.py
+    <repo>/ml/neural_networks/.venv/bin/python surrogate.py \
         --n-data 20000 --epochs 3000 --hidden 64 64
 """
 import argparse
@@ -54,7 +54,7 @@ T_LO, T_HI = 0.5, 10.0          # years to expiry
 F_LO, F_HI = 0.02, 0.05         # forward rate
 LOG_M_LO, LOG_M_HI = -0.3, 0.3  # log-moneyness range  -> K = F * exp(log_m)
 
-NFEATURES = 7  # [sig_a, sig_c, sabr_alpha, rho_inf, T, log(K/F), F]
+N_FEATURES = 7  # [sig_a, sig_c, sabr_alpha, rho_inf, T, log(K/F), F]
 
 
 # =============================================================================
@@ -184,7 +184,7 @@ class Surrogate(nn.Module):
         like-shapes against y of shape (N,).
     """
 
-    def __init__(self, d_in: int = NFEATURES, hidden: tuple[int, ...] = (64, 64)):
+    def __init__(self, d_in: int = N_FEATURES, hidden: tuple[int, ...] = (64, 64)):
         super().__init__()
         # TODO: build self.net = nn.Sequential(...) per the docstring.
         layers = []
@@ -497,7 +497,7 @@ def main() -> None:
     X_tr, y_tr, X_va, y_va = split_train_val(X, y, args.val_frac, args.seed)
     
     # Build the surrogate model and train it
-    model = Surrogate(NFEATURES, tuple(args.hidden)).to(device)
+    model = Surrogate(N_FEATURES, tuple(args.hidden)).to(device)
     
     # Train the surrogate model and record training history
     history = train_surrogate(model, X_tr, y_tr, X_va, y_va, args.epochs, args.lr, device)

@@ -3,7 +3,7 @@
 Personal cheatsheet for building an ML/quant project from a blank directory,
 organised by phase. Each section is a pattern + one-line why + the mental
 prompt that makes it second nature. Canonical example used throughout:
-`quant_finance/capstones/lmm_nn_surrogate/lmm_nn_capstone.py`.
+`quant_finance/capstones/04_lmm_nn_surrogate/surrogate.py`.
 
 Two related docs: `eda_decisions.md` (what model/transform to pick),
 `deployment.ipynb` (how to ship a model). This doc is the *code-writing*
@@ -354,17 +354,17 @@ The phase structure (bootstrap → data → split → model → train → infer 
 
 **Canonical implementations + project-specific lessons:**
 - LMM NN surrogate (calibration / surrogate-replaces-slow-function):
-  `quant_finance/capstones/lmm_nn_surrogate/lmm_nn_capstone.py` +
-  `quant_finance/capstones/lmm_nn_surrogate/LESSONS.md`
+  `quant_finance/capstones/04_lmm_nn_surrogate/surrogate.py` +
+  `quant_finance/capstones/04_lmm_nn_surrogate/LESSONS.md`
 - Tabular NN (multiclass classification, CrossEntropy):
-  `ml/neural_networks/capstone/capstone_tabular_nn.py` +
-  `ml/neural_networks/capstone/LESSONS_tabular_nn.md`
+  `ml/04_neural_networks/capstones/01_tabular_classifier_wine/train.py` +
+  `ml/04_neural_networks/capstones/01_tabular_classifier_wine/LESSONS.md`
 - Regression NN (continuous target, early stopping, target scaling):
-  `ml/neural_networks/capstone/capstone_regression_nn.py` +
-  `ml/neural_networks/capstone/LESSONS_regression_nn.md`
+  `ml/04_neural_networks/capstones/02_regression_california_housing/train.py` +
+  `ml/04_neural_networks/capstones/02_regression_california_housing/LESSONS.md`
 
 **Production wrapping (MLflow + FastAPI):**
-- `quant_finance/capstones/lmm_nn_surrogate/api_extension/`
+- `quant_finance/capstones/04_lmm_nn_surrogate/api_extension/`
 
 **Related toolkit docs:**
 - EDA / model selection upstream: `toolkit/eda_decisions.md`

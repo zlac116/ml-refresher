@@ -1,7 +1,7 @@
 # Tabular NN (Wine multiclass) — Lessons (code-first)
 
 Canonical patterns from this build. Each section: code → why → trap.
-For phase-by-phase generic playbook: [`toolkit/ml_project_methodology.md`](../../../toolkit/ml_project_methodology.md).
+For phase-by-phase generic playbook: [`toolkit/ml_project_methodology.md`](../../../../toolkit/ml_project_methodology.md).
 
 ---
 
@@ -174,6 +174,6 @@ seed → device → data → loaders → model → loss/opt → train → eval �
 
 ---
 
-Related: [`LESSONS_regression_nn.md`](LESSONS_regression_nn.md) ·
-[`LESSONS.md` (LMM)](../../../quant_finance/capstones/lmm_nn_surrogate/LESSONS.md) ·
-[`toolkit/ml_project_methodology.md`](../../../toolkit/ml_project_methodology.md)
+Related: [`LESSONS.md` (regression NN)](../02_regression_california_housing/LESSONS.md) ·
+[`LESSONS.md` (LMM)](../../../../quant_finance/capstones/04_lmm_nn_surrogate/LESSONS.md) ·
+[`toolkit/ml_project_methodology.md`](../../../../toolkit/ml_project_methodology.md)

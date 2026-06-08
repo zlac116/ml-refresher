@@ -9,7 +9,7 @@ End-to-end flow:
   5. Verify: re-run the "full pricer" at the calibrated params, invert Black,
      compare market / NN / MC implied vols.
 
-Run:  python lmm_nn_surrogate_example.py
+Run:  python example.py
 """
 
 import numpy as np
