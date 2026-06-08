@@ -74,11 +74,31 @@ def trained_registry(tmp_path_factory) -> Path:
         return tracking_dir
     """
     # TODO T1 — implement per the docstring.
-    raise NotImplementedError("TODO T1: trained_registry fixture")
+    # raise NotImplementedError("TODO T1: trained_registry fixture")
+    tracking_dir = tmp_path_factory.mktemp("mlruns") # Temporary dir
+    tracking_uri = f"sqlite:///{tracking_dir}/mlflow.db"
+    mlflow.set_tracking_uri(str(tracking_uri))
+    mlflow.set_experiment("test")
+
+    torch.manual_seed(0)
+    X, y = generate_data(200, seed=0)
+    X_tr, y_tr, X_va, y_va = split_train_val(X, y, 0.2, seed=0)
+    model = Surrogate(N_FEATURES, (16, 16))
+    train_surrogate(model, X_tr, y_tr, X_va, y_va, epochs=20, lr=1e-2, device=torch.device("cpu"))
+
+    with mlflow.start_run():
+        mlflow.pytorch.log_model(
+            pytorch_model=model,
+            name="model",
+            registered_model_name=MODEL_NAME,
+        )
+
+    MlflowClient().set_registered_model_alias(MODEL_NAME, "candidate", "1")
+    return tracking_uri
 
 
 @pytest.fixture
-def client(trained_registry: Path) -> TestClient:
+def client(trained_registry: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     """Boot the FastAPI app pointed at the tmp registry.
 
     PATTERN:
@@ -99,7 +119,18 @@ def client(trained_registry: Path) -> TestClient:
             yield c
     """
     # TODO T2 — implement per the docstring.
-    raise NotImplementedError("TODO T2: client fixture")
+    monkeypatch.setenv("MLFLOW_TRACKING_URI", str(trained_registry))
+    monkeypatch.setenv("MODEL_ALIAS", "candidate")
+    monkeypatch.setenv("MODEL_NAME", MODEL_NAME)
+
+    # Import here so the override is in place before app boots.
+    get_settings.cache_clear()
+
+    from app.main import create_app
+    app = create_app()
+
+    with TestClient(app) as c:    # triggers lifespan
+        yield c
 
 
 # =============================================================================
@@ -112,7 +143,17 @@ def test_price_endpoint_returns_iv(client: TestClient) -> None:
     #   instruments: [{"T": 1.0, "K": 0.030, "F": 0.035}]
     # Assert: 200, response has "ivs" (list of length 1), 0.1 < iv < 1.0.
     # Assert "model_version" == 1.
-    raise NotImplementedError("TODO T3: /price happy path")
+    # raise NotImplementedError("TODO T3: /price happy path")
+    params = {"sig_a": 0.18, "sig_c": 0.40, "sabr_alpha": 0.015, "rho_inf": 0.30}
+    instruments = [{"T": 1.0, "K": 0.030, "F": 0.035}]
+    
+    response = client.post("/price", json={"params": params, "instruments": instruments})
+    body = response.json()
+
+    assert response.status_code == 200, f"Got status code={response.status_code}, expected 200"
+    assert body["model_version"] == 1, f"Got model version={body['model_version']}, expected 1"
+    assert len(body["ivs"]) == 1, f"Received wrong number of IVs={body['ivs']}, expected 1"
+    assert (0.01 <= body["ivs"][0] <= 1.0), f"IV={body['ivs'][0]} is out of range, expected [0.01, 1.0]"
 
 
 def test_calibrate_endpoint_recovers_true_params(client: TestClient) -> None:
