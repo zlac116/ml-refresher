@@ -31,26 +31,40 @@ This gives you:
 Also install the **Python Debugger** extension (`ms-python.debugpy`) if you haven't —
 required for Phase 3 below.
 
-Drop a `.vscode/launch.json` so debug runs are one-click (`F5`):
+Drop a `.vscode/launch.json` at the **workspace root** so debug runs are one-click (`F5`):
 
 ```json
 {
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Uvicorn (debug)",
+      "name": "Uvicorn (debug) — api_extension",
       "type": "debugpy",
       "request": "launch",
       "module": "uvicorn",
       "args": ["app.main:app", "--reload", "--port", "8003"],
-      "justMyCode": false
+      "cwd": "${workspaceFolder}/quant_finance/capstones/04_lmm_nn_surrogate/api_extension",
+      "python": "${workspaceFolder}/quant_finance/capstones/04_lmm_nn_surrogate/api_extension/.venv/bin/python",
+      "justMyCode": false,
+      "console": "integratedTerminal"
     }
   ]
 }
 ```
 
-`justMyCode: false` lets you step INTO library code (FastAPI, MLflow, PyTorch) —
-critical when "why does this magic line work?" needs an answer.
+Four fields are non-obvious but essential:
+- **`cwd`** — without this, uvicorn launches from the workspace root and Python
+  fails with `No module named 'app'`. The `app/` package only resolves from
+  inside `api_extension/`.
+- **`python`** — pins the interpreter to this capstone's `.venv` (not a
+  workspace-wide one), so FastAPI / uvicorn / MLflow imports resolve.
+- **`justMyCode: false`** — lets you step INTO library code (FastAPI, MLflow,
+  PyTorch). Critical when "why does this magic line work?" needs an answer.
+- **`console: integratedTerminal`** — routes uvicorn logs to the terminal panel
+  instead of the Debug Console (nicer for reading FastAPI request logs).
+
+If `F5` returns `No module named 'app'`, your `cwd` is wrong — debugpy is
+launching uvicorn from the wrong directory.
 
 ---
 
@@ -199,7 +213,8 @@ Read top-down:
 Use `Ctrl+Click` to navigate:
 - Click `get_settings` → opens `app/config.py`
 - Click `load_model_by_alias` → opens `app/registry.py`
-- `Ctrl+-` (or `Alt+Left`) to navigate BACK in your reading history
+- Navigate BACK in reading history: `Alt+Left` on Linux/Windows, `Ctrl+-` on macOS
+  (if `Alt+Left` is hijacked by your desktop environment, see §8 for rebinding)
 
 ### 3.4 Skim `app/schemas.py` — the data contract (5 min)
 
@@ -312,11 +327,19 @@ def nn_iv(model, params, instruments, device):
 
 One forward pass for ALL instruments. Return numpy so scipy can do its math.
 
-### 4.5 Back-trace using Ctrl+-
+### 4.5 Back-trace through your reading history
 
-`Ctrl+-` (or `Alt+Left`) navigates BACK through your reading history. Step
-back from `surrogate.py` → `services.py` → `routes/calibrate.py`. You've now
+Navigate BACK through the files you just visited:
+- **Linux/Windows**: `Alt+Left`
+- **macOS**: `Ctrl+-`
+
+Step back from `surrogate.py` → `services.py` → `routes/calibrate.py`. You've now
 seen the entire chain. The other endpoints are variations on this same shape.
+
+If `Alt+Left` does nothing on Linux, your desktop environment is probably
+intercepting it (GNOME uses it for workspace navigation). Either disable that
+DE binding, or rebind VSCode's `workbench.action.navigateBack` to something
+unhijacked (e.g. `Ctrl+Backspace`) via `Ctrl+K Ctrl+S`.
 
 ---
 
@@ -477,13 +500,14 @@ points at exactly which behavior broke.
 | `Ctrl+T` | Workspace symbol search | "Where is `Surrogate` defined?" |
 | `Ctrl+Shift+F` | Workspace text search | "Find everywhere using `nn_iv`" |
 | `F12` / `Ctrl+Click` | Go to definition | Follow imports |
-| `Ctrl+-` (Alt+Left) | Navigate BACK | Reading history back-button |
+| `Alt+Left` (Linux/Win) / `Ctrl+-` (mac) | Navigate BACK | Reading history back-button |
 | `Ctrl+Shift+O` | File outline | Skim symbols in current file |
 | `Shift+F12` | Find all references | Who calls this function? |
 | `F2` | Rename symbol | Refactor safely |
 | `F5` / `F10` / `F11` | Debugger: continue / step-over / step-in | Active debugging |
 
-The **most underused** is `Ctrl+-` — your reading history's back-button.
+The **most underused** is the navigate-BACK shortcut (`Alt+Left` on
+Linux/Windows, `Ctrl+-` on macOS) — your reading history's back-button.
 Combined with F12 it lets you dive deep then bounce back without losing
 your place.
 
@@ -527,7 +551,7 @@ If you can answer 5/7 without scrolling back, you've internalised the project.
 | 10-15 min | 3.3 | Read `app/main.py` lifespan |
 | 15-20 min | 3.4 | Skim `app/schemas.py` shapes |
 | 20-25 min | 3.5-3.6 | Skim `app/config.py`, `deps.py`, `registry.py`, `services.py` |
-| 25-40 min | 4 | Trace `POST /calibrate` with F12/Ctrl+- through routes → services → surrogate |
+| 25-40 min | 4 | Trace `POST /calibrate` with F12 + back-navigate through routes → services → surrogate |
 | 40-45 min | 5 | Open `/docs`, send live requests |
 | 45-60 min | 6 | Debugger walkthrough — F5/F10/F11 through a real `/calibrate` request |
 | (later) | 7 | Read `test_e2e.py` for ground-truth behavior |
