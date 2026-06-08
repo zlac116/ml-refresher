@@ -170,41 +170,57 @@ cython_debug/
 
 # ----------------------------------------------------------------------------
 # Editors / IDEs — local-only, never commit
+# NOTE: gitignore does NOT support inline comments — # is only a comment
+# marker at the start of a line. Put any notes on their own line above the rule.
 # ----------------------------------------------------------------------------
-.idea/                       # JetBrains
-.vscode/                     # VS Code (uncomment if your team commits a shared .vscode/)
-.fleet/                      # JetBrains Fleet
-.zed/                        # Zed
-*.iml                        # JetBrains module files
-*.swp                        # vim swap
-*.swo                        # vim swap
-*~                           # vim backup
-\#*\#                        # Emacs autosave
-.\#*                         # Emacs lock files
-.netrwhist                   # vim netrw history
+# JetBrains
+.idea/
+*.iml
+# VS Code (delete this rule if your team commits a shared .vscode/)
+.vscode/
+# JetBrains Fleet
+.fleet/
+# Zed
+.zed/
+# vim
+*.swp
+*.swo
+*~
+.netrwhist
+# Emacs
+\#*\#
+.\#*
 
 # ----------------------------------------------------------------------------
 # AI tooling — user/session-specific, never commit
 # ----------------------------------------------------------------------------
-.claude/                     # Claude Code session state
-.cursor/                     # Cursor IDE
-.cursorignore                # Cursor ignore rules (local pref)
+# Claude Code session state
+.claude/
+# Cursor IDE
+.cursor/
+.cursorignore
 .cursorindexingignore
-.aider*                      # Aider AI
-.continue/                   # Continue.dev
-.copilot/                    # GitHub Copilot local config
-.github/copilot-instructions.md   # if it's user-specific
+# Aider AI
+.aider*
+# Continue.dev
+.continue/
+# GitHub Copilot local config
+.copilot/
+# Copilot instructions (delete this rule if your team commits a shared one)
+.github/copilot-instructions.md
 
 # ----------------------------------------------------------------------------
 # OS-specific cruft
 # ----------------------------------------------------------------------------
-.DS_Store                    # macOS
+# macOS
+.DS_Store
 .AppleDouble
 .LSOverride
-Thumbs.db                    # Windows
+# Windows
+Thumbs.db
 Thumbs.db:encryptable
 ehthumbs.db
-desktop.ini                  # Windows
+desktop.ini
 
 # ----------------------------------------------------------------------------
 # Misc tooling
