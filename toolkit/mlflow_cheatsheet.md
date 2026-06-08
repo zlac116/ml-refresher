@@ -92,6 +92,11 @@ client.set_registered_model_alias("my-model", "candidate", str(latest))
 - Skip `registered_model_name=` if you don't want the model in the registry.
 - Multiple `log_model` calls per run = ensembles; use different `name=`.
 
+**Registry hygiene** (§10): for ANY model that goes into the registry, also set:
+1. **Description** on the registered model + each version (`client.update_registered_model`, `client.update_model_version`).
+2. **Tags** on both layers (owner / domain / framework / task / git_commit / validation_status).
+Do this in code (`train_and_register.py`), never via UI "Add" — reproducibility matters.
+
 The rest of this doc fills in the details for each step + the per-flavour
 specifics for step 6.
 
@@ -371,6 +376,98 @@ canonical pattern in MLflow ≥ 2.9. The docs explicitly recommend migration.
 **Common alias names** (convention, not enforced): `production`,
 `candidate`, `staging`, `champion`, `challenger`, `archived`.
 
+### Registry hygiene — descriptions + tags (do this in code, never the UI)
+
+**What's explicitly in the MLflow docs** (verbatim, [model-registry page](https://mlflow.org/docs/latest/ml/model-registry)):
+
+> *"You can annotate the top-level model and each version individually using Markdown, including the description and any relevant information useful for the team"*
+>
+> *"Tags are key-value pairs that you associate with registered models and model versions, allowing you to label and categorize them by function or status."*
+
+The only tag examples the docs prescribe:
+- Model-level: `task: question-answering`
+- Version-level: `validation_status: pending` → `approved` (the docs explicitly show this as the deployment-readiness workflow tag)
+- `problem_type: regression`
+
+Everything else (the tag schema below — `git_commit`, `owner`, `framework`, etc.) is **general MLOps best practice**, not MLflow-doc-prescribed. The docs say "use tags to categorise" without prescribing which keys.
+
+**Placement** (matches the docs' tutorial pattern):
+- The model is **registered inside the run** via `log_model(registered_model_name=...)` (step 6 of §0).
+- Description / tag / alias calls happen **after the `with` block exits** — they're registry operations, not run operations. They work in either place mechanically, but "after the run" keeps the semantic split clean (run = execution; registry = catalogue).
+
+Three layers, each with a distinct purpose:
+
+| Layer | What goes here | When it changes |
+|---|---|---|
+| **Registered-model** description + tags | What the model IS — purpose, owner, framework, ML problem type | Edit once; rarely changes |
+| **Model-version** description + tags | What's new in THIS version — training data, metrics, sign-off | Set per version |
+| **Alias** | Deployment-state pointer (`@production`) | Movable across versions |
+
+```python
+from mlflow import MlflowClient
+client = MlflowClient()
+
+# ── REGISTERED MODEL: the contract (what it IS) ──
+# Description: docs-recommended (Markdown supported)
+client.update_registered_model(
+    name="my-model",
+    description=(
+        "NN surrogate for LMM swaption calibration. Replaces the slow MC "
+        "pricer inside scipy.optimize.least_squares.\n\n"
+        "**Owner**: rates-quant   |   **Framework**: PyTorch"
+    ),
+)
+# Tags: only `task` is explicitly shown in docs; rest is general MLOps practice.
+for k, v in {
+    "task":        "regression",           # ← docs' example
+    "owner":       "rates-quant",          # general practice — who to ping
+    "domain":      "rates",                # general practice — business area
+    "model_type":  "surrogate",            # general practice
+    "framework":   "pytorch",              # general practice
+    "criticality": "low",                  # general practice — risk tier
+}.items():
+    client.set_registered_model_tag("my-model", k, v)
+
+# ── MODEL VERSION: what changed in THIS release ──
+version = "1"                                   # always str
+client.update_model_version(
+    name="my-model", version=version,
+    description=(
+        "64×64 MLP, SiLU. seed=0, n_train=10000, final val MSE 4.2e-5.\n"
+        "Validation: pending VC review."
+    ),
+)
+# Tags: only `validation_status` is explicitly in docs; rest is general practice.
+for k, v in {
+    "validation_status":  "pending",       # ← docs' explicit deployment-readiness tag
+    "git_commit":         "abc1234",       # general practice — reproducibility
+    "training_data_seed": "0",             # general practice
+    "n_train":            "10000",         # general practice
+    "architecture":       "64,64",         # general practice
+    "final_val_mse":      "4.2e-5",        # general practice — denormalised search shortcut
+}.items():
+    client.set_model_version_tag("my-model", version, k, v)
+```
+
+**What's doc-prescribed vs general practice**:
+- ✅ **Docs explicit**: descriptions on both layers, `task` tag, `validation_status: pending/approved` tag, aliases for deployment routing.
+- 🟡 **General MLOps practice** (not MLflow-doc-prescribed): `git_commit`, `owner`, `framework`, `domain`, `criticality`, `training_data_seed`, `n_train`, `architecture`, denormalised metric tags. Adopt what matches your team's governance.
+
+**Why programmatic, not UI**: a tag added via "Add" in the UI lives only
+on that one server. The same call in `train_and_register.py` runs every
+time you train — every new version is governed by default, and the code
+is the source of truth.
+
+**Run tag vs registry tag** — easy confusion:
+- `mlflow.log_param / mlflow.set_tag` inside `start_run()` → attaches to that *execution*.
+- `client.set_registered_model_tag / set_model_version_tag` → attaches to the *registry entry*. Survives the run.
+
+The UI shows them in different places — registry tags are searchable via `client.search_registered_models(filter_string="tags.owner = 'rates-quant'")`.
+
+**Don't put metrics in tags** (except as denormalised search shortcuts).
+Metrics belong in `mlflow.log_metric`. A tag like `final_val_mse: 4.2e-5`
+exists only so registry search can find "versions with val MSE < 1e-4".
+
 ---
 
 ## 11. Loading models
@@ -534,6 +631,11 @@ For Docker: `mlflow models build-docker -m "models:/..." -n my-image`.
 | Smell | What to do |
 |---|---|
 | `Stage="Production"` / `transition_model_version_stage(...)` | Use **aliases** (`set_registered_model_alias`) |
+| Registered model with no description | `client.update_registered_model(name, description=...)` — the docs recommend annotating top-level + each version (§10) |
+| Model version with no description | `client.update_model_version(name, version, description=...)` per release |
+| Tags added via UI "Add" button | Add via `set_registered_model_tag` / `set_model_version_tag` inside `train_and_register.py` — reproducible, scriptable, every run governed by default |
+| Metric stored as a tag | Use `mlflow.log_metric` (plottable, comparable). Tags are categorical search shortcuts, not numbers |
+| Confusing `mlflow.set_tag` (run) with `client.set_registered_model_tag` (registry) | Run tags live on one execution; registry tags survive across runs. Use the right one |
 | `artifact_path="model"` in `log_model(...)` | `name="model"` — `artifact_path` is **deprecated in MLflow 3.x** |
 | `mlflow.pytorch.log_model(...)` without `serialization_format="pt2"` | Pass `pt2` — cloudpickle default executes arbitrary code on load |
 | File-store backend `./mlruns` for tracking URI | `sqlite:///mlflow.db` — file-store is **maintenance-mode in MLflow 3.x**; aliases won't work properly |

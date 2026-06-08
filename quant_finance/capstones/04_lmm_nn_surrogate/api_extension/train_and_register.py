@@ -24,6 +24,7 @@ to sys.path so it can re-use generate_data / Surrogate / train_surrogate.
 """
 import argparse
 import sys
+from textwrap import dedent
 from pathlib import Path
 
 # Make the parent capstone importable WITHOUT modifying it. This is the only
@@ -233,6 +234,25 @@ def main() -> None:
         alias=CANDIDATE_ALIAS,
         version=str(latest_version)
     )
+    # Add global description
+    client.update_registered_model(
+        name=MODEL_NAME,
+        description=(dedent(
+            """NN surrogate for LMM swaption calibration. Replaces the slow MC
+            pricer inside scipy.optimize.least_squares.
+            **Owner**: rates-quant | **Framework**: PyTorch"""
+        )),
+    )
+    # Add global tags (optional, but good for filtering in the registry UI)
+    for k, v in {
+        "owner": "rates-quant",
+        "domain": "rates",
+        "model_type": "surrogate",
+        "framework": "pytorch",
+        "task": "regression",
+        "criticality": "low",
+    }.items():
+        client.set_registered_model_tag(MODEL_NAME, k, v)
     print(f"Registered {MODEL_NAME} v{latest_version} @{CANDIDATE_ALIAS}")
 
 
