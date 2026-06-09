@@ -17,8 +17,6 @@ What you'll see:
 NB: streaming is added in STRETCH ST5. This CORE version uses invoke()
 which returns once the entire workflow is complete.
 """
-from __future__ import annotations
-
 import argparse
 import sys
 

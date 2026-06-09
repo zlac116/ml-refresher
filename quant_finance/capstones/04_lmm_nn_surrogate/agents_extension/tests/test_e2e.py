@@ -17,8 +17,6 @@ If you want to skip e2e by default, use:
 and configure pyproject.toml:
     addopts = "-m 'not e2e'"
 """
-from __future__ import annotations
-
 import os
 
 import httpx

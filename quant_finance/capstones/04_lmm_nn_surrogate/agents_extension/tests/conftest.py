@@ -7,8 +7,6 @@ Two notable choices:
 This split mirrors the api_extension test structure: unit tests are fast
 + deterministic; e2e tests are slow + realistic.
 """
-from __future__ import annotations
-
 import os
 from pathlib import Path
 

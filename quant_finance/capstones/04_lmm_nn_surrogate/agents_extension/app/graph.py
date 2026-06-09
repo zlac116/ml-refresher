@@ -28,8 +28,6 @@ This is the supervisor pattern: workers never call each other directly;
 the supervisor always picks who runs next. All inter-worker data flows
 through the shared WorkflowState.
 """
-from __future__ import annotations
-
 from langgraph.graph import END, START, StateGraph
 
 # TODO G0 — uncomment these imports AFTER agents.py / supervisor.py are done.

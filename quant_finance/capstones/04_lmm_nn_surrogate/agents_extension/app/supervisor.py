@@ -21,8 +21,6 @@ Two design choices made here:
 
 The graph wires it all up in graph.py.
 """
-from __future__ import annotations
-
 from typing import Literal
 
 from langchain_anthropic import ChatAnthropic

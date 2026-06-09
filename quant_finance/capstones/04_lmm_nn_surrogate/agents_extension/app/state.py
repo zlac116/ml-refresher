@@ -23,6 +23,7 @@ WHY this specific shape:
 """
 from typing import Annotated, Any, Literal, TypedDict
 
+from langchain.messages import AnyMessage
 from langgraph.graph.message import add_messages
 
 # Names workers can be routed to. Keep in sync with agents.py.
@@ -67,5 +68,10 @@ WorkerName = Literal[
 # Match this when you implement the tools in tools.py.
 # ----------------------------------------------------------------------------
 class WorkflowState(TypedDict, total=False):
-    # TODO S1 — fill in fields per the pattern above.
-    ...
+    messages: Annotated[list[AnyMessage], add_messages]
+    market_quotes: list[dict] | None
+    calibration: dict | None
+    prices: list[dict] | None
+    final_report: str | None
+    next: WorkerName
+    step_count: int

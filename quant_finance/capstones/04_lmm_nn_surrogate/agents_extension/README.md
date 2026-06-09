@@ -102,7 +102,7 @@ section entirely on your first pass.
 | 3 | `app/tools.py`            | T2   | 10 min | `calibrate_surrogate` — POSTs to `/calibrate`, returns JSON |
 | 4 | `app/tools.py`            | T3   | 5 min  | `price_swaption` — POSTs to `/price`, returns JSON |
 | 5 | `app/prompts.py`          | P1–P5 | 20 min | 5 system prompts (supervisor + 4 workers). The prompt IS your context engineering. |
-| 6 | `app/agents.py`           | A1–A4 | 10 min | 4 `create_react_agent` calls, each bound to ONE tool (or none, for report) |
+| 6 | `app/agents.py`           | A1–A4 | 10 min | 4 `create_agent` calls (from `langchain.agents` — the LangChain 1.x replacement for the deprecated `langgraph.prebuilt.create_react_agent`), each bound to ONE tool (or none, for report) |
 | 7 | `app/supervisor.py`       | SUP1 | 10 min | 4 handoff tools (`transfer_to_X`) + `finish` tool |
 | 8 | `app/supervisor.py`       | SUP2–SUP4 | 15 min | Supervisor LLM + node + routing edge function |
 | 9 | `app/graph.py`            | G1   | 10 min | `build_graph()` — `StateGraph` with supervisor + workers + conditional edges |

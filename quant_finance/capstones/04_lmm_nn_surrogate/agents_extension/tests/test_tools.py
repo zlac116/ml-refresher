@@ -8,8 +8,6 @@ Uses respx to mock httpx — no live surrogate API required. Tests verify:
 Tools are decorated with @tool, which wraps them in a StructuredTool.
 To call from a test, use `.invoke({"arg": value})` (or `.run({...})`).
 """
-from __future__ import annotations
-
 import respx
 from httpx import Response
 

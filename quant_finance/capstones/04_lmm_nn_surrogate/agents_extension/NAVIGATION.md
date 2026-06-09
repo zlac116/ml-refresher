@@ -125,7 +125,7 @@ agents_extension/
 │   ├── state.py             ← WorkflowState TypedDict (the data contract)
 │   ├── tools.py             ← @tool: fetch_quotes, calibrate, price
 │   ├── prompts.py           ← 5 SYSTEM PROMPTS — the LLM's instructions
-│   ├── agents.py            ← create_react_agent × 4 workers
+│   ├── agents.py            ← create_agent (LangChain 1.x) × 4 workers
 │   ├── supervisor.py        ← Supervisor LLM + handoff tools + routing
 │   └── graph.py             ← StateGraph wiring + compile
 │
@@ -215,7 +215,7 @@ which reads `state["next"]` and returns the next node's name.
 
 `F12` on the `WORKERS` map → `app/agents.py`.
 
-A worker is a `create_react_agent(model=llm, tools=[ONE], prompt=PROMPT)`.
+A worker is a `create_agent(model=llm, tools=[ONE], system_prompt=PROMPT, name="...")` (LangChain 1.x — replaces the deprecated `langgraph.prebuilt.create_react_agent`).
 When invoked, it:
 1. Reads `state["messages"]` (full history)
 2. Calls the LLM with its prompt + tool bound

@@ -21,8 +21,6 @@ NB on tool naming: keep verb-first, snake_case, descriptive. The LLM uses
 the name as its primary handle. `calibrate_surrogate` is better than
 `do_calibration` or `call_calibrate_endpoint`.
 """
-from __future__ import annotations
-
 import json
 from functools import lru_cache
 from pathlib import Path
@@ -71,8 +69,15 @@ def _client() -> httpx.Client:
 # ----------------------------------------------------------------------------
 @tool
 def fetch_market_quotes(num_quotes: int = 4) -> list[dict]:
-    """Fetch today's swaption market quotes (TODO T1)."""
-    raise NotImplementedError("TODO T1: fetch_market_quotes")
+    """Fetch today's swaption market quotes.
+    
+    Use this FIRST in any calibration workflow — calibrate_surrogate
+    needs market quotes as input. Returns up to `num_quotes` quotes,
+    each shaped {"T": float, "K": float, "F": float, "iv": float}.
+    """
+    path = Path(__file__).resolve().parent.parent / "examples" / "sample_market.json"
+    quotes = json.loads(path.read_text())
+    return quotes[:num_quotes]
 
 
 # ============================================================================
@@ -111,7 +116,11 @@ def fetch_market_quotes(num_quotes: int = 4) -> list[dict]:
 @tool
 def calibrate_surrogate(quotes: list[dict]) -> dict:
     """Calibrate the LMM surrogate to a set of market quotes (TODO T2)."""
-    raise NotImplementedError("TODO T2: calibrate_surrogate")
+    instruments = [{"T": q["T"], "K": q["K"], "F": q["F"]} for q in quotes]
+    market_ivs  = [q["iv"] for q in quotes]
+    r = _client().post("/calibrate", json={"instruments": instruments, "market_ivs": market_ivs})
+    r.raise_for_status()
+    return r.json()
 
 
 # ============================================================================
@@ -142,4 +151,15 @@ def calibrate_surrogate(quotes: list[dict]) -> dict:
 @tool
 def price_swaption(params: dict, instruments: list[dict]) -> dict:
     """Predict implied vols for new swaption instruments using calibrated params (TODO T3)."""
-    raise NotImplementedError("TODO T3: price_swaption")
+    r = _client().post("/price", json={"params": params, "instruments": instruments})
+    r.raise_for_status()
+    return r.json()
+
+
+if __name__ == "__main__":
+    q = fetch_market_quotes.invoke({"num_quotes": 4})
+    print(f"\nquotes{q}")
+    c = calibrate_surrogate.invoke({"quotes": q})
+    print(f"\ncalib results{c}")
+    p = price_swaption.invoke({"params": c["theta_star"], "instruments": q})
+    print(f"\nprice={p}")
