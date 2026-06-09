@@ -151,7 +151,7 @@ class Params(BaseModel):
 # =============================================================================
 class CalibrateRequest(BaseModel):
     instruments: list[Instrument] = Field(..., min_length=1)
-    market_ivs:  list[float]      = Field(..., min_length=1, examples=[[0.3591, 0.3657]])
+    market_ivs:  list[float]      = Field(..., min_length=1, examples=[0.3591, 0.3657])
 
     # ------------------------------------------------------------------
     # TODO C — assert len(instruments) == len(market_ivs).

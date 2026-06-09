@@ -97,12 +97,18 @@ def list_versions(name: str) -> list[ModelVersion]:
     """
     # TODO 9 — implement per the docstring.
     client = MlflowClient()
+
+    rm = client.get_registered_model(name)
+    aliases_by_version: dict[int, list[str]] = {}
+    for alias, version_str in rm.aliases.items():
+        aliases_by_version.setdefault(int(version_str), []).append(alias)
+    
     out: list[ModelVersion] = []
     for mv in client.search_model_versions(f"name='{name}'"):
         out.append(
             ModelVersion(
                 version=int(mv.version), 
-                aliases=list(mv.aliases or []),
+                aliases=aliases_by_version.get(int(mv.version), []),
                 created_at=datetime.fromtimestamp(
                     mv.creation_timestamp / 1000, tz=timezone.utc
                 ),

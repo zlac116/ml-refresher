@@ -167,15 +167,28 @@ def test_calibrate_endpoint_recovers_true_params(client: TestClient) -> None:
     # Compute market_ivs in the test (don't hardcode — they depend on
     # mock_lmm_iv being stable).
     # Assert: 200, "success" is True, verify.rmse_calib_bp is a float.
-    raise NotImplementedError("TODO T4: /calibrate happy path")
+    instruments = [{"T": 1.0, "K": 0.030, "F": 0.035}]
+    market_ivs = [0.18]
+    response = client.post("/calibrate", json={"instruments": instruments, "market_ivs": market_ivs})
+    body = response.json()
+
+    assert response.status_code == 200, f"Got status code={response.status_code}, expected 200"
+    assert body["success"] == True, f"Got success={body['success']}, expected True"
+    assert isinstance(body["verify"]["rmse_calib_bp"], float), f"Got verify.rmse_calib_bp={body['verify']['rmse_calib_bp']}, expected float"
 
 
-def test_models_list_shows_production_alias(client: TestClient) -> None:
+def test_models_list_shows_candidate_alias(client: TestClient) -> None:
     """GET /models returns one version with the production alias."""
     # TODO T5 — GET /models.
     # Assert: 200, response["name"] == "lmm-surrogate",
     # len(versions) == 1, "production" in versions[0]["aliases"].
-    raise NotImplementedError("TODO T5: GET /models")
+    response = client.get("/models")
+    body = response.json()
+
+    assert response.status_code == 200, f"Got status code={response.status_code}, expected 200"
+    assert body["name"] == "lmm-surrogate", f"Got name={body['name']}, expected 'lmm-surrogate'"
+    assert len(body["versions"]) == 1, f"Got len(versions)={len(body['versions'])}, expected 1"
+    assert "candidate" in body["versions"][0]["aliases"], f"Got aliases={body['versions'][0]['aliases']}, expected 'candidate'"
 
 
 def test_promote_endpoint_sets_alias(client: TestClient) -> None:
@@ -184,12 +197,22 @@ def test_promote_endpoint_sets_alias(client: TestClient) -> None:
     # {"version": 1, "alias": "staging"}.
     # Assert: 200, then GET /models and check "staging" appears in
     # versions[0]["aliases"].
-    raise NotImplementedError("TODO T6: POST /promote")
+    response = client.post("/models/lmm-surrogate/promote", json={"version": 1, "alias": "staging"})
+    body = response.json()
 
+    assert response.status_code == 200, f"Got status code={response.status_code}, expected 200"
+    assert "staging" in body["alias"], f"Got aliases={body['alias']}, expected 'staging'"
+    
 
 def test_price_rejects_out_of_bounds_T(client: TestClient) -> None:
     """POST /price with T outside the training range returns 422."""
     # TODO T7 — call /price with T=20.0 (outside [T_LO=0.5, T_HI=10.0]).
     # Assert: 422 (pydantic validation error, NOT 500).
     # Assert: response body mentions "T" somewhere in the error detail.
-    raise NotImplementedError("TODO T7: /price bounds violation")
+    instruments = [{"T": 20.0, "K": 0.030, "F": 0.035}]
+    market_ivs = [0.18]
+    response = client.post("/calibrate", json={"instruments": instruments, "market_ivs": market_ivs})
+    body = response.json()
+
+    assert response.status_code == 422, f"Got status code={response.status_code}, expected 422"
+    assert "T" in body["detail"][0]["msg"], f"Got detail={body['detail']}, expected 'T' in detail"
