@@ -24,7 +24,6 @@ def list_models_endpoint(settings: SettingsDep) -> ModelsListResponse:
         versions = list_versions(settings.model_name)
         return ModelsListResponse(name=settings.model_name, versions=versions)
     """
-    # TODO 16 — implement per the docstring.
     versions = list_versions(settings.model_name)
     return ModelsListResponse(name=settings.model_name, versions=versions)
 
@@ -50,7 +49,6 @@ def promote_endpoint(
 
         return PromoteResponse(name=name, version=req.version, alias=req.alias)
     """
-    # TODO 17 — implement per the docstring.
     if name != settings.model_name:
         raise HTTPException(404, f"Unknown model: {name}")
 

@@ -56,7 +56,6 @@ def load_model_by_alias(name: str, alias: str) -> tuple[Any, int]:
 
         return model, version
     """
-    # TODO 8 — implement per the docstring.
     uri = f"models:/{name}@{alias}"
     model = mlflow.pytorch.load_model(uri)
     model.eval()
@@ -95,7 +94,6 @@ def list_versions(name: str) -> list[ModelVersion]:
         out.sort(key=lambda v: v.version, reverse=True)
         return out
     """
-    # TODO 9 — implement per the docstring.
     client = MlflowClient()
 
     rm = client.get_registered_model(name)
@@ -136,7 +134,6 @@ def set_alias(name: str, version: int, alias: str) -> None:
             name=name, alias=alias, version=str(version)
         )
     """
-    # TODO 10 — implement per the docstring.
     client = MlflowClient()
     client.set_registered_model_alias(
         name=name, alias=alias, version=str(version)

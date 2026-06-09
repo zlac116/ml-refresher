@@ -72,8 +72,6 @@ def run_pricing(
         )
         return ivs.tolist()
     """
-    # TODO 11 — implement per the docstring.
-    # raise NotImplementedError("TODO 11: run_pricing")
     device = _device(model)
     ivs = nn_iv(
         model,
@@ -126,7 +124,6 @@ def run_calibration(
             "verify":     verify_rep,
         }
     """
-    # TODO 12 — implement per the docstring.
     device = _device(model)
     tuples = _instruments_to_tuples(instruments)
     ivs_np = np.asarray(market_ivs, dtype=np.float64)
@@ -185,7 +182,6 @@ def _build_verify_report(
             rmse_surrogate_bp=float(np.sqrt(np.mean(surrogate_bp**2))),
         )
     """
-    # TODO 13 — implement per the docstring.
     iv_nn = nn_iv(model, theta_star, instruments, device)
     iv_mc = np.array([
         black76_implied_vol(mock_lmm_price(theta_star, T, K, F), F, K, T)

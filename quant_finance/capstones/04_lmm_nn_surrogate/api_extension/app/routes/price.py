@@ -23,7 +23,6 @@ def price_endpoint(
         ivs                  = run_pricing(model, req.params, req.instruments)
         return PriceResponse(ivs=ivs, model_version=model_version)
     """
-    # TODO 15 — implement per the docstring.
     model, model_version = model_and_version
     ivs = run_pricing(model, req.params, req.instruments)
     return PriceResponse(ivs=ivs, model_version=model_version)

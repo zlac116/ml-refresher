@@ -98,7 +98,7 @@ def trained_registry(tmp_path_factory) -> Path:
 
 
 @pytest.fixture
-def client(trained_registry: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+def client(trained_registry: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Boot the FastAPI app pointed at the tmp registry.
 
     PATTERN:
@@ -173,7 +173,7 @@ def test_calibrate_endpoint_recovers_true_params(client: TestClient) -> None:
     body = response.json()
 
     assert response.status_code == 200, f"Got status code={response.status_code}, expected 200"
-    assert body["success"] == True, f"Got success={body['success']}, expected True"
+    assert body["success"], f"Got success={body['success']}, expected True"
     assert isinstance(body["verify"]["rmse_calib_bp"], float), f"Got verify.rmse_calib_bp={body['verify']['rmse_calib_bp']}, expected float"
 
 
@@ -201,7 +201,8 @@ def test_promote_endpoint_sets_alias(client: TestClient) -> None:
     body = response.json()
 
     assert response.status_code == 200, f"Got status code={response.status_code}, expected 200"
-    assert "staging" in body["alias"], f"Got aliases={body['alias']}, expected 'staging'"
+    follow = client.get("/models").json()
+    assert "staging" in follow["versions"][0]["aliases"]
     
 
 def test_price_rejects_out_of_bounds_T(client: TestClient) -> None:
@@ -216,3 +217,20 @@ def test_price_rejects_out_of_bounds_T(client: TestClient) -> None:
 
     assert response.status_code == 422, f"Got status code={response.status_code}, expected 422"
     assert "T" in body["detail"][0]["msg"], f"Got detail={body['detail']}, expected 'T' in detail"
+
+
+def test_calibrate_rejects_length_mismatch(client):
+    r = client.post("/calibrate", json={
+        "instruments": [{"T": 1.0, "K": 0.030, "F": 0.035}],
+        "market_ivs":  [0.18, 0.19],   # 2 IVs, 1 instrument
+    })
+    assert r.status_code == 422
+    assert "len(instruments)" in r.json()["detail"][0]["msg"]
+      
+
+def test_price_rejects_out_of_bounds_sig_a(client):
+    r = client.post("/price", json={
+        "params": {"sig_a": 0.5, "sig_c": 0.40, "sabr_alpha": 0.015, "rho_inf": 0.30},  # 0.5 > 0.25
+        "instruments": [{"T": 1.0, "K": 0.030, "F": 0.035}],
+    })
+    assert r.status_code == 422

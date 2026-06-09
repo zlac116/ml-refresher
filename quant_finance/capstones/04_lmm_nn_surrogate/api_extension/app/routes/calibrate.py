@@ -32,7 +32,6 @@ def calibrate_endpoint(
             verify=result["verify"],
         )
     """
-    # TODO 14 — implement per the docstring.
     model, model_version = model_and_version
     result = run_calibration(model, req.instruments, req.market_ivs)
     return CalibrateResponse(

@@ -90,7 +90,6 @@ def main() -> None:
     # HINT: mlflow.set_tracking_uri(args.tracking_uri)
     #       mlflow.set_experiment(args.experiment)
     # ------------------------------------------------------------------
-    # raise NotImplementedError("TODO 1: set_tracking_uri + set_experiment")
     
     mlflow.set_tracking_uri(args.tracking_uri)
     mlflow.set_experiment(args.experiment)
@@ -138,8 +137,7 @@ def main() -> None:
     #         mlflow.log_metric("final_val_mse",   history["val"][-1])
     #         mlflow.log_metric("best_val_mse",    min(history["val"]))
     # ------------------------------------------------------------------
-    # raise NotImplementedError("TODO 3: open a run + log params + per-epoch metrics")
-    with mlflow.start_run(run_name=f"surrogate-{args.seed}") as run:
+    with mlflow.start_run(run_name=f"surrogate-{args.seed}"):
         mlflow.log_params({
             "n_data": args.n_data,
             "hidden": args.hidden,
@@ -157,7 +155,6 @@ def main() -> None:
         mlflow.log_metric("best_val_mse", min(history["val"]))
 
     # ------------------------------------------------------------------
-    # TODO 4 — Log the trained model AND register it in one call.
     # WHY: this is the bridge from "tracked run" to "registered model".
     # `registered_model_name=MODEL_NAME` causes MLflow to create the
     # registry entry on first call and add a new VERSION on every call
@@ -207,7 +204,6 @@ def main() -> None:
             local_copy.unlink(missing_ok=True)                 # delete the temp copy
     
     # ------------------------------------------------------------------
-    # TODO 5 — Tag the new version with @candidate (NOT @production).
     # WHY: aliases are the modern MLflow way to point at "the model to
     # serve". We deliberately do NOT auto-promote — a human (or a
     # downstream gate / approval) decides when a candidate becomes

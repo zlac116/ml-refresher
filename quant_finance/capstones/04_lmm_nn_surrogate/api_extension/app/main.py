@@ -36,7 +36,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     propagate out of the lifespan stops uvicorn from booting. That's
     better than a half-working API where /calibrate silently 500s.
     """
-    # TODO 6 — wire startup.
     # WHY: this is where the "load from registry" handshake happens.
     # PATTERN:
     #     settings = get_settings()
@@ -69,8 +68,6 @@ def create_app() -> FastAPI:
         version=settings.api_version,
         lifespan=lifespan,
     )
-
-    # TODO 7 — include the three routers.
     # HINT:
     #     app.include_router(calibrate.router)
     #     app.include_router(price.router)
