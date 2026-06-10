@@ -74,7 +74,40 @@ def parse_args() -> argparse.Namespace:
 #                                 border_style="bold green"))
 # ----------------------------------------------------------------------------
 def main() -> None:
-    raise NotImplementedError("TODO R1: main runner")
+    args = parse_args()
+    console.print(Panel(args.question, title="user", border_style="cyan"))
+
+    from app.graph import build_graph
+    graph = build_graph()
+
+    initial_state = {
+        "messages":   [HumanMessage(content=args.question)],
+        "step_count": 0,
+    }
+
+    final_state = {}
+
+    printed_ids: set[str] = set()
+
+    for chunk in graph.stream(initial_state, stream_mode=["updates", "values"], version="v2"):
+        if chunk["type"] == "updates":
+            for node_name, update in chunk["data"].items():
+                for msg in update.get("messages", []):
+                    if msg.id in printed_ids:
+                        continue
+                    printed_ids.add(msg.id)
+                    role  = msg.type
+                    color = {"human": "cyan", "ai": "yellow", "tool": "green"}.get(role, "white")
+                    console.print(Panel(
+                        str(msg.content)[:2000],
+                        title=f"{node_name} ({role})",
+                        border_style=color,
+                    ))
+        elif chunk["type"] == "values":
+            final_state = chunk["data"]
+
+    if final_state.get("final_report"):
+        console.print(Panel(final_state["final_report"], title="FINAL REPORT", border_style="bold green"))
 
 
 if __name__ == "__main__":

@@ -24,10 +24,12 @@ the name as its primary handle. `calibrate_surrogate` is better than
 import json
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import Any, Annotated
 
 import httpx
-from langchain_core.tools import tool
+from langchain.messages import ToolMessage
+from langchain.tools import tool, InjectedToolCallId
+from langgraph.types import Command
 
 from app.config import get_settings
 
@@ -68,7 +70,7 @@ def _client() -> httpx.Client:
 #         return quotes[:num_quotes]
 # ----------------------------------------------------------------------------
 @tool
-def fetch_market_quotes(num_quotes: int = 4) -> list[dict]:
+def fetch_market_quotes(num_quotes: int=4, tool_call_id: Annotated[str, InjectedToolCallId] = "") -> Command:
     """Fetch today's swaption market quotes.
     
     Use this FIRST in any calibration workflow — calibrate_surrogate
@@ -77,7 +79,11 @@ def fetch_market_quotes(num_quotes: int = 4) -> list[dict]:
     """
     path = Path(__file__).resolve().parent.parent / "examples" / "sample_market.json"
     quotes = json.loads(path.read_text())
-    return quotes[:num_quotes]
+    return Command(
+        update={
+            "prices": quotes[:num_quotes],
+            "messages": [ToolMessage(content=json.dumps(quotes[:num_quotes]), tool_call_id=tool_call_id,)]
+        })
 
 
 # ============================================================================
@@ -114,13 +120,17 @@ def fetch_market_quotes(num_quotes: int = 4) -> list[dict]:
 #         return r.json()
 # ----------------------------------------------------------------------------
 @tool
-def calibrate_surrogate(quotes: list[dict]) -> dict:
+def calibrate_surrogate(quotes: list[dict], tool_call_id: Annotated[str, InjectedToolCallId]) -> Command:
     """Calibrate the LMM surrogate to a set of market quotes (TODO T2)."""
     instruments = [{"T": q["T"], "K": q["K"], "F": q["F"]} for q in quotes]
     market_ivs  = [q["iv"] for q in quotes]
     r = _client().post("/calibrate", json={"instruments": instruments, "market_ivs": market_ivs})
     r.raise_for_status()
-    return r.json()
+    return Command(
+        update={
+            "prices": r.json(),
+            "messages": [ToolMessage(content=r.json(), tool_call_id=tool_call_id,)]
+        })
 
 
 # ============================================================================
@@ -149,17 +159,12 @@ def calibrate_surrogate(quotes: list[dict]) -> dict:
 #         return r.json()
 # ----------------------------------------------------------------------------
 @tool
-def price_swaption(params: dict, instruments: list[dict]) -> dict:
+def price_swaption(params: dict, instruments: list[dict], tool_call_id: Annotated[str, InjectedToolCallId]) -> Command:
     """Predict implied vols for new swaption instruments using calibrated params (TODO T3)."""
     r = _client().post("/price", json={"params": params, "instruments": instruments})
     r.raise_for_status()
-    return r.json()
-
-
-if __name__ == "__main__":
-    q = fetch_market_quotes.invoke({"num_quotes": 4})
-    print(f"\nquotes{q}")
-    c = calibrate_surrogate.invoke({"quotes": q})
-    print(f"\ncalib results{c}")
-    p = price_swaption.invoke({"params": c["theta_star"], "instruments": q})
-    print(f"\nprice={p}")
+    return Command(
+        update={
+            "prices": r.json(),
+            "messages": [ToolMessage(content=r.json(), tool_call_id=tool_call_id,)]
+        })

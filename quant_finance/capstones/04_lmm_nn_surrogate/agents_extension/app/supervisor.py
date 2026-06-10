@@ -21,15 +21,14 @@ Two design choices made here:
 
 The graph wires it all up in graph.py.
 """
-from typing import Literal
-
 from langchain_anthropic import ChatAnthropic
-from langchain_core.tools import tool
+from langchain.messages import ToolMessage, AIMessage, HumanMessage
+from langchain.tools import tool
 from langgraph.graph import END
 
 from app.config import get_settings
 from app.prompts import SUPERVISOR_PROMPT
-from app.state import WorkerName
+from app.state import WorkerName, WorkflowState
 
 
 # ============================================================================
@@ -74,7 +73,34 @@ from app.state import WorkerName
 #                      transfer_to_pricing_agent,     transfer_to_report_agent,
 #                      finish]
 # ----------------------------------------------------------------------------
-# HANDOFF_TOOLS = [...]   # TODO SUP1
+@tool
+def transfer_to_market_data_agent() -> str:
+    """Hand off to the market data agent to fetch quotes."""
+    return "market_data_agent"
+
+@tool
+def transfer_to_calibration_agent() -> str:
+    """Hand off to the calibration agent to calibrate to market quotes."""
+    return "calibration_agent"
+
+@tool
+def transfer_to_pricing_agent() -> str:
+    """Hand off to the pricing agent to price new instruments."""
+    return "pricing_agent"
+
+@tool
+def transfer_to_report_agent() -> str:
+    """Hand off to the report agent to write the final summary."""
+    return "report_agent"
+
+@tool
+def finish() -> str:
+    """End the workflow. Call this when the report is complete."""
+    return "FINISH"
+
+HANDOFF_TOOLS = [transfer_to_market_data_agent, transfer_to_calibration_agent,
+                 transfer_to_pricing_agent,     transfer_to_report_agent,
+                 finish]
 
 
 # ============================================================================
@@ -93,7 +119,14 @@ from app.state import WorkerName
 #         # bind_tools forces the LLM to emit a tool call (or refuse).
 #         return llm.bind_tools(HANDOFF_TOOLS, tool_choice="any")
 # ----------------------------------------------------------------------------
-# def make_supervisor(): ...   # TODO SUP2
+def make_supervisor():
+    s = get_settings()
+    llm = ChatAnthropic(
+        model=s.agent_model,
+        api_key=s.anthropic_api_key,
+        temperature=0,
+    )
+    return llm.bind_tools(HANDOFF_TOOLS, tool_choice="any")
 
 
 # ============================================================================
@@ -125,8 +158,35 @@ from app.state import WorkerName
 #             "step_count": step,
 #         }
 # ----------------------------------------------------------------------------
-# def supervisor_node(state): ...   # TODO SUP3
+def supervisor_node(state: WorkflowState):
+    """Route only. Extraction is handled by per-worker nodes in app/extractors.py."""
+    supervisor = make_supervisor()
+    if isinstance(state["messages"][-1], AIMessage):
+        messages = [{"role": "system", "content": SUPERVISOR_PROMPT}, *state["messages"], HumanMessage(content="Select the next worker")]
+    else:
+        messages = [{"role": "system", "content": SUPERVISOR_PROMPT}, *state["messages"]]
+    
+    response = supervisor.invoke(messages)
 
+    tool_call = response.tool_calls[0]
+    if tool_call["name"] == "finish":
+        next_worker: WorkerName = "FINISH"
+    else:
+        next_worker = tool_call["name"].replace("transfer_to_", "")
+
+    # Anthropic protocol: every tool_use needs a tool_result in the next message.
+    # Handoff "tools" don't do real work, so we synthesise the ack here.
+    tool_ack = ToolMessage(
+        content=f"Transferred to {next_worker}",
+        tool_call_id=tool_call["id"],
+        name=tool_call["name"],
+    )
+
+    return {
+        "messages":   [response, tool_ack],
+        "next":       next_worker,
+        "step_count": state.get("step_count", 0) + 1,
+    }
 
 # ============================================================================
 # Routing helper — read state["next"] and return the next graph node.
@@ -147,4 +207,9 @@ from app.state import WorkerName
 #         choice = state.get("next", "FINISH")
 #         return END if choice == "FINISH" else choice
 # ----------------------------------------------------------------------------
-# def route_from_supervisor(state): ...   # TODO SUP4
+def route_from_supervisor(state: WorkflowState) -> str:
+    s = get_settings()
+    if state.get("step_count", 0) >= s.max_supervisor_steps:
+        return END
+    choice = state.get("next", "FINISH")
+    return END if choice == "FINISH" else choice

@@ -73,5 +73,5 @@ class WorkflowState(TypedDict, total=False):
     calibration: dict | None
     prices: list[dict] | None
     final_report: str | None
-    next: WorkerName
+    next: WorkerName | None
     step_count: int

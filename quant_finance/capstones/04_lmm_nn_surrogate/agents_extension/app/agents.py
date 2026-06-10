@@ -58,21 +58,36 @@ def _llm() -> ChatAnthropic:
 #     )
 # ----------------------------------------------------------------------------
 # market_data_agent = ...   # TODO A1
-
+market_data_agent = create_agent(
+    model=_llm(),
+    tools=[fetch_market_quotes],
+    name="market_data_agent",
+    system_prompt=MARKET_DATA_PROMPT,
+)
 
 # ============================================================================
 # TODO A2 — calibration_agent.
 # PATTERN: same shape as A1 with calibrate_surrogate tool + CALIBRATION_PROMPT.
 # ----------------------------------------------------------------------------
 # calibration_agent = ...   # TODO A2
-
+calibration_agent = create_agent(
+    model=_llm(),
+    tools=[calibrate_surrogate],
+    name="calibration_agent",
+    system_prompt=CALIBRATION_PROMPT,
+)
 
 # ============================================================================
 # TODO A3 — pricing_agent.
 # PATTERN: same shape with price_swaption tool + PRICING_PROMPT.
 # ----------------------------------------------------------------------------
 # pricing_agent = ...       # TODO A3
-
+pricing_agent = create_agent(
+    model=_llm(),
+    tools=[price_swaption],
+    name="pricing_agent",
+    system_prompt=PRICING_PROMPT,
+)
 
 # ============================================================================
 # TODO A4 — report_agent.
@@ -89,15 +104,20 @@ def _llm() -> ChatAnthropic:
 #     )
 # ----------------------------------------------------------------------------
 # report_agent = ...        # TODO A4
-
+report_agent = create_agent(
+    model=_llm(),
+    tools=None,
+    name="report_agent",
+    system_prompt=REPORT_PROMPT,
+)
 
 # ============================================================================
 # Convenience map — used by graph.py to wire workers into the StateGraph.
 # Uncomment + populate AFTER A1-A4 are defined.
 # ============================================================================
-# WORKERS = {
-#     "market_data_agent": market_data_agent,
-#     "calibration_agent": calibration_agent,
-#     "pricing_agent":     pricing_agent,
-#     "report_agent":      report_agent,
-# }
+WORKERS = {
+    "market_data_agent": market_data_agent,
+    "calibration_agent": calibration_agent,
+    "pricing_agent":     pricing_agent,
+    "report_agent":      report_agent,
+}
