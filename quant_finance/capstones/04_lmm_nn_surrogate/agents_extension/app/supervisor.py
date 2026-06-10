@@ -27,8 +27,11 @@ Refs:
   - create_agent: https://docs.langchain.com/oss/python/langchain/agents
   - Command:     https://docs.langchain.com/oss/python/langgraph/use-graph-api
 """
+from typing import Callable
+
 from langchain.agents import create_agent
-from langchain.messages import AIMessage, ToolMessage
+from langchain.agents.middleware import wrap_model_call, ModelRequest, ModelResponse
+from langchain.messages import HumanMessage,AIMessage, ToolMessage
 from langchain.tools import ToolRuntime, tool
 from langgraph.graph import END
 from langgraph.types import Command
@@ -150,6 +153,27 @@ HANDOFF_TOOLS = [
     finish,
 ]
 
+# ============================================================================
+# Middleware. If the last message is an AI message, append a HumanMessage.
+# ============================================================================
+@wrap_model_call
+def inject_human_after_ai(
+    request: ModelRequest,
+    handler: Callable[[ModelRequest], ModelResponse]
+) -> ModelResponse:
+    """Inject a HumanMessage when history ends with an AIMessage.
+
+    Anthropic models without prefill support require the conversation to
+    end with a user-role message. After a worker returns, state.messages
+    ends with the worker's AIMessage summary — we add a sentinel HumanMessage
+    only inside this LLM call, not in durable state.
+    """
+    if isinstance(request.messages[-1], AIMessage):
+        new_messages = request.messages + [HumanMessage(content="Select the next worker.")]
+        return handler(request.override(messages=new_messages))
+    else:
+        return handler(request)
+            
 
 # ============================================================================
 # The supervisor agent. Drops directly into the parent StateGraph as a node.
@@ -159,4 +183,5 @@ supervisor = create_agent(
     tools=HANDOFF_TOOLS,
     system_prompt=SUPERVISOR_PROMPT,
     name="supervisor",
+    middleware=[inject_human_after_ai],
 )

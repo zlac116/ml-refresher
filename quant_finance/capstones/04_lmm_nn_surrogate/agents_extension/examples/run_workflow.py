@@ -47,6 +47,11 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    
+    from app.config import get_settings
+    model = get_settings().model
+    console.print(Panel(model, title="model used", border_style="blue"))
+    
     console.print(Panel(args.question, title="user", border_style="cyan"))
 
     from app.graph import build_graph
