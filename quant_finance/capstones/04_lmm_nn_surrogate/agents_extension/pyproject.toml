@@ -17,6 +17,7 @@ dependencies = [
     "pydantic-settings>=2.14",
     # CLI niceness
     "rich>=15.0",
+    "langchain-openai>=1.2.2",
 ]
 
 [dependency-groups]

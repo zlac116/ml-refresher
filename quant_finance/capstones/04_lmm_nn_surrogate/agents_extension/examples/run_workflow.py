@@ -6,21 +6,25 @@ Usage:
 PREREQUISITES:
     1. The LMM surrogate API must be running:
            cd ../api_extension && uv run uvicorn app.main:app --reload --port 8003
-    2. .env must contain ANTHROPIC_API_KEY (copy from .env.example)
+    2. .env must contain ANTHROPIC_API_KEY and OPENAI_API_KEY
     3. `uv sync` has been run in this directory
 
-What you'll see:
-    - The supervisor's tool call (which worker it picked)
-    - Each worker's response (tool calls + outputs)
-    - The final report
+Streams the workflow via the canonical LangGraph 1.2+ pattern:
+  - stream_mode=["updates", "values"], version="v2"
+  - "updates" chunks print each new message as workers run
+  - "values" chunks keep the running merged state for the final report
 
-NB: streaming is added in STRETCH ST5. This CORE version uses invoke()
-which returns once the entire workflow is complete.
+Deduplicates printed messages by `msg.id` because compiled subgraphs
+(create_agent) return their full accumulated message list per chunk;
+the parent state's `add_messages` reducer dedupes by id, but the stream
+emits everything.
+
+Refs:
+  - Streaming: https://docs.langchain.com/oss/python/langgraph/streaming
 """
 import argparse
-import sys
 
-from langchain_core.messages import HumanMessage
+from langchain.messages import HumanMessage
 from rich.console import Console
 from rich.panel import Panel
 
@@ -41,38 +45,6 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
-# ============================================================================
-# TODO R1 — implement the main runner.
-#
-# PATTERN:
-#     def main() -> None:
-#         args = parse_args()
-#         console.print(Panel(args.question, title="user", border_style="cyan"))
-#
-#         from app.graph import build_graph
-#         graph = build_graph()
-#
-#         initial_state = {
-#             "messages":   [HumanMessage(content=args.question)],
-#             "step_count": 0,
-#         }
-#         final_state = graph.invoke(initial_state)
-#
-#         # Print every message in order so the workflow is auditable.
-#         for msg in final_state["messages"]:
-#             role  = getattr(msg, "name", None) or msg.type
-#             color = {
-#                 "human": "cyan", "ai": "yellow", "tool": "green",
-#                 "supervisor": "magenta",
-#             }.get(role, "white")
-#             console.print(Panel(str(msg.content)[:2000], title=role,
-#                                 border_style=color))
-#
-#         # Final report (if the report agent populated it)
-#         if final_state.get("final_report"):
-#             console.print(Panel(final_state["final_report"], title="FINAL REPORT",
-#                                 border_style="bold green"))
-# ----------------------------------------------------------------------------
 def main() -> None:
     args = parse_args()
     console.print(Panel(args.question, title="user", border_style="cyan"))
@@ -80,13 +52,9 @@ def main() -> None:
     from app.graph import build_graph
     graph = build_graph()
 
-    initial_state = {
-        "messages":   [HumanMessage(content=args.question)],
-        "step_count": 0,
-    }
+    initial_state = {"messages": [HumanMessage(content=args.question)]}
 
-    final_state = {}
-
+    final_state: dict = {}
     printed_ids: set[str] = set()
 
     for chunk in graph.stream(initial_state, stream_mode=["updates", "values"], version="v2"):
@@ -107,7 +75,11 @@ def main() -> None:
             final_state = chunk["data"]
 
     if final_state.get("final_report"):
-        console.print(Panel(final_state["final_report"], title="FINAL REPORT", border_style="bold green"))
+        console.print(Panel(
+            final_state["final_report"],
+            title="FINAL REPORT",
+            border_style="bold green",
+        ))
 
 
 if __name__ == "__main__":
