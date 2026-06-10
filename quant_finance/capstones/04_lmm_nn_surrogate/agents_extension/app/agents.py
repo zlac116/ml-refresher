@@ -1,16 +1,20 @@
 """Worker agents — one create_agent per specialist, each bound to ONE tool.
 
 Each worker is a `langchain.agents.create_agent` returning a CompiledStateGraph
-that drops directly into the parent StateGraph as a node. Workers DON'T need
+that drops directly into the parent StateGraph as a node. Workers don't need
 handoff tools — their parent edge (`worker → supervisor` in graph.py) returns
-control to the supervisor, which then decides the next route via its own
-handoff tools.
+control to the supervisor, which decides the next route via its own handoff
+tools.
+
+`state_schema=WorkflowState` makes each worker share the parent graph's state
+schema, so tools returning `Command(update={"calibration": ..., ...})` write
+to the parent's named state fields (not just to the worker's internal state).
 
 The report_agent has `tools=None` — it's a pure-LLM summariser; its sole job
-is to write the final report based on prior tool outputs already in messages.
+is to synthesise the final report from prior tool outputs already in messages.
 
 Refs:
-  - create_agent: https://docs.langchain.com/oss/python/langchain/agents
+  - create_agent + state_schema: https://docs.langchain.com/oss/python/langchain/agents
 """
 from langchain.agents import create_agent
 

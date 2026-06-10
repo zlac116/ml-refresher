@@ -1,15 +1,22 @@
 # Capstone 04 — agents_extension
 
-A multi-agent **swaption desk assistant** built with LangGraph. A team of
-Claude-powered agents takes a natural-language question, orchestrates the
-**LMM surrogate API** (the sibling `api_extension/` capstone), and returns
-a structured answer + report.
+A multi-agent **swaption desk assistant** built with LangChain 1.x / LangGraph 1.x.
+A team of LLM-powered agents takes a natural-language question, orchestrates the
+**LMM surrogate API** (the sibling `api_extension/` capstone), and returns a
+structured answer + report.
 
-This extension demonstrates the **tool-based supervisor pattern** — the
-current (2026) LangGraph-team recommendation for multi-agent systems. You
-build the supervisor manually with handoff tools rather than using the
-`langgraph-supervisor` prebuilt; the manual approach makes the routing
-mechanics explicit and gives full control over context engineering.
+The whole thing is wired against current `docs.langchain.com` patterns:
+
+- `init_chat_model("openai:gpt-5-mini" | "anthropic:claude-...")` — provider-prefixed model string
+- `create_agent(...)` for every agent (supervisor + 4 workers)
+- Tool-based **handoff** routing via `Command(goto=..., graph=Command.PARENT)`
+- Tools return `Command(update={field: value, "messages": [ToolMessage(...)]})` to populate state
+- `state_schema=WorkflowState` on workers so tool updates propagate to parent state
+- `@wrap_model_call` middleware to satisfy Anthropic's "conversation must end with user message" rule
+- Streaming via `stream_mode=["updates", "values"], version="v2"`
+
+There is NO manual supervisor node, NO `state["next"]` field, NO conditional edges from
+supervisor, NO step counter — routing is driven entirely by handoff tools' `Command(goto)`.
 
 ---
 
@@ -17,168 +24,112 @@ mechanics explicit and gives full control over context engineering.
 
 You've built the surrogate API (`api_extension/`). Now LET AGENTS DRIVE IT.
 The same `/calibrate` + `/price` endpoints can be invoked by:
+
 - A human via Swagger UI
 - A Python script (`requests.post(...)`)
 - **An LLM that decides for itself which endpoint to call** — that's this capstone
 
-The educational payoff is internalising the multi-agent control flow:
-- How a supervisor routes work via tool calls
-- How state flows between specialised workers
-- How tools wrap external APIs as LLM-callable functions
-- How to bound a workflow (max steps, conditional exits)
+The educational payoff is internalising the canonical multi-agent control flow:
+
+- How a supervisor routes work via handoff tools (`Command(goto, graph=Command.PARENT)`)
+- How tools update both messages AND named state fields in one return
+- How `state_schema` lets workers participate in the parent's typed state
+- How middleware adapts the agent loop to model-specific quirks
 
 ---
 
-## 1. The mental model — READ THIS BEFORE THE CODE
+## 1. The mental model — read this BEFORE the code
 
 ```
 USER QUESTION (natural language)
-         ↓
+         │
+         ▼
    ┌─────────────┐
-   │ SUPERVISOR  │  ← LLM with handoff TOOLS only — no domain logic
-   └─────────────┘
-         ↓ routes to ONE worker per step
+   │ SUPERVISOR  │  create_agent with HANDOFF_TOOLS only
+   └─────┬───────┘  (transfer_to_X, finish)
+         │ Command(goto="X", graph=Command.PARENT)
+         ▼
    ┌──────────────────┬──────────────────┬──────────────────┐
    │ MarketDataAgent  │ CalibrationAgent │ PricingAgent     │
-   │ tool:            │ tool:            │ tool:            │
-   │ fetch_quotes()   │ POST /calibrate  │ POST /price      │
+   │ fetch_market_…   │ calibrate_…      │ price_swaption   │
    └──────────────────┴──────────────────┴──────────────────┘
-                            ↓ supervisor decides "all data gathered"
-                    ┌───────────────┐
-                    │ ReportAgent   │  ← LLM with NO tools — pure summarisation
-                    └───────────────┘
-                            ↓
-                    FINAL ANSWER (markdown report + structured state)
+                 │ returns to supervisor via worker→supervisor edge
+                 ▼
+                supervisor decides "all data gathered"
+                 │ Command(goto="report_agent", ...)
+                 ▼
+         ┌───────────────┐
+         │ ReportAgent   │  no tools — pure summarisation
+         └─────┬─────────┘
+               │ supervisor sees report, calls finish()
+               │ Command(goto=END, graph=Command.PARENT)
+               ▼
+              END
 ```
 
-**Two key invariants**:
-1. **The supervisor is the only router.** Workers never call each other —
-   control always returns to the supervisor between worker calls.
-2. **All inter-worker data flows through `WorkflowState`** (a TypedDict).
-   Tools write to it; later workers read from it. No back-channels.
+**Two key invariants:**
 
-**The supervisor pattern vs the swarm pattern** (just so you know): in a
-*swarm*, workers can hand off directly to each other. That's more flexible
-but harder to debug + reason about. The supervisor pattern centralises
-routing, which is easier to audit ("why did it call X?" → check the
-supervisor's tool call in messages).
+1. **The supervisor is the only router.** Workers never call each other. Each
+   worker has an edge back to the supervisor (`graph.add_edge(worker, "supervisor")`).
+2. **All inter-worker data flows through `WorkflowState`.** Tools write to it via
+   `Command(update=...)`; later agents read it. No back-channels.
+
+**Supervisor pattern vs swarm:** in a swarm, workers can hand off directly to
+each other (each agent gets handoff tools too). That's more flexible but harder
+to audit. The supervisor pattern centralises routing — every routing decision
+is in one agent's tool call, easy to inspect in the message history.
 
 ---
 
 ## 2. Setup (2 min)
 
 ```bash
-# In this directory:
 cd quant_finance/capstones/04_lmm_nn_surrogate/agents_extension
 
-# Install deps with uv
 uv sync
 
-# Configure secrets
 cp .env.example .env
-# Then edit .env: set ANTHROPIC_API_KEY
+# Edit .env: set ANTHROPIC_API_KEY and/or OPENAI_API_KEY
+# Optionally override MODEL="anthropic:claude-haiku-4-5-20251001"
 ```
 
-In **another terminal**, start the LMM surrogate API:
+In another terminal, start the LMM surrogate API (sibling capstone):
 
 ```bash
 cd ../api_extension
 uv run uvicorn app.main:app --reload --port 8003
 ```
 
-Verify it's up: `curl http://localhost:8003/` → should return JSON.
+Verify: `curl http://localhost:8003/` should return the service JSON.
 
 ---
 
-## 3. Ordered build steps (~2.5h CORE)
-
-Build in this order — each step builds on the previous. Skip the STRETCH
-section entirely on your first pass.
-
-| # | File | TODO | Time | What you'll write |
-|---|---|---|---|---|
-| 1 | `app/state.py`            | S1   | 5 min  | `WorkflowState` TypedDict with `messages` (add_messages reducer), `market_quotes`, `calibration`, `prices`, `final_report`, `next`, `step_count` |
-| 2 | `app/tools.py`            | T1   | 5 min  | `fetch_market_quotes` — reads `examples/sample_market.json` |
-| 3 | `app/tools.py`            | T2   | 10 min | `calibrate_surrogate` — POSTs to `/calibrate`, returns JSON |
-| 4 | `app/tools.py`            | T3   | 5 min  | `price_swaption` — POSTs to `/price`, returns JSON |
-| 5 | `app/prompts.py`          | P1–P5 | 20 min | 5 system prompts (supervisor + 4 workers). The prompt IS your context engineering. |
-| 6 | `app/agents.py`           | A1–A4 | 10 min | 4 `create_agent` calls (from `langchain.agents` — the LangChain 1.x replacement for the deprecated `langgraph.prebuilt.create_react_agent`), each bound to ONE tool (or none, for report) |
-| 7 | `app/supervisor.py`       | SUP1 | 10 min | 4 handoff tools (`transfer_to_X`) + `finish` tool |
-| 8 | `app/supervisor.py`       | SUP2–SUP4 | 15 min | Supervisor LLM + node + routing edge function |
-| 9 | `app/graph.py`            | G1   | 10 min | `build_graph()` — `StateGraph` with supervisor + workers + conditional edges |
-| 10 | `examples/run_workflow.py` | R1   | 10 min | CLI: invoke graph, print every message with rich Panels |
-| 11 | `tests/test_tools.py`     | TT1–TT3 | 15 min | Unit tests with respx mocks |
-| 12 | `tests/test_e2e.py`       | TE1  | 10 min | End-to-end against live API |
-
-**Smoke test after step 10**:
-
-```bash
-uv run python -m examples.run_workflow \
-  "Fetch 2 market quotes, calibrate, then price a 1y ATM swaption."
-```
-
-Expected: you see the supervisor's tool calls, each worker's response,
-and a final markdown report.
-
----
-
-## 4. Each file's job (one line each)
+## 3. The file map
 
 ```
 app/
-  config.py        → Settings (env-backed via pydantic-settings); read-only after import
-  state.py         → WorkflowState TypedDict — the SHARED MEMORY across all agents
-  tools.py         → 3 @tool wrappers around the surrogate API; the LLM's "vocabulary"
-  prompts.py       → System prompts for every agent (5 in CORE); the LLM's "instructions"
-  agents.py        → create_react_agent × 4; each worker = LLM + prompt + ONE tool
-  supervisor.py    → Handoff tools + supervisor LLM + routing decision logic
-  graph.py         → StateGraph wiring; nodes = agents, edges = routing rules
+  config.py        Settings (env-backed via pydantic-settings) + get_llm() factory
+  state.py         WorkflowState (TypedDict with add_messages reducer)
+  tools.py         3 @tool wrappers returning Command(update={...}) — populate state
+  prompts.py       5 system prompts: supervisor + 4 workers
+  agents.py        4 create_agent workers (state_schema=WorkflowState)
+  supervisor.py    5 handoff tools (Command goto, graph=PARENT) + create_agent supervisor
+                   + wrap_model_call middleware for Anthropic prefill
+  graph.py         StateGraph wiring: START→supervisor; worker→supervisor (×4)
 
 examples/
-  run_workflow.py  → CLI: invoke the graph and pretty-print the conversation
-  sample_market.json → Stub market data (4 quotes); replace with real feed in prod
+  run_workflow.py   CLI — streams the workflow with rich panels
+  sample_market.json  Stub market data
 
 tests/
-  conftest.py      → Fixtures (env setup, cache clearing, sample_quotes)
-  test_tools.py    → Unit-test the 3 @tool wrappers with respx (mocked httpx)
-  test_e2e.py      → End-to-end: real Claude + real API + real graph
+  conftest.py       env-reset + sample_quotes fixtures
+  test_tools.py     unit tests for tools (TODOs)
+  test_e2e.py       full workflow against live API (TODOs)
 ```
 
 ---
 
-## 5. IGNORE for CORE — STRETCH goals
-
-Don't touch these until CORE is green. They each unlock a real LangGraph
-concept but cost time you may not have:
-
-| Stretch | What | Why nontrivial |
-|---|---|---|
-| ST1 | **Validator agent + retry loop** — reads `verify.rmse_calib_bp`, routes back to CalibrationAgent if > 50bp | Teaches conditional edges + state-driven loops |
-| ST2 | **HITL approval** before `/promote` — pause for user input via `interrupt()` | Teaches LangGraph checkpointing |
-| ST3 | **LangSmith tracing** — set `LANGSMITH_TRACING=true`, get a click-through trace | Production observability |
-| ST4 | **FastAPI wrapper** exposing `POST /workflow` — same shape as api_extension | Productionising agent workflows |
-| ST5 | **Streaming output** — use `graph.stream(...)` + Rich `Live`; user sees agents thinking | Better UX, deeper graph understanding |
-
----
-
-## 6. Test it
-
-```bash
-# Unit tests (fast, no API needed)
-uv run pytest tests/test_tools.py -v
-
-# End-to-end (requires running API + Claude)
-uv run pytest tests/test_e2e.py -v
-
-# Everything
-uv run pytest -v
-```
-
-Test debugging recipes are in [`../../../toolkit/pytest_debug_cheatsheet.md`](../../../../toolkit/pytest_debug_cheatsheet.md).
-
----
-
-## 7. Running locally — the golden path
+## 4. Running locally — golden path
 
 ```bash
 # Terminal 1: surrogate API
@@ -188,29 +139,70 @@ uv run uvicorn app.main:app --reload --port 8003
 # Terminal 2: agent workflow
 cd ../agents_extension
 uv run python -m examples.run_workflow \
-  "Fetch 4 market quotes, calibrate the LMM, then price 1y/2y/5y/10y ATM swaptions. Report concisely."
+  "Fetch 2 market quotes, calibrate the LMM, then price a 1y ATM swaption."
 ```
 
-You'll see:
-1. Supervisor picks `market_data_agent` → quotes appear
-2. Supervisor picks `calibration_agent` → theta_star + RMSE appear
-3. Supervisor picks `pricing_agent` → IVs appear
-4. Supervisor picks `report_agent` → markdown summary
-5. Supervisor picks `FINISH` → workflow ends
+You'll see panels in this order:
 
-If any step misroutes, **read the supervisor's tool call message** —
-that's where its reasoning lives. Iterate on `SUPERVISOR_PROMPT`.
+1. `user` — the question
+2. `supervisor (ai)` — empty content + handoff tool call
+3. `supervisor (tool)` — "Transferred to market_data_agent"
+4. `market_data_agent (ai/tool/ai)` — planning, tool result, summary
+5. … repeats for calibration → pricing → report …
+6. `supervisor (tool)` — "Workflow complete" (from `finish` tool)
+7. `FINAL REPORT` — the report agent's markdown
+
+If a step misroutes, **read the supervisor's tool call message** — that's where
+its reasoning lives. Iterate on `SUPERVISOR_PROMPT` in `app/prompts.py`.
+
+---
+
+## 5. Canonical patterns this capstone demonstrates
+
+| Pattern | Where | Reference |
+|---|---|---|
+| `init_chat_model` factory | `config.py:get_llm()` | https://docs.langchain.com/oss/python/langchain/models |
+| `create_agent` + `state_schema` | `agents.py`, `supervisor.py` | https://docs.langchain.com/oss/python/langchain/agents |
+| Handoff tools with `Command(goto=, graph=Command.PARENT)` | `supervisor.py` | https://docs.langchain.com/oss/python/langchain/multi-agent/handoffs |
+| Tools returning `Command(update={...})` with `ToolRuntime` | `tools.py` | https://docs.langchain.com/oss/python/langchain/tools |
+| `add_messages` reducer on TypedDict | `state.py` | https://docs.langchain.com/oss/python/langgraph/use-graph-api |
+| `@wrap_model_call` middleware | `supervisor.py:inject_human_after_ai` | https://docs.langchain.com/oss/python/langchain/middleware/custom |
+| `stream_mode=["updates","values"], version="v2"` | `examples/run_workflow.py` | https://docs.langchain.com/oss/python/langgraph/streaming |
+
+---
+
+## 6. STRETCH
+
+| # | What | Why nontrivial |
+|---|---|---|
+| ST1 | **Validator agent + retry loop** — reads `verify.rmse_calib_bp`, hands off back to calibration if > 50bp | Real conditional routing via Command |
+| ST2 | **HITL approval** before a `promote` step — pause via `interrupt()` | Teaches LangGraph checkpointing |
+| ST3 | **LangSmith tracing** — `LANGSMITH_TRACING=true` + key | Production observability |
+| ST4 | **FastAPI wrapper** exposing `POST /workflow` | Productionising an agent system |
+| ST5 | **Live UI** — Rich `Live` view of the streaming workflow | Better UX |
+
+---
+
+## 7. Tests
+
+```bash
+# Unit tests (fast — no API or LLM needed)
+uv run pytest tests/test_tools.py -v
+
+# End-to-end (slow + billable — needs live API + LLM key)
+uv run pytest tests/test_e2e.py -v
+```
+
+Tests are currently TODO stubs; see file headers for the scaffolding.
+
+Debugging recipes: [`../../../../toolkit/pytest_debug_cheatsheet.md`](../../../../toolkit/pytest_debug_cheatsheet.md).
 
 ---
 
 ## 8. Where to go after CORE
 
-- **Read `NAVIGATION.md`** — a 60-min reader's guide to the assembled code,
-  showing the actual flow with breakpoint-friendly traces.
-- **Add ValidatorAgent (ST1)** — first real conditional routing.
-- **Add HITL (ST2)** — teaches LangGraph checkpointing, which is essential
-  for any production agent system.
-- **Switch to `langgraph-supervisor`** — replace your manual supervisor
-  with the prebuilt; compare context size + control trade-offs.
-- **Read the parent project's `LESSONS.md`** for connecting patterns
-  (LangChain LCEL ↔ FastAPI dependency injection ↔ LangGraph state graph).
+- **Read `NAVIGATION.md`** — guided tour through the assembled code.
+- **Implement at least one STRETCH** — ST1 (validator loop) teaches conditional
+  routing via Command; ST2 (HITL) teaches checkpointers.
+- **Compare with `langgraph-supervisor` prebuilt** — replace the manual supervisor
+  with the prebuilt and see how much code disappears (and what control you lose).

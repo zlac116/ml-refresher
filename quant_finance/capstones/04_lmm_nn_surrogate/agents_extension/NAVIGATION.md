@@ -2,11 +2,10 @@
 
 A guided tour through `agents_extension`: how the multi-agent pieces fit
 together, the order to read them, and how to trace one workflow end-to-end
-with the LangGraph debugger. Designed so you can sit down with VSCode and
-build a complete mental model in **~60 minutes**.
+with the LangGraph debugger. Designed for ~60 minutes with VSCode.
 
-If you've already done the sibling `api_extension` walkthrough, much of
-the file-organisation discipline will feel familiar — that's deliberate.
+This capstone uses the canonical LangChain 1.x / LangGraph 1.x patterns —
+see `README.md §5` for the source-doc URL for each one.
 
 ---
 
@@ -39,104 +38,93 @@ one-click (`F5`):
 }
 ```
 
-`justMyCode: false` lets you step INTO LangGraph + LangChain + Claude SDK
-code — invaluable for understanding the supervisor's message routing.
+`justMyCode: false` lets you step INTO LangGraph + LangChain code — invaluable
+for understanding the agent execution loop.
 
-Make sure the surrogate API is running in a separate terminal before you
-hit F5, or the tools will error out.
+Make sure the surrogate API is running in a separate terminal before you hit F5.
 
 ---
 
 ## 1. The mental model — read this BEFORE the code
 
-### Three distinct workflows that share one codebase
-
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│ ONE-OFF (script)                                                     │
-│   examples/run_workflow.py                                           │
-│     ↓                                                                │
-│     graph.invoke({...}) → final state                                │
-└──────────────────────────────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────────────────────────────┐
-│ UNIT TESTS (no LLM, no live API)                                     │
-│   tests/test_tools.py uses respx to mock httpx                       │
-│   Each @tool tested in isolation                                     │
-└──────────────────────────────────────────────────────────────────────┘
-
-┌──────────────────────────────────────────────────────────────────────┐
-│ E2E TESTS (real Claude, real surrogate API)                          │
-│   tests/test_e2e.py drives the full graph against a live system     │
-│   Skipped automatically if API not reachable                         │
-└──────────────────────────────────────────────────────────────────────┘
-```
-
-### The control flow (the headline pattern)
+### The control flow
 
 ```
 START
-  ↓
-SUPERVISOR (LLM with handoff tools)
-  ↓ tool call: transfer_to_X
-WORKER X (LLM with ONE domain tool)
-  ↓ worker calls its tool, gets result, returns
-SUPERVISOR (reads updated state, decides next worker or FINISH)
-  ↓ ...loop until FINISH...
+  │
+  ▼
+SUPERVISOR (create_agent with HANDOFF_TOOLS)
+  │ LLM picks a handoff tool → tool returns Command(goto="X", graph=Command.PARENT)
+  ▼
+WORKER X (create_agent with one domain tool + state_schema=WorkflowState)
+  │ tool returns Command(update={field: ..., "messages": [...]})
+  │ writes BOTH state field AND ToolMessage
+  ▼
+SUPERVISOR (via worker→supervisor edge)
+  │ LLM decides next: another worker OR finish()
+  ▼
+... loop ...
+  │
+  ▼ finish() returns Command(goto=END, graph=Command.PARENT)
 END
 ```
 
-**The supervisor never does domain work itself.** Its only job is routing.
-Workers never call each other. State is the only inter-worker channel.
+**The supervisor never does domain work itself.** It only routes. Workers never
+call each other — every worker has an edge back to supervisor.
 
 ### Layered architecture
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
-│  examples/run_workflow.py  ← OUTERMOST — CLI entrypoint        │
-│  app/graph.py              ← StateGraph assembly                │
-│  app/supervisor.py         ← routing brain                      │
-│  app/agents.py             ← worker bodies (LLM + 1 tool each)  │
-│  app/tools.py              ← @tool wrappers around HTTP API     │
-│  app/prompts.py            ← system prompts (no logic)          │
-│  app/state.py              ← shared TypedDict (the data plane)  │
-│  app/config.py             ← env-driven Settings                │
+│  examples/run_workflow.py  CLI — graph.stream + rich panels    │
+│  app/graph.py              StateGraph assembly + compile        │
+│  app/supervisor.py         supervisor agent + handoff tools     │
+│                            + wrap_model_call middleware         │
+│  app/agents.py             4 worker agents (state_schema=…)     │
+│  app/tools.py              @tool wrappers (Command(update=…))   │
+│  app/prompts.py            5 system prompts (data only)         │
+│  app/state.py              WorkflowState TypedDict              │
+│  app/config.py             Settings + get_llm()                 │
 └────────────────────────────────────────────────────────────────┘
 ```
 
-Strict directionality:
-- `graph.py` imports from `supervisor.py` + `agents.py`
-- `agents.py` imports from `tools.py` + `prompts.py`
-- `tools.py` imports from `config.py`
-- `state.py` is pure data — imported by everyone, depends on nothing
+Strict directionality (no circular imports):
+
+- `graph.py` imports `supervisor` + `WORKERS`
+- `supervisor.py` imports `get_llm`, `SUPERVISOR_PROMPT`
+- `agents.py` imports `get_llm`, the 4 worker prompts, the 3 tools, `WorkflowState`
+- `tools.py` imports `get_settings` (only for `_client()`)
+- `state.py` is pure data — depends on nothing in this project
 
 ---
 
-## 2. The file map (3 minutes)
+## 2. The file map
 
 ```
 agents_extension/
-├── README.md                ← spec + how to run; READ FIRST
-├── NAVIGATION.md            ← this guide
-├── pyproject.toml           ← uv deps (langgraph, langchain-anthropic, httpx)
+├── README.md                 spec + how to run; READ FIRST
+├── NAVIGATION.md             this guide
+├── pyproject.toml            uv deps (langchain, langgraph, httpx, rich)
+├── .env.example              ANTHROPIC_API_KEY / OPENAI_API_KEY / MODEL / SURROGATE_API_URL
 │
 ├── app/
-│   ├── config.py            ← Settings: ANTHROPIC_API_KEY, SURROGATE_API_URL
-│   ├── state.py             ← WorkflowState TypedDict (the data contract)
-│   ├── tools.py             ← @tool: fetch_quotes, calibrate, price
-│   ├── prompts.py           ← 5 SYSTEM PROMPTS — the LLM's instructions
-│   ├── agents.py            ← create_agent (LangChain 1.x) × 4 workers
-│   ├── supervisor.py        ← Supervisor LLM + handoff tools + routing
-│   └── graph.py             ← StateGraph wiring + compile
+│   ├── config.py             Settings + get_settings() + get_llm()
+│   ├── state.py              WorkflowState TypedDict (messages + 4 data fields)
+│   ├── tools.py              3 @tool wrappers; each returns Command(update={...})
+│   ├── prompts.py            5 system prompts (one constant per agent)
+│   ├── agents.py             4 create_agent workers + WORKERS map
+│   ├── supervisor.py         5 handoff tools + supervisor create_agent
+│   │                         + inject_human_after_ai @wrap_model_call middleware
+│   └── graph.py              build_graph(): START→supervisor; worker→supervisor (×4)
 │
 ├── examples/
-│   ├── run_workflow.py      ← CLI runner
-│   └── sample_market.json   ← Stub quotes
+│   ├── run_workflow.py       CLI: graph.stream + rich Panels
+│   └── sample_market.json    4 stub swaption quotes
 │
 └── tests/
-    ├── conftest.py          ← Fixtures (env reset, cache clear, sample_quotes)
-    ├── test_tools.py        ← Unit tests w/ respx
-    └── test_e2e.py          ← End-to-end against live API
+    ├── conftest.py           env-reset, sample_quotes fixture
+    ├── test_tools.py         unit tests (TODO)
+    └── test_e2e.py           full workflow against live API (TODO)
 ```
 
 ---
@@ -144,208 +132,229 @@ agents_extension/
 ## 3. Phase 1 — Static reading (15 min)
 
 ### 3.1 Read `README.md` (5 min)
-Should already be done. Confirm you understand:
-- The supervisor pattern + why workers don't call each other
-- The role of `WorkflowState` (TypedDict, not Pydantic)
-- The role of `@tool` decorators (LLM reads docstring → decides when to call)
+
+Confirm you understand:
+
+- The handoff pattern (Command goto, graph=Command.PARENT)
+- WHY workers have `state_schema=WorkflowState` (so tool updates flow to parent state)
+- WHY the supervisor has a `wrap_model_call` middleware (Anthropic prefill rule)
 
 ### 3.2 Read `app/state.py` (3 min)
+
+The most important file. Every node reads and writes to this TypedDict.
+
 ```
-Ctrl+P → state.py
+messages       Annotated[list, add_messages] — APPENDS (and dedupes by id)
+market_quotes  set by fetch_market_quotes (via Command(update=...))
+calibration    set by calibrate_surrogate
+prices         set by price_swaption
+final_report   set by — currently NOT populated (see README §STRETCH for option 1)
 ```
-The MOST IMPORTANT FILE for understanding the workflow. Every node reads
-and writes here. Notice:
-- `messages: Annotated[list, add_messages]` — appends, not replaces
-- All other fields are simple types — they REPLACE on each write
-- `WorkerName` Literal is the supervisor's vocabulary
+
+`add_messages` is the canonical reducer — without it, every node return would
+OVERWRITE the message list instead of appending.
 
 ### 3.3 Read `app/tools.py` (3 min)
-Each `@tool` function's **docstring is part of the prompt**. The LLM
-reads the docstring to decide which tool fits the current step. Notice:
-- One tool per worker (single responsibility)
-- Types in signatures → LLM knows the input/output shape
-- `_client()` is module-level → swappable for tests
+
+Each tool returns `Command(update={...})` with BOTH:
+
+- A named state field (e.g. `"market_quotes": quotes`)
+- A `ToolMessage` paired by `runtime.tool_call_id` (so the LLM loop sees the result)
+
+`runtime: ToolRuntime` is injected by LangGraph automatically — never passed
+explicitly by your code or the LLM.
+
+Note `*` before `runtime` — it's keyword-only, so callers can't accidentally
+pass it positionally.
 
 ### 3.4 Read `app/prompts.py` (4 min)
-Centralised system prompts. This is where you'd iterate the most in a
-real project. Notice:
-- The supervisor prompt enumerates workers + when to use each
-- Worker prompts are short — they have exactly one job
-- The report prompt has explicit MARKDOWN STRUCTURE — that's a contract
+
+Five constants. Notice the `CALIBRATION_PROMPT` is much more constrained than
+the others ("DO NOT… write prose, markdown…") — that's deliberate. Without those
+constraints the calibration agent hallucinates pricing analysis it doesn't have
+a tool for.
 
 ---
 
 ## 4. Phase 2 — Trace ONE workflow end-to-end (15 min)
 
-Pick "Fetch 1 quote, calibrate, price 1 swaption". Follow the trace.
+Question: "Fetch 2 quotes, calibrate, then price T=1, K=0.035, F=0.035."
 
 ### 4.1 Start at `examples/run_workflow.py`
 
 ```python
 graph = build_graph()
-result = graph.invoke({"messages": [HumanMessage(question)], "step_count": 0})
+for chunk in graph.stream(initial_state, stream_mode=["updates","values"], version="v2"):
+    ...
 ```
 
-Hit `F12` on `build_graph` → jumps to `app/graph.py`.
+`F12` on `build_graph` → `app/graph.py`.
 
-### 4.2 Follow into `build_graph`
+### 4.2 Read `build_graph` (it's only ~10 lines)
 
-Read top to bottom. Notice:
-- `StateGraph(WorkflowState)` — the type-checked state container
-- `add_node("supervisor", supervisor_node)` — supervisor is just another node
-- `add_node(name, agent)` for each worker
-- `add_conditional_edges(...)` — the routing rule
-- `add_edge(name, "supervisor")` for each worker — workers ALWAYS return to supervisor
+```
+g.add_node("supervisor", supervisor)
+for worker_name, agent in WORKERS.items():
+    g.add_node(worker_name, agent)
 
-### 4.3 Follow into `supervisor_node`
+g.add_edge(START, "supervisor")
+for worker_name in WORKERS:
+    g.add_edge(worker_name, "supervisor")
+```
 
-`F12` on `supervisor_node` → `app/supervisor.py`.
+There are NO `add_conditional_edges` from the supervisor. The supervisor's
+handoff tools' `Command(goto=...)` returns drive routing directly.
 
-The supervisor:
-1. Reads `state["messages"]`
-2. Prepends `SUPERVISOR_PROMPT` as the system message
-3. Invokes the LLM with handoff tools bound
-4. Reads the LLM's tool call → maps to a worker name
-5. Returns `{"messages": [response], "next": worker_name, "step_count": +1}`
+### 4.3 Follow `supervisor` into `app/supervisor.py`
 
-LangGraph then merges that into state and calls `route_from_supervisor`,
-which reads `state["next"]` and returns the next node's name.
+```python
+supervisor = create_agent(
+    model=get_llm(),
+    tools=HANDOFF_TOOLS,
+    system_prompt=SUPERVISOR_PROMPT,
+    name="supervisor",
+    middleware=[inject_human_after_ai],
+)
+```
+
+The supervisor is just a `create_agent`. Its tools are the 5 handoff tools
+(`transfer_to_X` × 4 + `finish`). Each handoff tool:
+
+1. Reads the supervisor's most recent AIMessage (via `_last_ai_message(state)`).
+2. Builds a synthetic ToolMessage acknowledging the handoff (`tool_call_id=runtime.tool_call_id`).
+3. Returns `Command(goto="X", graph=Command.PARENT, update={"messages": [...]})`.
+
+`graph=Command.PARENT` is what makes the goto route the PARENT graph (not the
+supervisor's own internal agent loop).
+
+The AIMessage must be included in the update because `Command(graph=PARENT)`
+otherwise leaves it stranded in the supervisor's subgraph — and Anthropic /
+OpenAI require every tool_result to be paired with a preceding tool_use AIMessage.
 
 ### 4.4 Follow into a worker (e.g. `calibration_agent`)
 
-`F12` on the `WORKERS` map → `app/agents.py`.
+`F12` on `calibration_agent` → `app/agents.py`.
 
-A worker is a `create_agent(model=llm, tools=[ONE], system_prompt=PROMPT, name="...")` (LangChain 1.x — replaces the deprecated `langgraph.prebuilt.create_react_agent`).
-When invoked, it:
-1. Reads `state["messages"]` (full history)
-2. Calls the LLM with its prompt + tool bound
-3. If LLM emits a tool call, runs the tool, feeds result back, loops
-4. Returns the updated messages
+```python
+calibration_agent = create_agent(
+    model=get_llm(),
+    tools=[calibrate_surrogate],
+    name="calibration_agent",
+    system_prompt=CALIBRATION_PROMPT,
+    state_schema=WorkflowState,
+)
+```
 
-The result of the tool (e.g., calibration JSON) flows back through
-messages — the next worker can read it.
+`state_schema=WorkflowState` is the canonical way to make the worker share the
+parent graph's state schema — so when its tool returns `Command(update={"calibration": ...})`,
+that field is written to the parent state, not just to the worker's internal
+`AgentState`.
 
 ### 4.5 Back-trace your reading history
 
-- **Linux/Windows**: `Alt+Left`
-- **macOS**: `Ctrl+-`
+- Linux/Windows: `Alt+Left`
+- macOS: `Ctrl+-`
 
-Step back from `tools.py` → `agents.py` → `supervisor.py` → `graph.py`
-→ `run_workflow.py`. You've now seen the entire chain.
+Step back from `agents.py` → `supervisor.py` → `graph.py` → `run_workflow.py`.
 
 ---
 
 ## 5. Phase 3 — Debugger trace (the killer step, 20 min)
 
-The static read tells you WHAT the code does. The debugger shows you
-HOW the agents reason. This is the biggest jump in understanding.
+The static read tells you WHAT the code does. The debugger shows you HOW the
+agent loops actually move messages around. This is where the mental model lands.
 
 ### 5.1 Set breakpoints
 
-- `app/supervisor.py` — first line of `supervisor_node` (right before LLM call)
-- `app/supervisor.py` — after `response = supervisor.invoke(...)` (to inspect tool calls)
-- `app/tools.py` — first line of `calibrate_surrogate`
-- `app/graph.py` — first line of `build_graph`
+- `app/graph.py` — first line of `build_graph` (watch the graph compile)
+- `app/supervisor.py` — first line of `transfer_to_market_data_agent` (see the handoff tool fire)
+- `app/supervisor.py` — first line of `inject_human_after_ai` (see the middleware in action)
+- `app/tools.py` — first line of `calibrate_surrogate` (see the surrogate API call)
 
 ### 5.2 Hit F5
 
-You're paused in `build_graph`. F10 through it. Watch the graph assemble.
+Paused in `build_graph`. F10 through it — watch the graph register nodes + edges.
+F5 to continue.
 
-F5 to continue. Next pause: the supervisor's first invocation.
+Next pause: the first handoff tool invocation (when the supervisor's LLM has
+already emitted a tool call). Inspect:
 
-### 5.3 Inspect the supervisor's reasoning
+- `runtime.tool_call_id` — the ID that pairs the supervisor's AIMessage tool_call
+  with the ToolMessage we're about to produce
+- `runtime.state["messages"]` — the current message history; you should see the
+  user's HumanMessage at index 0 and an AIMessage with tool_calls right before
 
-Before the LLM call:
-- `state["messages"]` should have one HumanMessage (your question)
-- Hover `messages[0].content` to read it
+### 5.3 Inspect the middleware
 
-After the LLM call:
-- Inspect `response.tool_calls` — this is the supervisor's DECISION
-- Note `tool_calls[0]["name"]` — should be `transfer_to_market_data_agent`
+Continue until paused in `inject_human_after_ai`. Inspect:
 
-Continue (F5). Next pause: inside `calibrate_surrogate` (after market data
-returns). Inspect `quotes` — see the actual market quotes flowing.
+- `request.messages[-1]` — was this an AIMessage? If so, the middleware appends
+  a HumanMessage before calling `handler(request.override(messages=…))`
+- This injection is scoped to THIS LLM call — `request.override` doesn't write
+  back to durable state
 
-### 5.4 The "aha moment"
+### 5.4 Inspect a tool firing
 
-You'll see the supervisor make 4-5 LLM calls — one per routing decision.
-Between them, workers run (each their own LLM call + tool call). The
-**state grows** as each worker writes back.
+Continue until paused in `calibrate_surrogate`. Inspect:
 
-You can step through the full conversation and see, message by message,
-how a high-level question turns into a sequence of HTTP calls + an LLM
-summary. **This is what production agent systems look like under the
-covers.**
+- `quotes` — the list of market quote dicts the LLM passed in
+- `runtime.tool_call_id` — same role as in the handoff tools
+- The `Command` you're about to return — `update["calibration"]` will land
+  directly in `state["calibration"]` because the worker uses `state_schema=WorkflowState`
 
 ### 5.5 Look at the Call Stack
 
 While paused inside a tool:
+
 ```
-calibrate_surrogate                ← currently here
-  → tool execution                 ← LangGraph's tool runner
-    → calibration_agent            ← worker
-      → graph.invoke / .stream     ← StateGraph runtime
-        → main                     ← your CLI
+calibrate_surrogate                       ← currently here
+  → tool execution (langgraph internals)
+    → calibration_agent (compiled agent)
+      → parent StateGraph
+        → graph.stream / main
 ```
 
-Click frames to inspect that scope.
+Click frames to inspect each scope.
 
 ---
 
-## 6. Phase 4 — Tests as ground-truth documentation (5 min)
+## 6. Phase 4 — Self-test
 
-```
-Ctrl+P → tests/test_tools.py
-Ctrl+P → tests/test_e2e.py
-```
+After completing the walkthrough, answer these without re-reading:
 
-`test_tools.py` documents the @tool contracts (input shape → output shape).
-`test_e2e.py` documents the workflow contract (question → final state).
+1. **How does the supervisor route to a worker?** (Handoff tool returns
+   `Command(goto="worker_name", graph=Command.PARENT)`. The PARENT specifies that
+   `goto` routes the parent graph, not the supervisor's internal subgraph.)
+2. **Why is the last AIMessage included in each handoff tool's `update["messages"]`?**
+   (Without it, `Command(graph=Command.PARENT)` strips the supervisor's tool_call AIMessage
+   from parent state; the worker's next LLM call then sees a ToolMessage with no
+   matching tool_call, and the LLM API rejects.)
+3. **Why does each worker have `state_schema=WorkflowState`?** (So tools' `Command(update=…)`
+   writes to PARENT state's named fields, not just the worker's internal `AgentState`.)
+4. **What does the `wrap_model_call` middleware do?** (Injects a HumanMessage when
+   the supervisor's request messages list ends with an AIMessage — required by
+   Anthropic models that don't support assistant prefill.)
+5. **Why is there no conditional edge from the supervisor?** (The supervisor's
+   handoff tools' `Command(goto=…)` provides routing directly. Conditional edges
+   would only be needed if routing depended on state inspection, not on a tool call.)
+6. **What stops the workflow looping forever?** (The `finish` tool returns
+   `Command(goto=END, graph=Command.PARENT)` when the supervisor's LLM decides
+   the report agent has produced the final report.)
 
-Run them:
-```bash
-uv run pytest tests/ -v
-```
-
-A green run = the workflow does what the docs say.
-
----
-
-## 7. Useful shortcuts (memorise 5)
-
-| Shortcut | What | When |
-|---|---|---|
-| `Ctrl+P` | Quick file open | Jump anywhere |
-| `Ctrl+T` | Workspace symbol search | "Where is `build_graph`?" |
-| `F12` / `Ctrl+Click` | Go to definition | Follow imports |
-| `Alt+Left` (Linux/Win) / `Ctrl+-` (mac) | Back in reading history | Bounce back after dive |
-| `F5` / `F10` / `F11` | Continue / step-over / step-in | Active debugging |
-| `Ctrl+Shift+O` | File outline | Skim symbols |
+If you can answer 5/6, you've internalised the canonical pattern.
 
 ---
 
-## 8. Self-test — answer these without re-reading
+## 7. Where to go next
 
-1. **What's the role of `state["next"]`?** (Supervisor writes it; `route_from_supervisor` reads it to pick the next node.)
-2. **Why is `messages` Annotated with `add_messages`?** (To APPEND each node's response to the history instead of overwriting.)
-3. **What stops the supervisor from looping forever?** (`max_supervisor_steps` in Settings + `route_from_supervisor` returns END if exceeded.)
-4. **Why does each worker have exactly one tool?** (Forces specialisation; supervisor routing becomes trivial; testable in isolation.)
-5. **How does the supervisor "decide" which worker to call?** (Its LLM is bound to handoff tools via `bind_tools(..., tool_choice="any")`. The tool the LLM picks IS the routing decision.)
-6. **What happens if `calibrate_surrogate` returns `success: false`?** (CORE: nothing — the report agent surfaces it in prose. STRETCH ST1 adds a ValidatorAgent that loops back.)
-
-If you can answer 5/6 without scrolling back, you've internalised the
-project.
-
----
-
-## 9. Where to go next
-
-- **Implement STRETCH ST1** (validator agent + retry loop) — your first
-  real conditional routing
-- **Switch to `langgraph-supervisor`** (`pip install langgraph-supervisor`)
-  — compare context size + ease of customisation
-- **Add streaming** (`graph.stream(...)`) — watch agents think in real time
-- **Wrap as FastAPI** — same shape as the sibling `api_extension/`
+- **STRETCH ST1**: Validator agent — your first real conditional flow (calibration_agent
+  → validator → either back to calibration OR forward to pricing)
+- **Switch to `langgraph-supervisor` prebuilt**: replace the manual supervisor
+  with `langgraph_supervisor.create_supervisor(...)`; compare what disappears
+  (your handoff tools, the wrap_model_call middleware) and what you lose in
+  flexibility
+- **Wrap as FastAPI**: same shape as the sibling `api_extension/` — drop
+  `graph.invoke(...)` into a FastAPI route handler
 
 ---
 
@@ -353,11 +362,11 @@ project.
 
 | Time | Phase | What |
 |---|---|---|
-| 0-5 min | 1   | Read `README.md` |
-| 5-10 min | 2  | Skim file tree |
-| 10-15 min | 3.2-3.3 | `state.py` + `tools.py` |
-| 15-20 min | 3.4 | `prompts.py` |
-| 20-30 min | 4   | Trace one workflow with F12 / Alt+Left |
-| 30-50 min | 5   | Debugger walkthrough |
-| 50-55 min | 6   | Read tests |
-| 55-60 min | 8   | Self-test |
+| 0–5 min  | 1     | Read `README.md` |
+| 5–10 min | 2     | Skim file tree |
+| 10–15 min | 3.2 | `state.py` |
+| 15–20 min | 3.3 | `tools.py` |
+| 20–25 min | 3.4 | `prompts.py` |
+| 25–40 min | 4   | Trace `supervisor.py` + `agents.py` + `graph.py` |
+| 40–55 min | 5   | Debugger walkthrough |
+| 55–60 min | 6   | Self-test |

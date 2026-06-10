@@ -1,42 +1,33 @@
-"""LangChain @tool wrappers around the LMM surrogate API.
+"""@tool wrappers around the LMM surrogate API.
 
-Each tool is a Python function decorated with @tool. The LLM reads:
+Each tool is a Python function decorated with `@tool`. The LLM reads:
   1. The function name → decides "this looks relevant"
   2. The argument names + type hints → knows what to pass
-  3. The DOCSTRING → understands what the tool does and when to use it
+  3. The docstring → understands WHEN to use it + WHAT it returns
 
-So the docstring is part of your prompt to the LLM. Write it for the AI,
-not the human. Include WHEN to call this tool and WHAT it returns.
+So docstrings are part of the prompt to the LLM. Write them for the model.
 
-Design choices:
-  - Tools are SYNC (LangChain supports async too, but sync is simpler and
-    httpx supports both). For a learning capstone, sync first.
-  - Tools take an httpx.Client via a module-level singleton (see _client()).
-    This is testable: tests can swap the client via respx or a fixture.
-  - Errors bubble up as Python exceptions. LangGraph will include them
-    in the message history so the LLM can react ("retry with different
-    inputs" or "give up and report").
+Tools return `Command(update={...})` (canonical LangChain 1.x pattern) so the
+result both surfaces as a `ToolMessage` for the LLM loop AND populates the
+named state field (`market_quotes`, `calibration`, `prices`) that downstream
+agents read. `runtime: ToolRuntime` is injected automatically by LangGraph
+and gives access to `runtime.tool_call_id` for the matching ToolMessage.
 
-NB on tool naming: keep verb-first, snake_case, descriptive. The LLM uses
-the name as its primary handle. `calibrate_surrogate` is better than
-`do_calibration` or `call_calibrate_endpoint`.
+Refs:
+  - Tools (Command, ToolRuntime): https://docs.langchain.com/oss/python/langchain/tools
 """
 import json
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Annotated
 
 import httpx
-from langchain.messages import ToolMessage
-from langchain.tools import tool, ToolRuntime
+from langchain.messages import AIMessage, ToolMessage
+from langchain.tools import ToolRuntime, tool
 from langgraph.types import Command
 
 from app.config import get_settings
 
 
-# ============================================================================
-# HTTP client (module-level singleton, swappable in tests)
-# ============================================================================
 @lru_cache
 def _client() -> httpx.Client:
     """Cached httpx client pointed at the surrogate API.
@@ -48,132 +39,94 @@ def _client() -> httpx.Client:
     return httpx.Client(base_url=s.surrogate_api_url, timeout=s.api_timeout_sec)
 
 
-# ============================================================================
-# Tool 1 — fetch market quotes (local fixture, no HTTP)
-# ============================================================================
-# TODO T1 — implement fetch_market_quotes.
-# WHY: in real life this would hit a broker feed (e.g., ICE, Bloomberg).
-# For this capstone, read a stub JSON file from examples/sample_market.json.
-# This isolates the agent's WORKFLOW logic from data-source plumbing.
-#
-# PATTERN:
-#     @tool
-#     def fetch_market_quotes(num_quotes: int = 4) -> list[dict]:
-#         """Fetch today's swaption market quotes.
-#
-#         Use this FIRST in any calibration workflow — calibrate_surrogate
-#         needs market quotes as input. Returns up to `num_quotes` quotes,
-#         each shaped {"T": float, "K": float, "F": float, "iv": float}.
-#         """
-#         path = Path(__file__).resolve().parent.parent / "examples" / "sample_market.json"
-#         quotes = json.loads(path.read_text())
-#         return quotes[:num_quotes]
-# ----------------------------------------------------------------------------
+def _last_ai_message(state) -> AIMessage:
+    """Pluck the worker's most recent AIMessage — the one whose tool_calls
+    is asking for THIS tool call. Required in Command.update when crossing
+    to parent via graph=Command.PARENT so the tool_use/tool_result pairing
+    is preserved (otherwise the parent gets an orphaned ToolMessage and
+    Anthropic/OpenAI reject the next LLM call).
+    """
+    return next(
+        msg for msg in reversed(state["messages"])
+        if isinstance(msg, AIMessage)
+    )
+
+
 @tool
-def fetch_market_quotes(num_quotes: int=4, runtime: ToolRuntime=None) -> Command:
+def fetch_market_quotes(num_quotes: int = 4, *, runtime: ToolRuntime) -> Command:
     """Fetch today's swaption market quotes.
-    
-    Use this FIRST in any calibration workflow — calibrate_surrogate
-    needs market quotes as input. Returns up to `num_quotes` quotes,
-    each shaped {"T": float, "K": float, "F": float, "iv": float}.
+
+    Use this FIRST in any calibration workflow — `calibrate_surrogate` needs
+    these quotes as input. Returns up to `num_quotes` quotes, each shaped
+    `{"T": float, "K": float, "F": float, "iv": float}`. Stored to
+    `state["market_quotes"]`.
     """
     path = Path(__file__).resolve().parent.parent / "examples" / "sample_market.json"
-    quotes = json.loads(path.read_text())
+    quotes = json.loads(path.read_text())[:num_quotes]
     return Command(
         update={
-            "market_quotes": quotes[:num_quotes],
-            "messages": [ToolMessage(
-                content=json.dumps(quotes[:num_quotes]),
-                tool_call_id=runtime.tool_call_id,
-            )]
-        })
+            "market_quotes": quotes,
+            "messages": [
+                _last_ai_message(runtime.state),
+                ToolMessage(
+                    content=json.dumps(quotes),
+                    tool_call_id=runtime.tool_call_id,
+                ),
+            ],
+        },
+        graph=Command.PARENT,
+    )
 
 
-# ============================================================================
-# Tool 2 — calibrate surrogate (POST /calibrate)
-# ============================================================================
-# TODO T2 — implement calibrate_surrogate.
-# WHY: this is the headline tool — wraps POST /calibrate. The LLM should
-# call this AFTER fetch_market_quotes returns a list of quotes.
-#
-# Input shape (the surrogate API's CalibrateRequest):
-#     {"instruments": [{"T":..., "K":..., "F":...}, ...],
-#      "market_ivs":  [float, ...]}
-#
-# Output shape (CalibrateResponse):
-#     {"theta_star": {"sig_a":..., "sig_c":..., "sabr_alpha":..., "rho_inf":...},
-#      "cost": float, "success": bool, "message": str,
-#      "model_version": int,
-#      "verify": {"rmse_calib_bp": ..., "rmse_surrogate_bp": ..., "rows": [...]}}
-#
-# PATTERN:
-#     @tool
-#     def calibrate_surrogate(quotes: list[dict]) -> dict:
-#         """Calibrate the LMM surrogate to a set of market quotes.
-#
-#         Call this AFTER fetch_market_quotes. Each quote must have T, K, F, iv.
-#         Returns calibrated parameters (theta_star) + a verify report with
-#         rmse_calib_bp (lower is better; > 50 bp suggests calibration failure).
-#         """
-#         instruments = [{"T": q["T"], "K": q["K"], "F": q["F"]} for q in quotes]
-#         market_ivs  = [q["iv"] for q in quotes]
-#         r = _client().post("/calibrate",
-#                            json={"instruments": instruments, "market_ivs": market_ivs})
-#         r.raise_for_status()
-#         return r.json()
-# ----------------------------------------------------------------------------
 @tool
-def calibrate_surrogate(quotes: list[dict], runtime: ToolRuntime) -> Command:
-    """Calibrate the LMM surrogate to a set of market quotes (TODO T2)."""
+def calibrate_surrogate(quotes: list[dict], *, runtime: ToolRuntime) -> Command:
+    """Calibrate the LMM surrogate to a list of market quotes.
+
+    Call AFTER `fetch_market_quotes`. Each quote must have T, K, F, iv keys.
+    Returns calibrated `theta_star` + a `verify` report with `rmse_calib_bp`
+    (lower is better; > 50 bp suggests poor calibration). Stored to
+    `state["calibration"]`.
+    """
     instruments = [{"T": q["T"], "K": q["K"], "F": q["F"]} for q in quotes]
     market_ivs  = [q["iv"] for q in quotes]
     r = _client().post("/calibrate", json={"instruments": instruments, "market_ivs": market_ivs})
     r.raise_for_status()
+    result = r.json()
     return Command(
         update={
-            "calibration": r.json(),
-            "messages": [ToolMessage(
-                content=json.dumps(r.json()),
-                tool_call_id=runtime.tool_call_id,
-            )]
-        })
+            "calibration": result,
+            "messages": [
+                _last_ai_message(runtime.state),
+                ToolMessage(
+                    content=json.dumps(result),
+                    tool_call_id=runtime.tool_call_id,
+                ),
+            ],
+        },
+        graph=Command.PARENT,
+    )
 
 
-# ============================================================================
-# Tool 3 — price a swaption (POST /price)
-# ============================================================================
-# TODO T3 — implement price_swaption.
-# WHY: takes calibrated params + new instruments and returns IVs. Call this
-# AFTER calibrate_surrogate gives you a theta_star.
-#
-# Input shape:
-#     params: {"sig_a":..., "sig_c":..., "sabr_alpha":..., "rho_inf":...}
-#     instruments: [{"T":..., "K":..., "F":...}, ...]
-#
-# Output shape: {"ivs": [float, ...], "model_version": int}
-#
-# PATTERN:
-#     @tool
-#     def price_swaption(params: dict, instruments: list[dict]) -> dict:
-#         """Predict implied vols for new swaption instruments using calibrated params.
-#
-#         Use AFTER calibrate_surrogate. Pass theta_star as `params`.
-#         Returns one IV per instrument, in input order.
-#         """
-#         r = _client().post("/price", json={"params": params, "instruments": instruments})
-#         r.raise_for_status()
-#         return r.json()
-# ----------------------------------------------------------------------------
 @tool
-def price_swaption(params: dict, instruments: list[dict], runtime: ToolRuntime) -> Command:
-    """Predict implied vols for new swaption instruments using calibrated params (TODO T3)."""
+def price_swaption(params: dict, instruments: list[dict], *, runtime: ToolRuntime) -> Command:
+    """Predict implied vols for new swaption instruments using calibrated params.
+
+    Use AFTER `calibrate_surrogate`. Pass `theta_star` as `params`. Returns
+    one IV per instrument, in input order. Stored to `state["prices"]`.
+    """
     r = _client().post("/price", json={"params": params, "instruments": instruments})
     r.raise_for_status()
+    result = r.json()
     return Command(
         update={
-            "prices": r.json(),
-            "messages": [ToolMessage(
-                content=json.dumps(r.json()),
-                tool_call_id=runtime.tool_call_id,
-            )]
-        })
+            "prices": result,
+            "messages": [
+                _last_ai_message(runtime.state),
+                ToolMessage(
+                    content=json.dumps(result),
+                    tool_call_id=runtime.tool_call_id,
+                ),
+            ],
+        },
+        graph=Command.PARENT,
+    )
