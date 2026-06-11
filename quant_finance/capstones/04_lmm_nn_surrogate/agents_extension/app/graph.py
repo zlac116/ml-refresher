@@ -29,6 +29,7 @@ from langgraph.graph import START, StateGraph
 from app.agents import WORKERS
 from app.state import WorkflowState
 from app.supervisor import supervisor
+from app.validator import validator_node
 
 
 def build_graph():
@@ -36,10 +37,13 @@ def build_graph():
     g = StateGraph(WorkflowState)
 
     g.add_node("supervisor", supervisor)
+    g.add_node("validator_node", validator_node)
+
     for worker_name, agent in WORKERS.items():
         g.add_node(worker_name, agent)
 
     g.add_edge(START, "supervisor")
+    g.add_edge("validator_node", "supervisor")
     for worker_name in WORKERS:
         g.add_edge(worker_name, "supervisor")
 

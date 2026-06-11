@@ -33,7 +33,7 @@ def calibrate_endpoint(
         )
     """
     model, model_version = model_and_version
-    result = run_calibration(model, req.instruments, req.market_ivs)
+    result = run_calibration(model, req.instruments, req.market_ivs, req.x0)
     return CalibrateResponse(
         theta_star=Params(**result["theta_star"]),
         cost=result["cost"],

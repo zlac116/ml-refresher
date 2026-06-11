@@ -152,6 +152,7 @@ class Params(BaseModel):
 class CalibrateRequest(BaseModel):
     instruments: list[Instrument] = Field(..., min_length=1)
     market_ivs:  list[float]      = Field(..., min_length=1, examples=[[0.3591, 0.3657]])
+    x0:          list[float] | None = None
 
     # ------------------------------------------------------------------
     # TODO C — assert len(instruments) == len(market_ivs).
@@ -176,6 +177,19 @@ class CalibrateRequest(BaseModel):
                 f"len(instruments)={len(self.instruments)} != "
                 f"len(market_ivs)={len(self.market_ivs)}"
             )
+        return self
+    
+    @model_validator(mode="after")
+    def _check_x0(self) -> Self:
+        if self.x0 is None:
+            return self
+        if len(self.x0) != len(LMM_PARAM_NAMES):
+            raise ValueError(f"len(x0)={len(self.x0)} != {len(LMM_PARAM_NAMES)}")
+        for name, val, lo, hi in zip(
+            LMM_PARAM_NAMES, self.x0, LMM_PARAM_LO, LMM_PARAM_HI
+        ):
+            if not (lo <= val <= hi):
+                raise ValueError(f"{name}={val} outside [{lo}, {hi}]")
         return self
     
 

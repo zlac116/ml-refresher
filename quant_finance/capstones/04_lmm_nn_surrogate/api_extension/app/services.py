@@ -91,6 +91,7 @@ def run_calibration(
     model: torch.nn.Module,
     instruments: list[Instrument],
     market_ivs: list[float],
+    x0: list[float] | None = None,
 ) -> dict:
     """Calibrate LMM params against market IVs. Returns a dict matching
     CalibrateResponse (minus model_version, which the route adds).
@@ -127,7 +128,7 @@ def run_calibration(
     device = _device(model)
     tuples = _instruments_to_tuples(instruments)
     ivs_np = np.asarray(market_ivs, dtype=np.float64)
-    x0 = (LMM_PARAM_LO + LMM_PARAM_HI) / 2
+    x0 = (LMM_PARAM_LO + LMM_PARAM_HI) / 2 if x0 is None else x0
     bounds = (LMM_PARAM_LO, LMM_PARAM_HI)
     
     res = calibrate(model, tuples, ivs_np, x0, bounds, device)

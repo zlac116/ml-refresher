@@ -79,7 +79,7 @@ def fetch_market_quotes(num_quotes: int = 4, *, runtime: ToolRuntime) -> Command
 
 
 @tool
-def calibrate_surrogate(quotes: list[dict], *, runtime: ToolRuntime) -> Command:
+def calibrate_surrogate(quotes: list[dict], x0: list[float] | None = None, *, runtime: ToolRuntime) -> Command:
     """Calibrate the LMM surrogate to a list of market quotes.
 
     Call AFTER `fetch_market_quotes`. Each quote must have T, K, F, iv keys.
@@ -87,11 +87,19 @@ def calibrate_surrogate(quotes: list[dict], *, runtime: ToolRuntime) -> Command:
     (lower is better; > 50 bp suggests poor calibration). Stored to
     `state["calibration"]`.
     """
-    instruments = [{"T": q["T"], "K": q["K"], "F": q["F"]} for q in quotes]
-    market_ivs  = [q["iv"] for q in quotes]
-    r = _client().post("/calibrate", json={"instruments": instruments, "market_ivs": market_ivs})
+    effective_quotes = runtime.state.get("market_quotes") or quotes
+    effective_x0 = runtime.state.get("retry_x0") or x0
+
+    instruments = [{"T": q["T"], "K": q["K"], "F": q["F"]} for q in effective_quotes]
+    market_ivs  = [q["iv"] for q in effective_quotes]
+
+    if effective_x0:
+        r = _client().post("/calibrate", json={"instruments": instruments, "market_ivs": market_ivs, "x0": effective_x0})
+    else:
+        r = _client().post("/calibrate", json={"instruments": instruments, "market_ivs": market_ivs})
     r.raise_for_status()
     result = r.json()
+
     return Command(
         update={
             "calibration": result,

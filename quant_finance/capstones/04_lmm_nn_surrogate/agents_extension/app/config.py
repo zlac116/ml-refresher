@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     surrogate_api_url: str   = "http://localhost:8003"
     api_timeout_sec:   float = 30.0
 
+    # === Calibration validation parameters ===
+    rmse_accept_bp: float = 30.0
+    retry_max: int = 3
+
     # === Optional: LangSmith tracing (stretch ST3) ===
     langsmith_tracing: bool       = False
     langsmith_api_key: str | None = None

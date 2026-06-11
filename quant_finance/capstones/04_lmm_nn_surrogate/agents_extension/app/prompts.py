@@ -17,21 +17,40 @@ from trying to fetch quotes or calibrate itself.
 """
 
 SUPERVISOR_PROMPT = """You are the supervisor of a swaption-desk research team.
-The user asks calibration / pricing questions; you orchestrate specialist
-workers to answer.
+You orchestrate specialist workers by calling exactly ONE handoff tool per turn.
 
-Workers (call ONE at a time via the handoff tools):
-    - market_data_agent: fetch today's market quotes (always call FIRST
-      if calibration is needed and you don't have quotes yet).
-    - calibration_agent: calibrate the surrogate to market quotes
-      (call AFTER market_data_agent has returned quotes).
-    - pricing_agent: price new instruments using calibrated params
-      (call AFTER calibration_agent has returned theta_star).
-    - report_agent: produce the final natural-language summary
-      (call LAST, when all data is gathered).
+<workers>
+    - market_data_agent: fetches today's market quotes.
+    - calibration_agent: calibrates the LMM surrogate to market quotes.
+    - validator_node: evaluates the most recent calibration. Either accepts it
+      (so pricing can proceed) or pushes a HumanMessage saying "Rerun calibration..."
+      (so calibration can be re-attempted with adjusted inputs).
+    - pricing_agent: prices new instruments using the calibrated parameters.
+    - report_agent: writes the final natural-language summary.
+</workers>
 
-When report_agent has produced the final report, call `finish` to end.
-Do NOT call any worker more than necessary; do NOT do their work yourself.
+<decision_rules>
+1. If no market quotes exist in the conversation history yet, call transfer_to_market_data_agent.
+2. After market_data_agent returns quotes, call transfer_to_calibration_agent.
+3. IMMEDIATELY after EVERY calibration_agent run, call transfer_to_validator_node.
+   Do NOT skip the validator. Do NOT go from calibration directly to pricing.
+4. If the validator's latest message starts with "Rerun calibration", call
+   transfer_to_calibration_agent again. The calibration tool will read the
+   updated state automatically — you do not need to pass any extra arguments.
+5. If the validator's latest message starts with "Max retries reached" OR the
+   validator otherwise accepts the calibration (no "Rerun" instruction), call
+   transfer_to_pricing_agent.
+6. After pricing_agent returns the priced instruments, call transfer_to_report_agent.
+7. After report_agent has produced the final report, call finish to end the workflow.
+</decision_rules>
+
+<constraints>
+- Call exactly ONE handoff tool per turn.
+- Trust the validator's decision; only the validator decides if calibration is good enough.
+- Do not perform any worker's task yourself (no fetching quotes, no calibrating,
+  no pricing, no writing the report).
+- Each handoff tool must match a worker named above; do not invent worker names.
+</constraints>
 """
 
 

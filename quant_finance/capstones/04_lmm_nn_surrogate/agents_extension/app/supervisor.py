@@ -92,6 +92,24 @@ def transfer_to_calibration_agent(runtime: ToolRuntime) -> Command:
 
 
 @tool
+def transfer_to_validator_node(runtime: ToolRuntime) -> Command:
+    """Hand off to the validator node to evaluate calibration performed by the calibration agent."""
+    return Command(
+        goto="validator_node",
+        update={
+            "messages": [
+                _last_ai_message(runtime.state),
+                ToolMessage(
+                    content="Transferred to validator_node",
+                    tool_call_id=runtime.tool_call_id,
+                ),
+            ],
+        },
+        graph=Command.PARENT,
+    )
+
+
+@tool
 def transfer_to_pricing_agent(runtime: ToolRuntime) -> Command:
     """Hand off to the pricing agent to price new instruments."""
     return Command(
@@ -148,6 +166,7 @@ def finish(runtime: ToolRuntime) -> Command:
 HANDOFF_TOOLS = [
     transfer_to_market_data_agent,
     transfer_to_calibration_agent,
+    transfer_to_validator_node,
     transfer_to_pricing_agent,
     transfer_to_report_agent,
     finish,
