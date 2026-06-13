@@ -3,14 +3,14 @@
 Market + credit risk fundamentals. The "what could go wrong" side of
 quant finance.
 
-## Notebooks (in order)
+## Learning notes (in order)
 
-| # | Notebook | Focus |
+| # | File | Focus |
 |---|---|---|
-| 01 | `01_var_methods.ipynb` | VaR via historical / parametric / Monte Carlo; coherence properties |
-| 02 | `02_expected_shortfall.ipynb` | ES (CVaR) — why it's the coherent successor to VaR |
-| 03 | `03_credit_merton.ipynb` | Merton structural model; PD from equity prices |
-| 04 | `04_cva_intro.ipynb` | Counterparty Valuation Adjustment — the EE/EPE/CVA chain |
+| 01 | [`01_var_methods.md`](01_var_methods.md) | VaR via historical / parametric / Monte Carlo; coherence properties |
+| 02 | [`02_expected_shortfall.md`](02_expected_shortfall.md) | ES (CVaR) — why it's the coherent successor to VaR |
+| 03 | [`03_credit_merton.md`](03_credit_merton.md) | Merton structural model; PD from equity prices |
+| 04 | [`04_cva_intro.md`](04_cva_intro.md) | Counterparty Valuation Adjustment — the EE/EPE/CVA chain |
 
 ## Prerequisites
 

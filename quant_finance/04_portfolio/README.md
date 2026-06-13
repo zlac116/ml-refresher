@@ -3,15 +3,15 @@
 Portfolio construction + performance attribution. Where finance theory
 becomes optimisation in practice.
 
-## Notebooks (in order)
+## Learning notes (in order)
 
-| # | Notebook | Focus |
+| # | File | Focus |
 |---|---|---|
-| 01 | `01_markowitz.ipynb` | Mean-variance optimisation, efficient frontier |
-| 02 | `02_black_litterman.ipynb` | Bayesian view-blending on top of market priors |
-| 03 | `03_risk_parity.ipynb` | Equal-risk-contribution allocation; convex formulation |
-| 04 | `04_factor_models.ipynb` | Fama-French + custom factors; regression-based attribution |
-| 05 | `05_performance_attribution.ipynb` | Brinson-Hood-Beebower; multi-period linking |
+| 01 | [`01_markowitz.md`](01_markowitz.md) | Mean-variance optimisation, efficient frontier |
+| 02 | [`02_black_litterman.md`](02_black_litterman.md) | Bayesian view-blending on top of market priors |
+| 03 | [`03_risk_parity.md`](03_risk_parity.md) | Equal-risk-contribution allocation; convex formulation |
+| 04 | [`04_factor_models.md`](04_factor_models.md) | Fama-French + custom factors; regression-based attribution |
+| 05 | [`05_performance_attribution.md`](05_performance_attribution.md) | Brinson-Hood-Beebower; multi-period linking |
 
 ## Prerequisites
 

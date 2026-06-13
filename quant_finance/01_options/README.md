@@ -1,26 +1,26 @@
 # 01 — Options
 
 Foundational derivatives — Black-Scholes through to local + stochastic vol
-models. Heaviest notebook subject in the quant track; do this in order.
+models. Heaviest subject in the quant track; do this in order.
 
-## Notebooks (in order)
+## Learning notes (in order)
 
-| # | Notebook | Focus |
+| # | File | Focus |
 |---|---|---|
-| 00 | `00_black_scholes_intuition.ipynb` | Narrative companion — the "why" before the maths |
-| 01 | `01_black_scholes.ipynb` | BS formula derivation + pricing |
-| 02 | `02_bs_family_and_asset_classes.ipynb` | Bachelier, Black-76; rates / FX / commodities |
-| 03 | `03_greeks.ipynb` | Delta, gamma, vega, theta, rho, vanna, vomma |
-| 04 | `04_binomial_trees.ipynb` | CRR + Jarrow-Rudd; American exercise |
-| 05 | `05_monte_carlo_pricing.ipynb` | MC engine, variance reduction (antithetic, control variates) |
-| 06 | `06_implied_vol_surface.ipynb` | Smile / skew / term structure; SABR fit |
-| 07 | `07_heston.ipynb` | Heston stochastic vol — characteristic-function pricing |
+| 00 | [`00_black_scholes_intuition.md`](00_black_scholes_intuition.md) | Narrative companion — the "why" before the maths |
+| 01 | [`01_black_scholes.md`](01_black_scholes.md) | BS formula derivation + pricing |
+| 02 | [`02_bs_family_and_asset_classes.md`](02_bs_family_and_asset_classes.md) | Bachelier, Black-76; rates / FX / commodities |
+| 03 | [`03_greeks.md`](03_greeks.md) | Delta, gamma, vega, theta, rho, vanna, vomma |
+| 04 | [`04_binomial_trees.md`](04_binomial_trees.md) | CRR + Jarrow-Rudd; American exercise |
+| 05 | [`05_monte_carlo_pricing.md`](05_monte_carlo_pricing.md) | MC engine, variance reduction (antithetic, control variates) |
+| 06 | [`06_implied_vol_surface.md`](06_implied_vol_surface.md) | Smile / skew / term structure; SABR fit |
+| 07 | [`07_heston.md`](07_heston.md) | Heston stochastic vol — characteristic-function pricing |
 
 ## Cheatsheets
 
-- [`bs_cheatsheet.md`](bs_cheatsheet.md) — Black-Scholes quick reference.
-- [`bachelier_cheatsheet.md`](bachelier_cheatsheet.md) — normal-model variant (rates).
-- [`sabr_cheatsheet.md`](sabr_cheatsheet.md) — SABR smile model.
+- [`cheatsheets/bs.md`](cheatsheets/bs.md) — Black-Scholes quick reference.
+- [`cheatsheets/bachelier.md`](cheatsheets/bachelier.md) — normal-model variant (rates).
+- [`cheatsheets/sabr.md`](cheatsheets/sabr.md) — SABR smile model.
 
 ## Prerequisites
 

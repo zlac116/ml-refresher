@@ -3,26 +3,29 @@
 Bonds, curves, swaps, swaptions, LMM. Heaviest subject in the quant
 track after options — and the prerequisite for `capstones/04_lmm_nn_surrogate/`.
 
-## Notebooks (in order)
+## Learning notes (in order)
 
-| # | Notebook | Focus |
+| # | File | Focus |
 |---|---|---|
-| 01 | `01_bond_pricing.ipynb` | Discounting, YTM, accrued interest, day-count conventions |
-| 02 | `02_duration_convexity_krd.ipynb` | Modified / Macaulay duration, convexity, key-rate durations |
-| 03 | `03_curve_building.ipynb` | Bootstrapping a yield curve from market instruments |
-| 04 | `04_swaps_swaptions.ipynb` | Vanilla IRS, swaption pricing via Black-76 |
-| 05 | `05_libor_market_model.ipynb` | LMM — forward-rate dynamics, smile via SABR |
+| 01 | [`01_bond_pricing.md`](01_bond_pricing.md) | Discounting, YTM, accrued interest, day-count conventions |
+| 02 | [`02_duration_convexity_krd.md`](02_duration_convexity_krd.md) | Modified / Macaulay duration, convexity, key-rate durations |
+| 03 | [`03_curve_building.md`](03_curve_building.md) | Bootstrapping a yield curve from market instruments |
+| 04 | [`04_swaps_swaptions.md`](04_swaps_swaptions.md) | Vanilla IRS, swaption pricing via Black-76 |
+| 05 | [`05_libor_market_model.md`](05_libor_market_model.md) | LMM — forward-rate dynamics, smile via SABR |
 
-## Cheatsheets + walkthroughs
+## Cheatsheets
 
-- [`curve_building_cheatsheet.md`](curve_building_cheatsheet.md) — bootstrap quick reference.
-- [`lmm_cheatsheet.md`](lmm_cheatsheet.md) — LMM quick reference (Rebonato vol curve, correlation).
-- [`lmm_end_to_end_walkthrough.md`](lmm_end_to_end_walkthrough.md) — production calibration workflow.
-- [`sabr_end_to_end_walkthrough.md`](sabr_end_to_end_walkthrough.md) — SABR smile fitting end-to-end.
+- [`cheatsheets/curve_building.md`](cheatsheets/curve_building.md) — bootstrap quick reference.
+- [`cheatsheets/lmm.md`](cheatsheets/lmm.md) — LMM quick reference (Rebonato vol curve, correlation).
+
+## Walkthroughs
+
+- [`walkthroughs/lmm_end_to_end.md`](walkthroughs/lmm_end_to_end.md) — production LMM calibration workflow.
+- [`walkthroughs/sabr_end_to_end.md`](walkthroughs/sabr_end_to_end.md) — SABR smile fitting end-to-end.
 
 ## Prerequisites
 
-- `01_options/02_bs_family_and_asset_classes.ipynb` — Black-76 specifically.
+- `01_options/02_bs_family_and_asset_classes.md` — Black-76 specifically.
 - `06_stoch_calc/` — drift / volatility under change of measure (HJM intuition).
 
 ## Next
