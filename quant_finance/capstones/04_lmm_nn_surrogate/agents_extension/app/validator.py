@@ -78,7 +78,7 @@ def _pick_strategy(calibration: dict, strategies_tried: list[str]) -> str | None
     """
     rows      = calibration["verify"]["rows"]
     residuals = [abs(r["calib_bp"]) for r in rows]
-
+    
     outlier_detected = len(residuals) >= 2 and max(residuals) > 2 * float(np.median(residuals))
     optimizer_failed = not calibration.get("success", True)
 
