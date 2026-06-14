@@ -391,6 +391,84 @@ D(0, T_1)  -  (1 + F·δ) · D(0, T_2)  =  0
 
 **Why this is forced**: if the market quoted any `F' ≠ F` for this deposit, you'd execute the forward + the opposite of the replication and pocket the difference as a riskless profit at `t=0`. The curve `D(0, T)` therefore *forces* one unique forward rate per `(T_1, T_2)` pair.
 
+### Continuous-compounded forward $f(T_1, T_2)$ — same idea, different compounding
+
+The simple-compounded form above writes the deposit's payoff as `1 + F·δ`. The continuous-compounded form writes it as `exp(f·δ)` — same growth, expressed under continuous instead of simple compounding. Re-run the replication argument with this single substitution:
+
+$$f(T_1, T_2) = -\frac{\ln\!\left( D(0, T_2) / D(0, T_1) \right)}{T_2 - T_1} = \frac{r_2 T_2 - r_1 T_1}{T_2 - T_1}$$
+
+Plain ASCII:
+
+```
+                  -ln( D(0, T_2) / D(0, T_1) )                  r_2 * T_2  -  r_1 * T_1
+f(T_1, T_2)  =   --------------------------------     OR       --------------------------
+                          T_2 - T_1                                    T_2 - T_1
+```
+
+**Derivation (same replication, continuous compounding):**
+
+```
+At T_2, $1 deposited at T_1 grows to:
+
+  simple:        1 + F·δ              ← used above
+  continuous:    exp(f·δ)             ← used here
+```
+
+Replicate the forward deposit using zeros, exactly as before. The only line that changes is the buy-side:
+
+```
+Net cost today  =  D(0, T_1)  -  exp(f·δ) · D(0, T_2)
+```
+
+Set net = 0 and solve for `f`:
+
+```
+exp(f·δ) · D(0, T_2)  =  D(0, T_1)
+
+                          D(0, T_1)
+exp(f·δ)             =   ----------
+                          D(0, T_2)
+
+                              /  D(0, T_1)  \
+   f · δ              =  ln  (  ----------  )
+                              \  D(0, T_2)  /
+
+                          -ln( D(0, T_2) / D(0, T_1) )
+   f                  =  ------------------------------       ✓
+                                  δ
+```
+
+**The zero-rate form** (used in the exercise) drops out by substituting `D(0, T) = exp(-r·T)`:
+
+```
+        -ln( exp(-r_2·T_2) / exp(-r_1·T_1) )       -(-r_2·T_2 + r_1·T_1)        r_2·T_2 - r_1·T_1
+f  =   -------------------------------------  =   -----------------------  =  ---------------------
+                    T_2 - T_1                            T_2 - T_1                   T_2 - T_1
+```
+
+### Mapping between simple and continuous
+
+Both formulas describe the **same forward**, in different unit conventions:
+
+```
+1 + F·δ  =  exp(f·δ)            ← same payoff at T_2
+
+           exp(f·δ) - 1                ln(1 + F·δ)
+    F  =  -------------         f  =  -------------
+                δ                            δ
+```
+
+For small `f·δ`, `exp(f·δ) ≈ 1 + f·δ` so `F ≈ f`. Diverges meaningfully for long tenors or high rates.
+
+Quick numerical check from the bootstrap exercise (`r_1=3.0%, r_2=3.3%, T_1=1, T_2=2, δ=1`):
+
+```
+f  =  (0.033 * 2 - 0.030 * 1) / 1           =  0.036    (3.60%)
+F  =  (exp(0.036) - 1) / 1                  =  0.03666  (3.666%)
+```
+
+Same forward window, just relabelled.
+
 ### Instantaneous forward $f(t)$ — a single-point object
 
 $$f(t) = -\frac{\partial \ln D(0, t)}{\partial t}$$
