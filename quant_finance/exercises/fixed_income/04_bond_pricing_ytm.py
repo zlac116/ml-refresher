@@ -37,7 +37,12 @@ from scipy.optimize import brentq
 def dirty_price(face: float, coupon: float, ytm: float, T: float, freq: int) -> float:
     """Present value of all remaining cashflows assuming we're at a coupon date."""
     # TODO: implement
-    raise NotImplementedError
+    n = int(T * freq)
+    t = np.arange(1, n + 1) / freq
+    cf = np.full(n, face * coupon / freq)
+    cf[-1] += face
+    discount = (1 + ytm / freq) ** (freq * t)
+    return np.sum(cf / discount)
 
 
 # ── TASK 2 ─────────────────────────────────────────────────────────────────
@@ -47,15 +52,14 @@ def accrued_interest(face: float, coupon: float, freq: int,
 
     accrued = (face * coupon / freq) * (days_elapsed / days_in_period)
     """
-    # TODO: implement
-    raise NotImplementedError
+    return face * (coupon / freq) * days_since_last_coupon / days_in_period
 
 
 # ── TASK 3 ─────────────────────────────────────────────────────────────────
 def clean_price(dirty: float, accrued: float) -> float:
     """clean = dirty - accrued."""
     # TODO: implement
-    raise NotImplementedError
+    return dirty - accrued
 
 
 # ── TASK 4 ─────────────────────────────────────────────────────────────────
@@ -64,8 +68,9 @@ def ytm_from_dirty(dirty: float, face: float, coupon: float,
     """Solve for ytm such that dirty_price(...) == dirty. Use brentq on
     [0.001, 0.20].
     """
-    # TODO: implement
-    raise NotImplementedError
+    return brentq(lambda y: dirty_price(face, coupon, y, T, freq) - dirty, 
+           a=0.001, b=0.20
+        )
 
 
 # ── GRADING ────────────────────────────────────────────────────────────────

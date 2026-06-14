@@ -12,6 +12,7 @@ track after options — and the prerequisite for `capstones/04_lmm_nn_surrogate/
 | 03 | [`03_curve_building.md`](03_curve_building.md) | Bootstrapping a yield curve from market instruments |
 | 04 | [`04_swaps_swaptions.md`](04_swaps_swaptions.md) | Vanilla IRS, swaption pricing via Black-76 |
 | 05 | [`05_libor_market_model.md`](05_libor_market_model.md) | LMM — forward-rate dynamics, smile via SABR |
+| 06 | [`06_loan_amortisation.md`](06_loan_amortisation.md) | Annuity formula, amortisation schedules, mortgage duration, prepayment risk |
 
 ## Cheatsheets
 

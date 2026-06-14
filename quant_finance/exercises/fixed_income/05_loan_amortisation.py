@@ -41,7 +41,6 @@ def monthly_payment(principal: float, annual_rate_nominal: float, years: int) ->
 
     Use the annuity formula with r = annual_rate_nominal / 12 and n = years*12.
     """
-    # TODO: implement
     raise NotImplementedError
 
 
