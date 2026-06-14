@@ -49,22 +49,23 @@ def _cashflows(face: float, coupon: float, ytm: float, T: float, freq: int):
 # ── TASK 1 ─────────────────────────────────────────────────────────────────
 def bond_price(face: float, coupon: float, ytm: float, T: float, freq: int) -> float:
     """Price a fixed-coupon bond at YTM (annualised, compounded `freq` times)."""
-    # TODO: implement
-    raise NotImplementedError
+    t, cf, ytm = _cashflows(face, coupon, ytm, T, freq)
+    discount = (1 + ytm) ** (freq * t)
+    return np.sum(cf / discount)
 
 
 # ── TASK 2 ─────────────────────────────────────────────────────────────────
 def macaulay_duration(face: float, coupon: float, ytm: float, T: float, freq: int) -> float:
     """Macaulay duration in years."""
-    # TODO: implement
-    raise NotImplementedError
+    t, cf, ytm = _cashflows(face, coupon, ytm, T, freq)
+    pv = cf / (1 + ytm) ** (t * freq)
+    return np.sum(t * pv) / np.sum(pv)
 
 
 # ── TASK 3 ─────────────────────────────────────────────────────────────────
 def modified_duration(face: float, coupon: float, ytm: float, T: float, freq: int) -> float:
     """Modified duration = Macaulay / (1 + y/freq)."""
-    # TODO: implement
-    raise NotImplementedError
+    return macaulay_duration(face, coupon, ytm, T, freq) / (1 + ytm/freq)
 
 
 # ── TASK 4 ─────────────────────────────────────────────────────────────────
@@ -74,15 +75,18 @@ def convexity(face: float, coupon: float, ytm: float, T: float, freq: int) -> fl
     Conv = sum_i PV_i * k_i * (k_i + 1) / (P * (1 + y/freq)^2 * freq^2)
     where k_i = i (the period index, 1..n).
     """
-    # TODO: implement
-    raise NotImplementedError
+    t, cf, y_per = _cashflows(face, coupon, ytm, T, freq)
+    pv = cf / (1 + y_per) ** (freq * t)
+    P = np.sum(pv)
+    return np.sum(pv * t *(t + 1/freq)) / np.sum(P *(1 + y_per)**2)
+
+    
 
 
 # ── TASK 5 ─────────────────────────────────────────────────────────────────
 def predict_dprice(price: float, mod_dur: float, convex: float, dy: float) -> float:
     """Predicted dP = -mod_dur * dy * P + 0.5 * convex * dy^2 * P."""
-    # TODO: implement
-    raise NotImplementedError
+    return -mod_dur * dy * price + 0.5 * convex * dy**2 * price
 
 
 # ── GRADING ────────────────────────────────────────────────────────────────

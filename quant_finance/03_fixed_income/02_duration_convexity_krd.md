@@ -20,17 +20,86 @@ The bond price $P(y)$ as a function of yield $y$ admits a Taylor expansion:
 
 $$\frac{\Delta P}{P} \approx -D \cdot \Delta y + \frac{1}{2} C \cdot (\Delta y)^2$$
 
-where:
+In plain ASCII:
 
-- **Modified duration** $D = -\dfrac{1}{P} \cdot \dfrac{\partial P}{\partial y}$ — first-order yield sensitivity (years).
-- **Convexity** $C = \dfrac{1}{P} \cdot \dfrac{\partial^2 P}{\partial y^2}$ — second-order, always positive for vanilla bonds.
+```
+dP/P   ≈   -D * dy   +   (1/2) * C * dy^2
+```
 
-**Macaulay duration** is the weighted-average time to cash flow, with weights = PV of each cash flow / total price. **Modified duration** = Macaulay duration / (1 + y/m), and is the one that maps directly to price sensitivity.
+`D` is duration (the slope, in % per yield unit). `C` is convexity (the curvature, in %/yield² units).
+
+### The four formulas explicitly (closed form)
+
+```
+                  sum_i  t_i * PV_i
+Macaulay D   =   --------------------                 (units: years)
+                          P
+
+Modified D   =   Macaulay D  /  (1 + y/m)             (units: years; also "% per yield unit")
+
+                  sum_i  t_i * (t_i + 1/m) * PV_i
+Convexity    =   ----------------------------------   (units: years²)
+                       P  *  (1 + y/m)^2
+
+DV01         =   Modified D  *  P  *  0.0001          (units: $ per bp per $ of face)
+```
+
+where for each cashflow `i`:
+- `t_i`  = time of cashflow in YEARS (e.g. 0.5, 1.0, 1.5, ...)
+- `PV_i` = `cf_i  /  (1 + y/m)^(m * t_i)`   ← present value of cashflow i
+- `P`    = `sum_i PV_i`                     ← bond price = sum of all PVs
+- `y`    = YTM (annualised, decimal: 0.05 for 5%)
+- `m`    = coupons per year (semi-annual → m=2; annual → m=1)
+
+### Where each formula comes from
+
+`Macaulay D` is just the weighted-average time you wait for cashflows, with PVs as weights. (No calculus.)
+
+`Modified D` and `Convexity` are the first and second derivatives of price with respect to yield, both divided by `P` to make them percentages:
+
+$$D = -\dfrac{1}{P} \cdot \dfrac{\partial P}{\partial y}  \qquad C = \dfrac{1}{P} \cdot \dfrac{\partial^2 P}{\partial y^2}$$
+
+Plain ASCII:
+
+```
+Modified D   =   -(1/P)  *  dP/dy        ← slope
+Convexity    =    (1/P)  *  d²P/dy²      ← curvature
+```
+
+When you differentiate `P(y) = sum cf_i / (1+y/m)^(m·t_i)` once with respect to `y`, the `t_i * PV_i` weighting falls out (giving Macaulay). When you differentiate twice, the `t_i * (t_i + 1/m) * PV_i` weighting falls out (giving Convexity). The extra `(1+y/m)` and `(1+y/m)^2` factors come from the chain rule on the discount term.
 
 ### Dollar duration / DV01
 
-- **Dollar duration** = $D \cdot P$ — sensitivity in price units per 1.0 yield change.
+- **Dollar duration** = $D \cdot P$ — sensitivity in $ per 1.0 (100%) yield change.
 - **DV01** (dollar value of 1 bp) = $D \cdot P \cdot 0.0001$ — sensitivity to a 1 bp move.
+
+In plain ASCII:
+
+```
+Dollar duration  =  D * P                  ($ per yield unit)
+DV01             =  D * P * 0.0001         ($ per bp per $ face)
+```
+
+### Formula → code mapping
+
+The formulas above translate to numpy line-for-line. For a generic helper that returns `(times, cf, y_per)` where `y_per = y/m`:
+
+```python
+t, cf, y_per = cash_flows_and_times(face, coupon, ytm, T, freq)
+                                          # t        = times in years     [0.5, 1.0, 1.5, ...]
+                                          # cf       = cashflow at each   [coupon, coupon, ..., coupon+face]
+                                          # y_per    = ytm / freq         (per-period yield)
+
+pv     = cf / (1 + y_per) ** (freq * t)   # PV_i, vectorised over all cashflows
+P      = np.sum(pv)                       # bond price
+
+D_mac  = np.sum(t * pv) / P                                # Macaulay duration
+D_mod  = D_mac / (1 + y_per)                               # Modified duration
+C      = np.sum(t * (t + 1/freq) * pv) / (P * (1 + y_per)**2)   # Convexity
+DV01   = D_mod * P * 0.0001                                # $ per bp per $ face
+```
+
+Each python line mirrors one formula line above. Read top-to-bottom in either column.
 
 ## Setup
 

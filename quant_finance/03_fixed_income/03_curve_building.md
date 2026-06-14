@@ -330,17 +330,66 @@ This is what gets quoted in the market and paid on swap floating legs.
 
 $$F(T_1, T_2) = \frac{1}{\delta} \left( \frac{D(0, T_1)}{D(0, T_2)} - 1 \right), \quad \delta = T_2 - T_1$$
 
+Plain ASCII:
+
+```
+                1     D(0, T_1)
+F(T_1, T_2) = ----  ( ---------  -  1 )                where δ = T_2 - T_1
+                δ     D(0, T_2)
+```
+
+(In LIBOR-style notation for a swap accrual period this is written:
+`L_i = (1/δ_i) * (D(0, T_{i-1}) / D(0, T_i)  -  1)` — exact same formula,
+just with `T_{i-1}, T_i` instead of `T_1, T_2`.)
+
 **Where this comes from** (no-arbitrage replication argument):
 
-Imagine a forward deposit you agree on today: at $T_1$ you deposit \$1, at $T_2$ you receive $1 + F\delta$. The contract has zero cost today.
+Imagine a **forward deposit** agreed today: at `T_1` you deposit \$1, at `T_2` you receive `1 + F·δ`. The contract has zero cost today (it's a pure agreement, no money changes hands now). The question: what value of `F` makes this fair?
 
-Replicate it using today's bonds:
-- "Pay \$1 at $T_1$" → sell a $T_1$ zero-coupon bond with face \$1: receive $D(0, T_1)$ today, owe \$1 at $T_1$
-- "Receive $1 + F\delta$ at $T_2$" → buy $T_2$ bonds with face $1 + F\delta$: pay $(1 + F\delta) \cdot D(0, T_2)$ today
+**Step 1 — replicate the two cashflows using today's zero-coupon bonds:**
 
-Net cost today: $D(0, T_1) - (1 + F\delta) \cdot D(0, T_2)$.
+```
+Forward-deposit cashflow                Replicate with bonds today
 
-Since the forward deposit costs zero, the replication must too. Setting the net to zero and solving for $F$ gives the formula above. **Any other $F$ creates a free profit** — that's why the curve forces this unique fair rate.
+  Pay  $1  at T_1            ─────►   Sell a T_1 zero (face $1)
+                                       ─ receive D(0, T_1) today
+                                       ─ owe $1 at T_1                  ✓
+
+  Receive  (1 + F·δ)  at T_2 ─────►   Buy T_2 zeros with face (1 + F·δ)
+                                       ─ pay (1 + F·δ) · D(0, T_2) today
+                                       ─ receive (1 + F·δ) at T_2       ✓
+```
+
+**Step 2 — net cost today of the replication:**
+
+```
+Net today  =  D(0, T_1)  -  (1 + F·δ) · D(0, T_2)
+              \_________/    \____________________/
+              from selling     from buying
+              the T_1 zero     the T_2 zeros
+```
+
+**Step 3 — set it to zero (because the forward deposit also has zero cost today, and no-arbitrage means replications of zero-cost contracts must also cost zero):**
+
+```
+D(0, T_1)  -  (1 + F·δ) · D(0, T_2)  =  0
+
+(1 + F·δ) · D(0, T_2)  =  D(0, T_1)
+
+           D(0, T_1)
+1 + F·δ = ----------
+           D(0, T_2)
+
+           D(0, T_1)
+    F·δ = ----------  -  1
+           D(0, T_2)
+
+           1    /  D(0, T_1)        \
+    F  = ---- (  ----------  -  1  )       ✓
+           δ    \  D(0, T_2)        /
+```
+
+**Why this is forced**: if the market quoted any `F' ≠ F` for this deposit, you'd execute the forward + the opposite of the replication and pocket the difference as a riskless profit at `t=0`. The curve `D(0, T)` therefore *forces* one unique forward rate per `(T_1, T_2)` pair.
 
 ### Instantaneous forward $f(t)$ — a single-point object
 
