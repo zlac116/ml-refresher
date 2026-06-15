@@ -41,7 +41,9 @@ def monthly_payment(principal: float, annual_rate_nominal: float, years: int) ->
 
     Use the annuity formula with r = annual_rate_nominal / 12 and n = years*12.
     """
-    raise NotImplementedError
+    r = annual_rate_nominal / 12 # monthly rate
+    n = years * 12 # number of payments
+    return principal * r * ((1 + r)**n) / ((1 + r)**n - 1)
 
 
 # ── TASK 2 ─────────────────────────────────────────────────────────────────
@@ -54,15 +56,30 @@ def amortisation_schedule(principal: float, annual_rate_nominal: float,
 
     Loop is fine — the schedule is recursive.
     """
-    # TODO: implement
-    raise NotImplementedError
+    n = years * 12
+    r = annual_rate_nominal / 12
+    pmt = principal * r * ((1 +r)**n) / ((1 + r)**n - 1)
+
+    result = {
+        "balance": np.zeros(n + 1),
+        "interest": np.zeros(n),
+        "principal": np.zeros(n)
+    }
+
+    result["balance"][0] = principal
+
+    for i in range(n):
+        result["interest"][i] = result["balance"][i] * r
+        result["principal"][i] = pmt - result["interest"][i]
+        result["balance"][i + 1] = result["balance"][i] - result["principal"][i]
+
+    return result
 
 
 # ── TASK 3 ─────────────────────────────────────────────────────────────────
 def effective_annual_rate(annual_rate_nominal: float, freq: int = 12) -> float:
     """(1 + r_nominal/freq)^freq - 1."""
-    # TODO: implement
-    raise NotImplementedError
+    return (1 + annual_rate_nominal / freq)**freq - 1
 
 
 # ── GRADING ────────────────────────────────────────────────────────────────
