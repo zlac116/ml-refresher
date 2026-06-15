@@ -13,6 +13,7 @@ track after options — and the prerequisite for `capstones/04_lmm_nn_surrogate/
 | 04 | [`04_swaps_swaptions.md`](04_swaps_swaptions.md) | Vanilla IRS, swaption pricing via Black-76 |
 | 05 | [`05_libor_market_model.md`](05_libor_market_model.md) | LMM — forward-rate dynamics, smile via SABR |
 | 06 | [`06_loan_amortisation.md`](06_loan_amortisation.md) | Annuity formula, amortisation schedules, mortgage duration, prepayment risk |
+| 07 | [`07_deposit_fra.md`](07_deposit_fra.md) | Money-market simple interest, ACT/360 vs 365, FRA no-arb derivation, settlement, multi-curve |
 
 ## Cheatsheets
 

@@ -50,7 +50,6 @@ def interp_par_rates(tenors: np.ndarray, par_rates: np.ndarray,
     return np.interp(all_years, tenors, par_rates)
 
 
-
 # ── TASK 2 ─────────────────────────────────────────────────────────────────
 def bootstrap_discount_factors(par_rates: np.ndarray,
                                deltas: np.ndarray) -> np.ndarray:

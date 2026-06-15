@@ -30,16 +30,26 @@ python 01_black_scholes_pricer.py        # raises NotImplementedError until you 
 | 03 | `03_implied_vol_newton.py`            | Implied vol via Newton-Raphson                     |
 | 04 | `04_delta_gamma_hedge_pnl.py`         | Delta-gamma-theta P&L explain                      |
 
-### `fixed_income/` — 6 exercises
+### `fixed_income/` — 14 exercises (full linear-FI coverage)
+
+In pedagogical order: foundation → risk metrics → money market → curves → swap pricing → loans.
 
 | #  | File                                  | Focus                                              |
 |----|---------------------------------------|----------------------------------------------------|
-| 01 | `01_yield_curve_bootstrap.py`         | Bootstrap discount curve from par swap rates       |
-| 02 | `02_duration_convexity.py`            | Macaulay/modified duration + convexity             |
-| 03 | `03_forward_rates.py`                 | Forward rates from discount factors                |
-| 04 | `04_bond_pricing_ytm.py`              | Clean/dirty/accrued + YTM back-out via brentq      |
-| 05 | `05_loan_amortisation.py`             | Fixed-rate mortgage schedule + effective rate      |
-| 06 | `06_deposit_fra.py`                   | ACT/360 money-market deposit + 3x6 FRA pricing     |
+| 01 | `01_bond_pricing_ytm.py`              | Clean/dirty/accrued + YTM back-out via brentq      |
+| 02 | `02_day_count_conventions.py`         | 30/360, ACT/360, ACT/365, ACT/ACT — cash differences |
+| 03 | `03_duration_convexity.py`            | Macaulay/modified duration + convexity             |
+| 04 | `04_duration_hedging.py`              | Two-bond DV01 hedge + Key Rate Durations           |
+| 05 | `05_deposit_fra.py`                   | ACT/360 money-market deposit + 3x6 FRA pricing     |
+| 06 | `06_fra_settlement.py`                | FRA discount-at-fixing settlement payment          |
+| 07 | `07_forward_rates.py`                 | Forward rates from discount factors                |
+| 08 | `08_yield_curve_bootstrap.py`         | Bootstrap discount curve from par swap rates (with deltas) |
+| 09 | `09_curve_multi_instrument.py`        | Deposits + swaps; log-linear-in-D vs linear-in-zero interp |
+| 10 | `10_annuity_swap_rate.py`             | Annuity factor A = Σ δ·D; par rate c = (1−D)/A     |
+| 11 | `11_swap_pricing.py`                  | IRS PV (fixed + float) + par rate + DV01 of swap   |
+| 12 | `12_forward_starting_swap.py`         | 2y×3y forward swap; par forward rate               |
+| 13 | `13_loan_amortisation.py`             | Fixed-rate mortgage schedule + effective rate      |
+| 14 | `14_mortgage_duration.py`             | Mac D of amortising loan ≈ ½ bullet bond           |
 
 ### `futures/` — 3 exercises
 
