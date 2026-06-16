@@ -19,6 +19,7 @@ track after options — and the prerequisite for `capstones/04_lmm_nn_surrogate/
 
 - [`cheatsheets/curve_building.md`](cheatsheets/curve_building.md) — bootstrap quick reference.
 - [`cheatsheets/lmm.md`](cheatsheets/lmm.md) — LMM quick reference (Rebonato vol curve, correlation).
+- [`cheatsheets/market_quoting.md`](cheatsheets/market_quoting.md) — Bloomberg/Reuters quote conventions → model inputs (Treasury 32nds, T-bill discount vs investment yield, SOFR futures, spreads, etc.)
 
 ## Walkthroughs
 

@@ -30,9 +30,9 @@ python 01_black_scholes_pricer.py        # raises NotImplementedError until you 
 | 03 | `03_implied_vol_newton.py`            | Implied vol via Newton-Raphson                     |
 | 04 | `04_delta_gamma_hedge_pnl.py`         | Delta-gamma-theta P&L explain                      |
 
-### `fixed_income/` — 14 exercises (full linear-FI coverage)
+### `fixed_income/` — 16 exercises (full linear-FI coverage + market quoting)
 
-In pedagogical order: foundation → risk metrics → money market → curves → swap pricing → loans.
+In pedagogical order: foundation → risk metrics → money market → curves → swap pricing → loans → market quoting.
 
 | #  | File                                  | Focus                                              |
 |----|---------------------------------------|----------------------------------------------------|
@@ -50,6 +50,10 @@ In pedagogical order: foundation → risk metrics → money market → curves �
 | 12 | `12_forward_starting_swap.py`         | 2y×3y forward swap; par forward rate               |
 | 13 | `13_loan_amortisation.py`             | Fixed-rate mortgage schedule + effective rate      |
 | 14 | `14_mortgage_duration.py`             | Mac D of amortising loan ≈ ½ bullet bond           |
+| 15 | `15_market_quote_parsing.py`          | Bloomberg/Reuters → model inputs (32nds, T-bill yields, SOFR futures) |
+| 16 | `16_relative_value_spreads.py`        | G-spread, Z-spread, ASW spread for corp bond vs Treasury / swap curve |
+
+**Companion reference**: [`03_fixed_income/cheatsheets/market_quoting.md`](../../03_fixed_income/cheatsheets/market_quoting.md) — one-page lookup translating screen quotes into model inputs.
 
 ### `futures/` — 3 exercises
 
