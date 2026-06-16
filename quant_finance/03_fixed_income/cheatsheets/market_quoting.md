@@ -26,42 +26,62 @@ conversion formula, and the exercise that consumes it.
 
 ### 📊 Worked example — Quote to fair value
 
-**Screen quote:**
+**The quote (Bloomberg DES page):**
+
 ```
-T 4.25 11/15/40       102-16+    yield 4.071%    settle T+1
-bid 102-16   ask 102-17    mid 102-16+
+T 4.25 11/15/40         PX_MID   102-16+  (102.515625)
+                        YLD_MID   4.019%
+                        DUR_MOD   12.7
 ```
 
-**Decoded:**
+**Two formulas — one for the quote, one for your model:**
+
 ```
-ticker         :  T 4.25 11/15/40  (4.25% coupon, matures Nov 15, 2040)
-price          :  102-16+   →  102 + 16/32 + 1/64  =  102.515625
-yield (BEY)    :  4.071%    (semi-annual, ACT/ACT)
-freq           :  2         face = 100        remaining T ≈ 14.5 years
+Bloomberg's price (YTM, single rate):
+
+                 n
+  P(y)  =  sum  c_i  /  (1 + y/m)^i      with y = 4.019%, m = 2, c_n includes face
+                 i=1
+
+
+Your model's price (curve, per-cashflow):
+
+                 n
+  P_model = sum  c_i  ×  D(0, t_i)       with D(0, t_i) = exp(-z(t_i) × t_i)
+                 i=1                     from YOUR bootstrap (exercises 08, 09)
 ```
 
-**Self-consistency check:**
-```
-Take quoted yield 4.071% and reprice:
-  PV = sum_{i=1..29}  (4.25/2) / (1 + 0.04071/2)^i  +  100 / (1 + 0.04071/2)^29
-     ≈ 102.51                                       ← matches quoted price ✓
+**Numerical check — Bloomberg's yield reprices its own quote:**
 
-Or take quoted price 102.515625 and back out YTM:
-  >>> ytm_from_dirty(102.515625, face=100, coupon=0.0425, T=14.5, freq=2)
-  0.04071                                           ← matches quoted yield ✓
+```python
+>>> ytm_from_dirty(102.515625, face=100, coupon=0.0425, T=14.5, freq=2)
+0.04019        ← matches Bloomberg's 4.019% ✓
 ```
 
-**Compare to your model:**
-```
-If YOUR model (with your own discount curve) prices it at 102.40 clean:
-  gap                =  102.515625 - 102.40        =  +0.1156 per $100 face
-  on $10M position   =  $10M / 100 * 0.1156        =  $11,563
-  DV01 of 14.5y bond ≈ 12.7 → in bp terms          ≈ 9.1 bp
+**Your fair value off your curve** (illustrative — substitute your bootstrap):
 
-Verdict: "the bond is 9 bp rich on the screen vs my curve."
+```python
+times = np.arange(1, 30) * 0.5           # 29 semi-annual dates
+cf    = np.full(29, 4.25/2); cf[-1] += 100
+zeros = your_curve(times)                 # from exercise 08 / 09
+D     = np.exp(-zeros * times)
+P_model = (cf * D).sum()                  # → 102.40
 ```
 
-**Feed to your code:** parsed decimal price → `01_bond_pricing_ytm.py` (`freq=2`, `face=100`) → DV01 + gap calc via `03_duration_convexity.py`.
+**Gap:**
+
+```
+Bloomberg mid     =  102.515625
+P_model           =  102.40
+gap / $100 face   =   0.1156
+DV01 (D_mod×P×1e-4) = 0.1302 / bp
+gap in bp         =   0.1156 / 0.1302   ≈   9 bp
+on $10M face      =   $11,560
+```
+
+**Verdict:** bond is ~9 bp rich on the screen vs your curve.
+
+**Feed to your code:** `01_bond_pricing_ytm.py` (YTM round-trip) + `03_duration_convexity.py` (DV01) + your bootstrap from `08`/`09`.
 
 ---
 
@@ -86,41 +106,58 @@ investment yield =  (F - P) / P  *  365/days       ← BEY, comparable to bonds
 
 ### 📊 Worked example — Quote to fair value
 
-**Screen quote:**
+**The quote (Bloomberg DES page):**
+
 ```
-3M T-bill (91 days)   discount 5.00%    investment 5.18%    price 98.736
+3M T-bill (91 days)     PX_LAST   98.736
+                        DISC_YLD   5.00%
+                        BEY        5.13%
 ```
 
-**Decoded — two yields for the same bill:**
+**Two formulas — one for the quote, one for your model:**
+
 ```
-discount yield     =  5.00%     ← ACT/360 banker's convention
-investment yield   =  5.18%     ← ACT/365 BEY, comparable to coupon bonds
-price              =  100 × (1 - 0.05 × 91/360)  =  98.7361
+Bloomberg's price (discount yield, ACT/360):
+
+  P  =  face × (1 - dy × days/360)        with dy = 5%, days = 91
+
+  BEY (investment yield, ACT/365):
+
+  BEY  =  (face - P) / P × 365 / days
+
+
+Your model's price (curve):
+
+  P_model  =  face × D(0, T)              with D(0, T) = exp(-z(T) × T)
+                                          from YOUR bootstrap
 ```
 
-**Self-consistency check (round-trip):**
-```
-From discount yield → price:
-   price  =  face × (1 - dy × d/360)
-          =  100  × (1 - 0.05 × 91/360)
-          =  98.7361                     ← matches quoted price ✓
+**Numerical check — round-trip:**
 
-From price → BEY:
-   BEY    =  (face - price) / price × 365 / days
-          =  (1.2639 / 98.7361) × (365/91)
-          =  5.135%                       ← matches quoted investment yield to ~bp ✓
+```
+dy=5%, 91d   →   P = 100 × (1 − 0.05 × 91/360) = 98.7361   ✓
+P=98.7361    →   BEY = (1.2639/98.7361) × 365/91 = 5.13%   ✓
 ```
 
-**Compare to your model:**
-```
-If your model curve gives D(91d):  fair price = D(91d) × 100 = 98.74
-Quoted price:                                                   98.7361
-Gap per $100:                                                    0.0039
-On $10M:                                                            $390
-In yield bp:                                                       ~1.6 bp
+**Your fair value off your curve** (illustrative):
+
+```python
+z_91d = your_curve(91/365)            # e.g. 5.10%
+D     = np.exp(-z_91d * 91/365)
+P_model = 100 * D                       # → 98.7365
 ```
 
-**Feed to your code:** `15_market_quote_parsing.py` (tasks 2-3) for the yield conversions.
+**Gap:**
+
+```
+Bloomberg price   =  98.7361
+P_model           =  98.7365
+gap / $100 face   =  -0.0004        →  effectively zero
+on $10M           =  ~$40
+in yield bp       =  ~0.2 bp
+```
+
+**Feed to your code:** `15_market_quote_parsing.py` (tasks 2-3).
 
 ---
 
@@ -147,34 +184,57 @@ P&L on 100 contracts × +5 bp move:
 
 ### 📊 Worked example — Quote to fair value
 
-**Screen quote:**
+**The quote (Bloomberg page SR3):**
+
 ```
-SR3 Z6     95.55      (Dec 2026 SOFR future)
+SR3 Z6 (Dec 2026 SOFR future)    PX_LAST   95.55
+                                  Implied   4.45%
+                                  Tick      $25/bp
 ```
 
-**Decoded:**
-```
-implied 3M rate    =  100 - 95.55  =  4.45%
-contract month     =  Dec 2026 (Z = December IMM)
-notional           =  $1M  per contract
-tick value         =  $25 per bp per contract
-```
+**Two formulas:**
 
-**Compare to your model:**
 ```
-Your bootstrapped curve has a 3M forward rate starting Dec 2026 — call it f_dec26.
+Bloomberg's implied rate:
 
-If your curve says f_dec26 = 4.40%:
-   model fair price  =  100 - 4.40 = 95.60
-   quoted price      =  95.55  (rate of 4.45%)
-   gap in rate       =  5 bp
+  rate_implied  =  (100 - quoted_price) / 100      = 4.45%
 
-Trade idea: buy 100 SOFR Dec26 contracts at 95.55.
-   PnL if rate converges to 4.40%:
-     100 contracts × 5 bp × $25/bp = $12,500
+
+Your model's fair rate (forward from your curve):
+
+  D(0, T_1)             3M discount factor (start of period)
+  D(0, T_2)             6M discount factor (end of period)
+  δ                     = (T_2 - T_1) in years  (≈ 0.25)
+
+  f_fair  =  (1/δ) × (D(0,T_1) / D(0,T_2) - 1)      ← simple-comp forward
 ```
 
-**Caveat — convexity adjustment**: the future's *rate* differs from the matched FRA rate by roughly `½σ²T₁T₂`. For 6M out the bias is < 1 bp; for 5y+ futures it's 5–20 bp. **Adjust the future's rate down before comparing it to your FRA-based curve forward**, otherwise you'll see a fake mispricing.
+**Numerical check (futures price ↔ rate):**
+
+```
+quoted 95.55  →  implied  =  (100 − 95.55)/100  =  4.45%   ✓
+```
+
+**Your fair rate** (illustrative — your curve gives `f_dec26 = 4.40%`):
+
+```python
+D_t1, D_t2 = your_curve(T1=0.25), your_curve(T2=0.50)
+f_fair = (D_t1/D_t2 - 1) / (T2-T1)         # → 4.40%
+P_model = 100 - f_fair*100                  # → 95.60
+```
+
+**Gap:**
+
+```
+Quoted price   =  95.55     (rate 4.45%)
+P_model        =  95.60     (rate 4.40%)
+gap in rate    =   5 bp     (screen is rich in price → low in rate)
+
+P&L on 100 contracts if rate converges to 4.40%:
+  100 × 5 bp × $25/bp  =  $12,500
+```
+
+**⚠ Convexity caveat**: futures rate differs from the FRA rate by `½σ²T₁T₂`. For 6M out the bias is < 1 bp; for 5y+ futures it's 5–20 bp. **Subtract the bias before comparing**, or you'll mistake the convexity adjustment for a mispricing.
 
 **Feed to your code:** `15_market_quote_parsing.py` (tasks 4-5).
 
@@ -192,53 +252,55 @@ Trade idea: buy 100 SOFR Dec26 contracts at 95.55.
 
 ### 📊 Worked example — Quote to fair value
 
-**Screen quote:**
-```
-XYZ 6.000 06/15/2031     98.50 clean    Z-spread +120 bp    G-spread +98 bp
-                          bid 98.45      ask 98.55           mid 98.50
-```
+**The quote (Bloomberg DES page):**
 
-**Decoded:**
 ```
-coupon       =  6.00%    annual (illustrative for round numbers)
-maturity     =  Jun 15, 2031 — about 5 years out
-clean price  =  98.50
-Z-spread     =  120 bp above the zero curve
-G-spread     =   98 bp above the 5y Treasury par rate
+XYZ 6.000 06/15/2031    PX_MID    98.50 clean
+                        ZSPRD    +120 bp
+                        GSPRD     +98 bp
+                        DUR_MOD    4.19
 ```
 
-**Self-consistency check:**
+**Two formulas:**
+
 ```
-Plug 120 bp Z-spread + your zero curve into:
-   price_implied  =  sum_i  cf_i × exp(-(z(t_i) + 0.012) × t_i)
-                   =  96.82       (from exercise 16 reference impl)
+Bloomberg's implied price (Z-spread on curve):
 
-But dealer's quoted clean price is 98.50.  Conflict!  Three options:
-   - the dealer's price is stale,
-   - the dealer's curve differs from yours (different OIS bootstrap),
-   - there's a wedge between bid/ask/mid.
+  P(s)  =  sum  c_i × exp(-(z(t_i) + s) × t_i)     with s = quoted Z-spread
 
-Path forward:
-   Compute YOUR Z-spread from the quoted clean price 98.50:
-     >>> z_spread(98.50, face=100, coupon_rate=0.06, T=5, ...)
-     0.00928       ← 92.79 bp on YOUR curve
+
+Your model's Z-spread (back out s from market price):
+
+  Find s such that:    sum  c_i × exp(-(z(t_i) + s) × t_i)  =  market_price
+                       (solve via brentq)
 ```
 
-**Compare to your model:**
-```
-3 numbers in play:
-   dealer's price       :  98.50
-   dealer's Z-spread    :  120 bp
-   your Z-spread        :  92.79 bp                ← bond is 27 bp RICH vs your curve
+**Numerical check** (5y, 6% annual coupon, market 98.50, your zero curve from exercises 08/09):
 
-Spread duration ≈ Modified D of the bond ≈ 4.5 years.
-27 bp × $100k face × 4.5 × 0.0001  =  $122 / $100k face
-On $5M:                              $6,075
-
-Verdict: "the bond is 27 bp rich on the dealer's screen vs my curve."
+```python
+>>> z_spread(market_price=98.50, face=100, coupon_rate=0.06, T=5, zeros=..., tenors=...)
+0.00928     ← 92.79 bp on YOUR curve
 ```
 
-**Feed to your code:** parsed price → `01_bond_pricing_ytm.py` (YTM back-out) → `16_relative_value_spreads.py` (all three spreads).
+**Gap (dealer's Z=120 bp vs yours = 92.79 bp):**
+
+```
+dealer's Z-spread   =  120 bp
+your Z-spread       =   92.79 bp
+gap in spread       =   27 bp           ← bond is RICH vs your curve
+
+Price impact:    spread duration × spread gap
+                  ≈ Mod D × 27 bp
+                  =  4.19 × 27/10000
+                  =  1.131%   of price
+
+In $/100 face:    1.131% × 98  =  $1.108  per $100
+On $5M face:      $5M / 100 × $1.108  =  $55,400
+```
+
+**Verdict:** bond is 27 bp / $55k rich on the dealer's screen vs your curve.
+
+**Feed to your code:** `01_bond_pricing_ytm.py` (YTM back-out) → `16_relative_value_spreads.py` (Z, G, ASW spreads).
 
 ---
 
@@ -273,22 +335,40 @@ Quote format: `r = 5.00%` annualised simple.
 
 ### 📊 Worked example — Quote to fair value
 
-**Screen quote:**
+**The quote (broker / Bloomberg):**
+
 ```
-3M USD deposit          5.00%    91 days    notional $1M
+3M USD deposit         5.00%    91 days    notional $1M
 ```
 
-**Decoded + cash:**
-```
-interest_USD  =  N × r × days/360  =  1M × 0.05 × 91/360  =  $12,638.89
-future value  =  N + interest      =  $1,012,638.89
-EAR equivalent =  (1 + 0.05 × 91/360)^(360/91) - 1  =  5.095%   ← higher than 5%
+**Two formulas:**
 
-If the SAME 5% headline were quoted as GBP deposit (ACT/365):
-   interest_GBP  =  1M × 0.05 × 91/365  =  $12,465.75    ← $173.14 LESS cash
+```
+Simple interest (USD, ACT/360):
+  interest  =  N × r × days/360
+  future value =  N × (1 + r × days/360)
+
+EAR (effective annual rate, for cross-currency comparison):
+  EAR  =  (1 + r × days/360)^(360/days)  -  1
 ```
 
-**Feed to your code:** straight into `05_deposit_fra.py` task 1, or `02_day_count_conventions.py` to compare conventions.
+**Numerical check:**
+
+```
+interest_USD  =  1M × 0.05 × 91/360  =  $12,638.89
+future value  =  $1,012,638.89
+EAR           =  (1.012639)^(3.956) - 1  =  5.094%       ← higher than 5%
+```
+
+**Compare conventions** (same 5% headline, different basis):
+
+```
+USD (ACT/360):  interest = 1M × 0.05 × 91/360 = $12,638.89
+GBP (ACT/365):  interest = 1M × 0.05 × 91/365 = $12,465.75
+gap                                            =    $173.14   (USD pays MORE)
+```
+
+**Feed to your code:** `05_deposit_fra.py` task 1, or `02_day_count_conventions.py` to compare bases.
 
 ---
 
@@ -312,40 +392,52 @@ Note: `M_start × M_end` is in **months from spot**, not years.
 
 ### 📊 Worked example — Quote to fair value
 
-**Screen quote:**
+**The quote (Bloomberg / broker):**
+
 ```
-3×6 SOFR FRA          5.20%    settle T+2    91-day deposit period
+3×6 SOFR FRA           F      5.20%
+                       settle T+2
+                       period 91 days (3M deposit forward-starting in 3M)
 ```
 
-**Decoded:**
-```
-F (contracted)    =  5.20%
-T_1 (start)       =  3M from spot
-T_2 (end)         =  6M from spot
-δ                 =  91/360  =  0.252778
-```
+**Two formulas:**
 
-**Compare to your model (FRA fair rate from curve):**
 ```
-Pull D(0, 3M) and D(0, 6M) from your bootstrapped curve:
-   D_3M  ≈  0.98875       D_6M  ≈  0.97667
+Bloomberg's quoted rate F  is just the contracted forward rate.
 
-Apply the FRA formula (exercise 05):
-   F_fair  =  (1/δ) × (D_3M / D_6M  -  1)
-           =  (1 / 0.2528) × (0.98875 / 0.97667 - 1)
-           =  4.892%
 
-Quoted F:  5.20%             Your F_fair:  4.892%      Gap:  +31 bp (rich)
+Your model's fair forward rate (from your curve):
+
+  D(0, T_1)        3M discount factor (start of forward window)
+  D(0, T_2)        6M discount factor (end of forward window)
+  δ                = (T_2 - T_1) in years  (= 91/360 ACT/360)
+
+  F_fair  =  (1/δ) × (D(0,T_1) / D(0,T_2) - 1)
 ```
 
-**Trade decision + settlement payoff:**
-```
-Quote is rich (31 bp above your fair) → SELL the FRA (pay floating L, receive F).
+**Numerical check** (your curve gives `D_3M=0.98875`, `D_6M=0.97667`):
 
-If market converges to 4.89% by fixing:
-   payoff at T_1  =  N × (L - F) × δ / (1 + L·δ)
-                  =  -10M × (0.04892 - 0.052) × 0.2528 / (1 + 0.04892×0.2528)
-                  ≈  +$7,700 in your favour
+```python
+delta = 91/360
+F_fair = (D_3M/D_6M - 1) / delta
+       = (0.98875/0.97667 - 1) / 0.252778
+       = 0.04893               # → 4.893%
+```
+
+**Gap:**
+
+```
+Quoted F        =  5.200%
+F_fair          =  4.893%
+gap             =   +31 bp     (screen is rich → SELL the FRA)
+```
+
+**Settlement payoff if market converges to 4.89%** (you sold the FRA at 5.20%):
+
+```
+payoff at T_1  =  N × (F - L) × δ / (1 + L·δ)        ← you receive (F − L)
+                =  10M × (0.052 - 0.04893) × 0.2528 / (1 + 0.04893×0.2528)
+                ≈  $7,660
 ```
 
 **Feed to your code:** `05_deposit_fra.py` (fair rate) + `06_fra_settlement.py` (cash payment).
@@ -365,41 +457,52 @@ If market converges to 4.89% by fixing:
 
 ### 📊 Worked example — Quote to fair value
 
-**Screen quote:**
+**The quote (Bloomberg page USSWAP):**
+
 ```
-5y SOFR swap          c_par = 4.50%    annual fixed leg ACT/360
-                      bid 4.498%       ask 4.502%
+5y SOFR swap (USSWAP5)    c_par   4.50%
+                          BID     4.498%
+                          ASK     4.502%
 ```
 
-**Decoded:**
+**Two formulas:**
+
 ```
-par rate     =  4.50%   (the trader receives or pays this for 5 years)
-fixed leg    =  annual ACT/360
-floating leg =  daily-compounded SOFR
-settle       =  T+2
+Bloomberg's quoted par rate c_par makes a fresh swap have zero NPV.
+
+
+Your model's par rate (from your curve):
+
+  A(0, T_n)  =  sum  δ_i × D(0, T_i)     ← annuity factor
+                i=1..n
+
+  c_fair  =  (1 - D(0, T_n))  /  A(0, T_n)
 ```
 
-**Compare to your model (par rate from your curve):**
-```
-1. Bootstrap your curve up to 5y (exercises 08 + 09).
-2. Apply the par-rate identity (exercise 10):
-     c_fair  =  (1 - D(0, 5y))  /  A(0, 5y)
-   where A(0, 5y) = sum_{i=1..5}  δ_i × D(0, i)  (=annuity factor).
+**Numerical check** (your curve bootstrapped to par 4.45%):
 
-3. Suppose your curve gives c_fair = 4.45%.   Gap: +5 bp (screen is rich).
+```python
+A_5y    = (deltas * D_curve).sum()     # → 4.396
+c_fair  = (1 - D_curve[-1]) / A_5y      # → 0.0445  (4.45%)
 ```
 
-**Mark-to-market at trade:**
-```
-For a $100M 5y receive-fixed swap struck at 4.50% (screen) when your
-fair par rate is 4.45%, the trader receives 5 bp above fair:
+**Gap:**
 
-   PV gain at trade  =  N × (c_screen - c_fair) × A(5y)
-                      =  100M × 0.0005 × 4.286
-                      =  $214,300                ← booked as Day-1 P&L
+```
+Quoted par   =  4.500%
+c_fair       =  4.450%
+gap          =   +5 bp        (screen is rich → receive-fixed at 4.50% wins)
 ```
 
-**Feed to your code:** `"5y USD SOFR swap at 4.50%"` → bootstrap → annuity → `11_swap_pricing.py` with `fixed_rate=0.045`, `freq=1`.
+**Mark-to-market at trade** ($100M 5y receive-fixed at 4.50%):
+
+```
+PV gain  =  N × (c_screen - c_fair) × A(5y)
+         =  100M × 0.0005 × 4.396
+         =  $219,800                  ← booked as Day-1 P&L
+```
+
+**Feed to your code:** bootstrap (08/09) → annuity (10) → `11_swap_pricing.py` with `fixed_rate=0.045`, `freq=1`.
 
 ---
 
@@ -422,39 +525,49 @@ EAR (with 1% pt)  ≈  6.18% (varies with loan size and term)
 
 ### 📊 Worked example — Quote to fair value
 
-**Screen quote (Bankrate / lender website):**
+**The quote (Bankrate / lender website):**
+
 ```
-30y fixed conforming    note rate 6.625%    APR 6.85%    points 0.5
+30y fixed conforming    Note rate    6.625%
+                        APR          6.85%
+                        Points       0.5
+                        Principal    $400,000
 ```
 
-**Decoded:**
-```
-note rate     =  6.625%   ← what your PMT formula uses (nominal, monthly comp)
-APR           =  6.85%    ← includes 0.5 points + origination fees (Reg Z)
-EAR (no fees) =  (1 + 0.06625/12)^12 - 1  =  6.83%
+**Two formulas:**
 
-Gap APR(6.85%) - note(6.625%) = 22.5 bp ≈ what the 0.5 points + fees cost annualised.
+```
+Annuity payment (uses NOTE rate, monthly comp):
+
+  r = note_rate/12       n = years × 12
+  PMT  =  P × r × (1 + r)^n / ((1 + r)^n - 1)
+
+EAR (to compare with bond yields):
+
+  EAR  =  (1 + note_rate/12)^12 - 1
 ```
 
-**Fair value check (cashflow level):**
-```
+**Numerical check:**
+
+```python
 >>> monthly_payment(P=400_000, annual_rate_nominal=0.06625, years=30)
-$2,561.07 / month
+$2,561.24 / month
 
-Total paid over 30y    =  $2,561.07 × 360  =  $921,985
-Total interest         =  $921,985 - $400,000  =  $521,985    ← > principal
+total payments  =  2,561.24 × 360  =  $922,048
+total interest  =  $522,048                ← > principal!
+EAR (no fees)   =  (1.005521)^12 - 1  =  6.83%
+APR (with fees) =  6.85%                   ← extra 22.5 bp = the 0.5 points + fees
 ```
 
-**Compare to your model:**
-```
-Borrower comparison: lender quotes APR; you compare lenders on APR (apples-to-apples).
-Trader comparison:   compare the note rate against 10y Treasury or 10y MBS rate.
+**Compare:**
 
-E.g.  10y Treasury = 4.07%       30y mortgage rate = 6.625%
-      mortgage spread to 10y    = 255 bp  ← premium for prepayment + credit risk
+```
+Borrower view:   lenders compete on APR (apples-to-apples after fees)
+Trader view:     mortgage spread to 10y Treasury
+                  6.625% - 4.02%  =  261 bp     ← premium for prepayment + credit risk
 ```
 
-**Feed to your code:** the *note rate* goes into `13_loan_amortisation.py`. APR is for borrower comparison only.
+**Feed to your code:** note rate → `13_loan_amortisation.py`. APR is borrower-side only.
 
 ---
 
