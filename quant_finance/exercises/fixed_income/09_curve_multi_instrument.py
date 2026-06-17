@@ -50,8 +50,7 @@ def deposit_discount_factor(rate: float, days: int, basis: int = 360) -> float:
 
     Used for money-market deposits.
     """
-    # TODO: implement
-    raise NotImplementedError
+    return 1 / (1 + rate * days/basis)
 
 
 # ── TASK 2 ─────────────────────────────────────────────────────────────────
@@ -60,16 +59,19 @@ def bootstrap_swap_DFs(par_rates: np.ndarray, deltas: np.ndarray) -> np.ndarray:
 
     D[k] = (1 - c * sum_{i<k} delta_i * D[i]) / (1 + c * delta[k])
     """
-    # TODO: implement
-    raise NotImplementedError
+    D = np.empty(len(par_rates))
+    weighted_prior_sum = 0.0
+    for i, (c, dk) in enumerate(zip(par_rates, deltas)):
+        D[i] = (1 - c * weighted_prior_sum) / (1 + c * dk)
+        weighted_prior_sum += dk * D[i]
+    return D
 
 
 # ── TASK 3 ─────────────────────────────────────────────────────────────────
 def interp_par_rates(input_tenors: np.ndarray, input_rates: np.ndarray,
                      all_years: np.ndarray) -> np.ndarray:
     """Linearly interpolate par rates onto every integer year in all_years."""
-    # TODO: implement (hint: np.interp)
-    raise NotImplementedError
+    return np.interp(all_years, input_tenors, input_rates)
 
 
 # ── TASK 4 ─────────────────────────────────────────────────────────────────
@@ -81,7 +83,10 @@ def interp_loglinear_in_D(pillars_T: np.ndarray, pillars_D: np.ndarray,
     """
     # TODO: implement (hint: find bracketing pillars; np.interp can be used on
     # log(D) directly if you pass arrays)
-    raise NotImplementedError
+    T1, T2 = pillars_T[0], pillars_T[1]
+    D1, D2 = pillars_D[0], pillars_D[1]
+    log_D_at_T = np.log(D1) + (T_eval - T1) / (T2 - T1) * (np.log(D2/D1))
+    return float(np.exp(log_D_at_T))
 
 
 # ── TASK 5 ─────────────────────────────────────────────────────────────────
@@ -90,8 +95,10 @@ def interp_linear_in_zero(pillars_T: np.ndarray, pillars_D: np.ndarray,
     """Linear in zero rate:  compute z_i = -ln(D_i)/T_i, linearly interpolate
     z(T_eval), then back out D(T_eval) = exp(-z*T_eval).
     """
-    # TODO: implement
-    raise NotImplementedError
+    z1 = -np.log(pillars_D[0]) / pillars_T[0]
+    z2 = -np.log(pillars_D[1]) / pillars_T[1]
+    z_at_T = z1 + (T_eval - pillars_T[0]) / (pillars_T[1] - pillars_T[0]) * (z2 - z1)
+    return float(np.exp(-z_at_T * T_eval))
 
 
 # ── GRADING ────────────────────────────────────────────────────────────────

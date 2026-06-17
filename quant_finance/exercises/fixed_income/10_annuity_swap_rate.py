@@ -47,8 +47,7 @@ def annuity_factor(deltas: np.ndarray, discount_factors: np.ndarray) -> float:
     Both inputs are vectors of length n. Returns a scalar (the PV of $1/period
     of coupon over the swap's tenor).
     """
-    # TODO: implement
-    raise NotImplementedError
+    return np.sum(deltas * discount_factors)
 
 
 # ── TASK 2 ─────────────────────────────────────────────────────────────────
@@ -59,8 +58,9 @@ def par_swap_rate(discount_factors: np.ndarray, deltas: np.ndarray) -> float:
 
     where A = sum_i delta_i * D(0, T_i).
     """
-    # TODO: implement
-    raise NotImplementedError
+    annuity = annuity_factor(deltas, discount_factors)
+    pv_float = (1 - discount_factors[-1])
+    return pv_float / annuity
 
 
 # ── TASK 3 ─────────────────────────────────────────────────────────────────
@@ -72,8 +72,12 @@ def verify_bootstrap_consistency(par_rates: np.ndarray, deltas: np.ndarray,
 
     Returns True if all implied par rates match the input to atol.
     """
-    # TODO: implement
-    raise NotImplementedError
+    n = len(par_rates)
+    error = np.empty(n)
+    for i in range(n):
+        error[i] = np.abs(par_rates[i] - par_swap_rate(discount_factors[:i+1], deltas[:i+1]))
+    
+    return all(error < atol)
 
 
 # ── GRADING ────────────────────────────────────────────────────────────────
@@ -95,7 +99,7 @@ if __name__ == "__main__":
 
     c_5y = par_swap_rate(D, deltas)
     assert abs(c_5y - 0.055) < 1e-8     # MUST equal the input 5y par rate
-
+    
     # Self-consistency check at every tenor
     ok = verify_bootstrap_consistency(par_rates, deltas, D)
     assert ok is True

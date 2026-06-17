@@ -46,8 +46,7 @@ def pv_fixed_leg(notional: float, fixed_rate: float, deltas: np.ndarray,
     """PV of fixed leg = N * c * sum(delta_i * D(T_i))
                       = N * c * A(T_n).
     """
-    # TODO: implement
-    raise NotImplementedError
+    return notional * fixed_rate * np.sum(deltas * discount_factors)
 
 
 # ── TASK 2 ─────────────────────────────────────────────────────────────────
@@ -59,16 +58,16 @@ def pv_floating_leg(notional: float, discount_factors: np.ndarray) -> float:
     where D(0, T_n) is the discount factor at the FINAL payment date.
     (Telescoping identity — see 03_curve_building.md for derivation.)
     """
-    # TODO: implement
-    raise NotImplementedError
+    return notional * (1 - discount_factors[-1])
 
 
 # ── TASK 3 ─────────────────────────────────────────────────────────────────
 def pv_swap_receive_fixed(notional: float, fixed_rate: float,
                           deltas: np.ndarray, discount_factors: np.ndarray) -> float:
     """PV from the receive-fixed perspective = PV_fix - PV_float."""
-    # TODO: implement
-    raise NotImplementedError
+    pv_fixed = pv_fixed_leg(notional, fixed_rate, deltas, discount_factors)
+    pv_float = pv_floating_leg(notional, discount_factors)
+    return pv_fixed - pv_float
 
 
 # ── TASK 4 ─────────────────────────────────────────────────────────────────
@@ -84,8 +83,11 @@ def swap_dv01(notional: float, fixed_rate: float,
 
     Use: D = exp(-z * T) to convert zero rates to discount factors.
     """
-    # TODO: implement
-    raise NotImplementedError
+    df_base = np.exp(-zero_rates * tenors)
+    df_up = np.exp(-(zero_rates + bump) * tenors)
+    pv_base = pv_swap_receive_fixed(notional, fixed_rate, deltas, df_base)
+    pv_up = pv_swap_receive_fixed(notional, fixed_rate, deltas, df_up)
+    return pv_base - pv_up
 
 
 # ── GRADING ────────────────────────────────────────────────────────────────

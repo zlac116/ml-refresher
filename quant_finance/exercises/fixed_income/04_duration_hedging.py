@@ -65,10 +65,12 @@ def _modified(face, coupon, ytm, T, freq=2):
 
 def _price_off_curve(face, coupon, T, freq, tenors, zeros):
     """Price a bond off a piecewise-linear continuously-compounded zero curve."""
-    n = int(T * freq); times = np.arange(1, n+1)/freq
-    cf = np.full(n, face*coupon/freq); cf[-1] += face
-    z_at_t = np.interp(times, tenors, zeros)
-    return np.sum(cf * np.exp(-z_at_t * times))
+    n = int(T * freq)
+    t = np.arange(1, n + 1) / freq
+    cf = np.full(n, face * coupon / freq)
+    cf[-1] += face
+    z = np.interp(t, tenors, zeros)
+    return np.sum(cf * np.exp(-z*t))
 
 
 # ── TASK 1 ─────────────────────────────────────────────────────────────────
@@ -77,8 +79,9 @@ def dv01_per_100_face(face: float, coupon: float, ytm: float, T: float, freq: in
 
     Returns the $ price change per +1 bp yield rise.
     """
-    # TODO: implement
-    raise NotImplementedError
+    mod_d = _modified(face, coupon, ytm, T, freq)
+    pv = _bond_pv(face, coupon, ytm, T, freq)
+    return mod_d * pv * 1e-4
 
 
 # ── TASK 2 ─────────────────────────────────────────────────────────────────
@@ -93,8 +96,10 @@ def two_bond_hedge_notionals(long_notional: float, dv01_long: float,
 
     All DV01s here are per $100 face.
     """
-    # TODO: implement
-    raise NotImplementedError
+    dv01_target = long_notional / 100 * dv01_long
+    notional_a = (dv01_target * split_a) / dv01_short_a * 100
+    notional_b = (dv01_target * (1 - split_a)) / dv01_short_b * 100
+    return notional_a, notional_b
 
 
 # ── TASK 3 ─────────────────────────────────────────────────────────────────
@@ -108,8 +113,15 @@ def key_rate_durations(face: float, coupon: float, T: float, freq: int,
 
     Returns array shape = (len(tenors),).
     """
-    # TODO: implement
-    raise NotImplementedError
+    p_base = _price_off_curve(face, coupon, T, freq, tenors, zeros)
+    krds = np.empty(len(tenors))
+    for i, _ in enumerate(zeros):
+        z_up = zeros.copy()
+        z_up[i] += bump
+        p_up = _price_off_curve(face, coupon, T, freq, tenors, z_up)
+        krds[i] = p_base - p_up
+
+    return krds
 
 
 # ── GRADING ────────────────────────────────────────────────────────────────
@@ -121,7 +133,7 @@ if __name__ == "__main__":
     DV01_2  = dv01_per_100_face(100, 0.06, y, 2)
     DV01_5  = dv01_per_100_face(100, 0.06, y, 5)
     DV01_10 = dv01_per_100_face(100, 0.06, y, 10)
-
+    
     assert abs(DV01_2  - 0.018585) < 1e-4
     assert abs(DV01_5  - 0.042651) < 1e-4
     assert abs(DV01_10 - 0.074387) < 1e-4
@@ -145,6 +157,7 @@ if __name__ == "__main__":
     tenors = np.array([1, 2, 5, 10], dtype=float)
     zeros  = np.array([0.040, 0.045, 0.050, 0.055])
     krds = key_rate_durations(100, 0.06, 10, 2, tenors, zeros)
+    
     assert krds.shape == (4,)
     assert abs(krds[0] - 0.000646) < 1e-4
     assert abs(krds[1] - 0.002793) < 1e-4

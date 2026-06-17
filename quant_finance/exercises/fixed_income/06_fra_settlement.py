@@ -50,8 +50,8 @@ def fra_settlement_payment(notional: float, contracted_rate: float,
     where δ = days_period / basis.
     Positive payment → buyer receives.
     """
-    # TODO: implement
-    raise NotImplementedError
+    delta = days_period / 360
+    return notional * (fixing_rate - contracted_rate) * delta / (1 + fixing_rate * delta)
 
 
 # ── TASK 2 ─────────────────────────────────────────────────────────────────
@@ -64,8 +64,8 @@ def fra_interest_differential_at_T2(notional: float, contracted_rate: float,
 
     This is the economic exposure; the FRA discounts it back to T_1.
     """
-    # TODO: implement
-    raise NotImplementedError
+    delta = days_period / basis
+    return notional * (fixing_rate - contracted_rate) * delta
 
 
 # ── GRADING ────────────────────────────────────────────────────────────────

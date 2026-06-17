@@ -562,6 +562,115 @@ The bootstrap produces DFs at discrete nodes. To price between nodes, you interp
 
 **Industry standard for SOFR**: log-linear in DF for short end, monotone-convex for long end. Used here: log-linear in DF.
 
+### The two methods used in `09_curve_multi_instrument.py`
+
+The general principle: **interpolate in whatever space the curve looks most linear, then convert back to `D(T)`**. Two competing choices:
+
+| Method | Interpolate this | Then recover D via |
+|---|---|---|
+| **Log-linear in D** | `ln(D(T))`             | `D(T) = exp(ln D(T))` |
+| **Linear in zero**   | `z(T) = -ln(D(T))/T`   | `D(T) = exp(-z(T) · T)` |
+
+Both produce a straight line between two pillars `(T_1, ·)` and `(T_2, ·)` in their respective spaces. The interpolation formula is the same generic equation of a line between two points:
+
+$$y(T) = y_1 + \dfrac{T - T_1}{T_2 - T_1} \cdot (y_2 - y_1)$$
+
+Plain ASCII:
+
+```
+                          T - T_1
+   y(T)  =  y_1   +   ───────────  ×  (y_2 - y_1)
+                         T_2 - T_1
+              ▲              ▲                ▲
+            start    fraction along T    total y-change
+                     (0 at T_1, 1 at T_2)
+```
+
+What changes between the methods is just **what plays the role of `y`**.
+
+#### Log-linear in D
+
+**Why this works**: `D(T) = exp(-z(T) · T)`, so `ln D(T) = -z(T) · T`. If `z(T)` is reasonably smooth, the product `z(T) · T` is approximately linear in `T` — making `ln D(T)` close to a straight line. Interpolating `ln D` linearly is a good approximation; doing it on `D` directly underestimates the discount factor because `D` is convex.
+
+```
+                              T - T_1
+   ln D(T)  =  ln D_1   +   ───────────  ×  (ln D_2 - ln D_1)
+                              T_2 - T_1
+
+
+   D(T)  =  exp(ln D(T))
+```
+
+**Implementation** (one line):
+
+```python
+def interp_loglinear_in_D(pillars_T, pillars_D, T_eval):
+    return float(np.exp(np.interp(T_eval, pillars_T, np.log(pillars_D))))
+```
+
+Trick: pass `log(D)` to `np.interp` instead of `D` — then exponentiate the result.
+
+#### Linear in zero
+
+**Why this works**: the zero rate `z(T)` is the most natural "what the curve says at time T" object — it's smooth, bounded, and traders intuit it directly. Interpolating `z` linearly between pillars assumes the rate moves linearly across maturities.
+
+```
+Step 1.  Convert pillar D's to zero rates:
+         z_i  =  -ln(D_i) / T_i
+
+
+Step 2.  Linearly interpolate z(T_eval):
+
+                            T - T_1
+   z(T)  =  z_1   +   ───────────  ×  (z_2 - z_1)
+                            T_2 - T_1
+
+
+Step 3.  Recover D(T):
+         D(T)  =  exp(-z(T) × T)
+```
+
+**Implementation**:
+
+```python
+def interp_linear_in_zero(pillars_T, pillars_D, T_eval):
+    zeros = -np.log(pillars_D) / pillars_T
+    z_at_T = np.interp(T_eval, pillars_T, zeros)
+    return float(np.exp(-z_at_T * T_eval))
+```
+
+#### Why they give different answers
+
+Both methods use the same straight-line formula, but on different `y`'s:
+
+```
+log-linear  straightens   ln D(T)        ↔   z(T) · T  is linear
+linear-in-z straightens   z(T)            ↔   z(T)      is linear
+```
+
+These are different shape assumptions. They agree exactly at the pillars (by construction) but disagree between them. The gap is small when pillars are close; it widens with sparsely-spaced pillars or steep curve slopes.
+
+**Numerical check from `09_curve_multi_instrument.py`** (pillars at 2y and 5y, evaluate at 3.5y):
+
+```
+pillars:   T_1=2.0,  D_1=0.90349,  ln D_1 = -0.10148,  z_1 = 5.074%
+           T_2=5.0,  D_2=0.76426,  ln D_2 = -0.26882,  z_2 = 5.376%
+
+fraction at T=3.5  →  (3.5 - 2.0) / (5.0 - 2.0) = 0.5  (halfway)
+
+Log-linear in D:
+   ln D(3.5)  =  -0.10148 + 0.5 × (-0.16734)  =  -0.18515
+   D(3.5)     =  exp(-0.18515)                =  0.83097
+
+Linear in zero:
+   z(3.5)     =  0.05074 + 0.5 × (0.00302)    =  0.05225
+   D(3.5)     =  exp(-0.05225 × 3.5)          =  0.83285
+
+Difference: 1.89e-3  ← real production-relevant gap; affects swap PV / DV01
+```
+
+**Which to use**: log-linear in D for SOFR / OIS curves in production (smoother implied forwards, no negative-DF risk). Linear-in-zero for pedagogy or when you want intuitive zero-rate plots.
+
 
 ```python
 # Compare interpolation: linear in zero vs log-linear in DF
