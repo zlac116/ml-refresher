@@ -48,8 +48,7 @@ def forward_annuity(forward_deltas: np.ndarray,
     A_fwd = sum_i delta_i * D(0, T_i)   where the sum is over only the
     forward-window payment dates.
     """
-    # TODO: implement
-    raise NotImplementedError
+    return np.sum(forward_deltas * forward_discount_factors)
 
 
 # ── TASK 2 ─────────────────────────────────────────────────────────────────
@@ -61,8 +60,7 @@ def forward_float_leg_pv(notional: float, D_start: float, D_end: float) -> float
     Reduces to N*(1 - D(T_end)) for a spot-starting swap (where T_start = 0,
     D_start = 1).
     """
-    # TODO: implement
-    raise NotImplementedError
+    return notional * (D_start - D_end)
 
 
 # ── TASK 3 ─────────────────────────────────────────────────────────────────
@@ -77,8 +75,7 @@ def par_forward_swap_rate(D_start: float, D_end: float,
 
     Sets PV of forward swap = 0.
     """
-    # TODO: implement
-    raise NotImplementedError
+    return forward_float_leg_pv(1, D_start, D_end) / forward_annuity(forward_deltas, forward_discount_factors)
 
 
 # ── GRADING ────────────────────────────────────────────────────────────────
