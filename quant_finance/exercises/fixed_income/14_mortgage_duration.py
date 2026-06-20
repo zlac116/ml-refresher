@@ -37,8 +37,10 @@ import numpy as np
 # ── TASK 1 ─────────────────────────────────────────────────────────────────
 def monthly_payment(principal: float, annual_rate_nominal: float, years: int) -> float:
     """Level monthly payment from the annuity formula."""
-    # TODO: implement
-    raise NotImplementedError
+    r = annual_rate_nominal / 12 # monthly rate
+    n = years * 12 # total months
+    pmt = principal * r * ((1 + r)**n) / ((1 + r)**n - 1) # monthly payment
+    return pmt
 
 
 # ── TASK 2 ─────────────────────────────────────────────────────────────────
@@ -53,8 +55,13 @@ def mortgage_mac_duration(principal: float, annual_rate_nominal: float,
 
     Returns Macaulay duration in YEARS.
     """
-    # TODO: implement
-    raise NotImplementedError
+    n = int(years * 12)
+    r_per = annual_rate_nominal / 12
+    periods = np.arange(1, n + 1)
+    times = periods / 12
+    pmt = monthly_payment(principal, annual_rate_nominal, years)
+    pv = pmt / (1 + r_per)**periods
+    return np.sum(pv * times) / np.sum(pv)
 
 
 # ── TASK 3 ─────────────────────────────────────────────────────────────────
@@ -64,7 +71,13 @@ def bullet_bond_mac_duration(face: float, coupon: float, ytm: float,
     discounted at YTM. Used as the comparison anchor.
     """
     # TODO: implement
-    raise NotImplementedError
+    n = int(T * freq)
+    periods = np.arange(1, n + 1)
+    times = periods / freq
+    cf = np.full(n, coupon * face / freq)
+    cf[-1] += face
+    pv = cf / (1 + ytm / freq)**periods
+    return np.sum(pv * times) / np.sum(pv)
 
 
 # ── GRADING ────────────────────────────────────────────────────────────────
