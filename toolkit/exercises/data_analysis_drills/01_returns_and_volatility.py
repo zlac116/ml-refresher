@@ -43,22 +43,19 @@ def daily_returns(df: pd.DataFrame) -> pd.Series:
 
     Length should be len(df) - 1. Use pandas idiomatic .pct_change().
     """
-    # TODO: implement
-    raise NotImplementedError
+    return df["close"].pct_change().iloc[1:]
 
 
 # ── TASK 2 ─────────────────────────────────────────────────────────────────
 def annualised_vol(returns: pd.Series, periods_per_year: int = 252) -> float:
     """Annualised volatility = sample std * sqrt(periods_per_year)."""
-    # TODO: implement
-    raise NotImplementedError
+    return returns.std() * np.sqrt(periods_per_year)
 
 
 # ── TASK 3 ─────────────────────────────────────────────────────────────────
 def rolling_vol(returns: pd.Series, window: int = 20, periods_per_year: int = 252) -> pd.Series:
     """20-day rolling annualised vol. Leading rows are NaN. Use .rolling()."""
-    # TODO: implement
-    raise NotImplementedError
+    return (returns * np.sqrt(periods_per_year)).rolling(window=window).std()
 
 
 # ── GRADING ────────────────────────────────────────────────────────────────

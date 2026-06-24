@@ -58,9 +58,11 @@ def parse_treasury_price(quote: str) -> float:
       "98-08"   -> 98 + 8/32 = 98.25
       "100-00"  -> 100.0
     """
-    # TODO: implement (hint: split on "-", check for trailing "+")
-    raise NotImplementedError
-
+    split = quote.split("-")
+    if quote.endswith("+"):
+        return float(split[0]) + float(split[1].split("+")[0]) / 32 + 1/64
+    else:
+        return float(split[0]) + float(split[1].split("+")[0]) / 32
 
 # ── TASK 2 ─────────────────────────────────────────────────────────────────
 def tbill_discount_yield(face: float, price: float, days: int) -> float:
@@ -68,8 +70,7 @@ def tbill_discount_yield(face: float, price: float, days: int) -> float:
 
         dy = (face - price) / face * 360 / days
     """
-    # TODO: implement
-    raise NotImplementedError
+    return (face - price) / face * 360 / days
 
 
 # ── TASK 3 ─────────────────────────────────────────────────────────────────
@@ -81,8 +82,7 @@ def tbill_investment_yield(face: float, price: float, days: int) -> float:
     NOTE: investment yield uses PRICE in the denominator (not face),
     and 365 (not 360). Both effects make it HIGHER than the discount yield.
     """
-    # TODO: implement
-    raise NotImplementedError
+    return (face - price) / price * 365 /days
 
 
 # ── TASK 4 ─────────────────────────────────────────────────────────────────
@@ -91,8 +91,7 @@ def sofr_future_implied_rate(quoted_price: float) -> float:
 
     e.g. quote 95.50 -> 4.50% (=0.045)
     """
-    # TODO: implement
-    raise NotImplementedError
+    return (100 - quoted_price) / 100
 
 
 # ── TASK 5 ─────────────────────────────────────────────────────────────────
@@ -105,15 +104,13 @@ def sofr_future_pnl(n_contracts: int, bps_move: float,
     Tick value is $25/bp/contract for SOFR (3M) and Eurodollar.
     Sign: positive bps_move means rates fell (price rose) → long position gains.
     """
-    # TODO: implement
-    raise NotImplementedError
+    return n_contracts * bps_move * tick_value_per_bp
 
 
 # ── TASK 6 ─────────────────────────────────────────────────────────────────
 def clean_to_dirty(clean_price: float, accrued: float) -> float:
     """dirty = clean + accrued. (The trade settles at dirty.)"""
-    # TODO: implement
-    raise NotImplementedError
+    return clean_price + accrued
 
 
 # ── GRADING ────────────────────────────────────────────────────────────────
