@@ -39,8 +39,13 @@ def to_daily_ohlc(s: pd.Series) -> pd.DataFrame:
     Returns a DataFrame with columns ['open','high','low','close'] indexed
     by date.
     """
-    # TODO: implement (hint: resample('1D') + .agg or call .first/.max/.min/.last)
-    raise NotImplementedError
+    # df = s.resample("1D").ohlc()
+    return pd.DataFrame({
+        "open": s.resample("1D").first(),
+        "high":s.resample("1D").max(),
+        "low": s.resample("1D").min(),
+        "close": s.resample("1D").last()
+    })
 
 
 # ── TASK 2 ─────────────────────────────────────────────────────────────────
@@ -49,7 +54,8 @@ def to_business_days(close: pd.Series) -> pd.Series:
     forward-filling any missing days.
     """
     # TODO: implement (hint: pd.bdate_range + .reindex + .ffill)
-    raise NotImplementedError
+    # breakpoint()
+    return close.reindex(pd.bdate_range(close.index[0], close.index[-1])).ffill()
 
 
 # ── GRADING ────────────────────────────────────────────────────────────────
