@@ -29,7 +29,7 @@ EXPECTED (scenario: +15bp rate, +10bp spread, +2 vol pts, 0% fx)
 GRADING: all asserts must pass.
 """
 import numpy as np
-from dataclasses import replace
+from dataclasses import replace, astuple
 from extension_drill2_SOLUTIONS import (
     Market, Scenario, Portfolio, Bond, InterestRateSwap, CreditDefaultSwap,
     TotalReturnSwap, ForeignBond, Swaption, Repo, SecLending, Loan, FXSpot, FXOption)
@@ -66,7 +66,17 @@ class PnLAttributor:
     #   EXPECTED ≈ (1.855e-4, 4.287e-5, -1.06362, 412.9212)
     # ═══════════════════════════════════════════════════════════════════════
     def gammas(self, base):
-        raise NotImplementedError
+        v0 = self.pf.value(base)
+        return (
+            (self.pf.value(replace(base, rate_bump_bp=base.rate_bump_bp + 1)) - 2*v0
+             + self.pf.value(replace(base, rate_bump_bp=base.rate_bump_bp - 1))) / 1**2,
+            (self.pf.value(replace(base, spread_bump_bp=base.spread_bump_bp + 1)) - 2*v0
+            + self.pf.value(replace(base, spread_bump_bp=base.spread_bump_bp - 1))) / 1**2,
+            (self.pf.value(replace(base, vol_shock=base.vol_shock + 0.01)) - 2*v0
+            + self.pf.value(replace(base, vol_shock=base.vol_shock - 0.01))) / 0.01**2,
+            (self.pf.value(replace(base, fx_shock=base.fx_shock + 0.01)) - 2*v0
+            + self.pf.value(replace(base, fx_shock=base.fx_shock - 0.01))) / 0.01**2,
+        )
 
     # ═══════════════════════════════════════════════════════════════════════
     # TASK 2 — attribute the full P&L of a scenario
@@ -80,7 +90,25 @@ class PnLAttributor:
     #      "unexplained":.. }                                   # = full − first − second
     # ═══════════════════════════════════════════════════════════════════════
     def attribute(self, base, scenario):
-        raise NotImplementedError
+        v0 = self.pf.value(base)
+        v1 = self.pf.value(scenario.apply(base))
+        sens = self.sensitivities(base)
+        gammas = self.gammas(base)
+        shocks = astuple(scenario)
+        per_factor = [s * d for s, d in zip(sens, shocks)]
+        first_order = sum(per_factor)
+        second_order = sum(0.5 * g * d**2 for g, d in zip(gammas, shocks))
+        full = v1 - v0
+        return {
+            "rate": per_factor[0],
+            "spread": per_factor[1],
+            "vol": per_factor[2],
+            "fx": per_factor[3],
+            "first_order": first_order,
+            "second_order": second_order,
+            "full": full,
+            "unexplained": full - first_order - second_order,
+        }
 
 
 # ═══════════════════════════════════════════════════════════════════════════
