@@ -61,6 +61,23 @@ ul.tight li { margin: 0; }
 .danger b:first-child { color: #b8341a; }
 
 hr { border: none; border-top: 1px solid rgba(0,0,0,0.18); margin: 2px 0; }
+
+/* === DENSE-FORMAT OVERRIDE (uniform across cards, mlflow_card parity) === */
+.cols { column-fill: balance !important; }
+.sec { break-inside: auto !important;
+       margin: 0 0 1px 0 !important;
+       padding: 1px 4px 2px 5px !important; }
+.sec h2 { margin: 0 !important; padding: 0 3px !important; }
+.sec h3 { margin: 1px 0 0 0 !important; }
+.sec > *:last-child { margin-bottom: 0 !important; }
+.p { margin: 0 !important; }
+.p .formula, .p .py { margin: 0 !important; padding: 0 4px !important; }
+.py, .formula { margin: 0 !important; padding: 0 4px !important; overflow-wrap: anywhere !important; }
+.callout, .danger { padding: 0 4px !important; margin: 1px 0 !important; }
+td code { word-break: break-all; overflow-wrap: anywhere; }
+.sec table, .sec ul.tight { break-inside: auto; }
+.sec.trap { break-inside: auto !important; }
+.sec h2 + *, .sec h3 + * { break-before: avoid; }
 </style>
 </head>
 <body>

@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>API Engineering (FastAPI) — Project Recipe Card</title>
+<style>
+@page { size: A4 landscape; margin: 0.35cm 0.35cm 0.45cm 0.35cm;
+        @bottom-right { content: counter(page) " / " counter(pages); font: 6pt 'DejaVu Sans', sans-serif; color: #aaa; } }
+* { box-sizing: border-box; }
+body { font-family: 'DejaVu Sans', sans-serif; font-size: 7pt; line-height: 1.15; color: #1a1a1a; margin: 0; padding: 0; }
+code, .formula, .py, pre { font-family: 'DejaVu Sans Mono', monospace; font-size: 6.6pt; }
+
+.banner { background: #2c3e50; color: #fff; padding: 3px 7px; margin-bottom: 3px; border-radius: 2px; }
+.banner h1 { font-size: 11pt; margin: 0; }
+.banner .sub { font-size: 6.6pt; color: #d3dde5; margin-top: 0; }
+.banner .sub code { color: #fff; background: rgba(0,0,0,0.18); padding: 0 2px; border-radius: 1px; }
+
+.cols { column-count: 3; column-gap: 5px; column-rule: 1px solid #ccc; column-fill: auto; }
+
+.sec { break-inside: avoid; margin: 0 0 3px 0; padding: 2px 4px 3px 5px; border-radius: 2px; border-left: 3px solid; }
+.sec h2 { font-size: 7.8pt; font-weight: bold; margin: 0 0 1px 0; padding: 0px 4px; border-radius: 2px; color: #fff; display: inline-block; }
+.sec h3 { font-size: 6.7pt; font-weight: bold; margin: 2px 0 0 0; color: #2c3e50; text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* Family palette — same scheme as prior cards for series consistency */
+.master  { background: #fff8d9; border-left-color: #806c0e; }  .master  h2 { background: #806c0e; }
+.frame   { background: #e7f2fa; border-left-color: #2e6b9c; }  .frame   h2 { background: #2e6b9c; }
+.model   { background: #e7fae9; border-left-color: #2e9c47; }  .model   h2 { background: #2e9c47; }
+.metric  { background: #f0e7fa; border-left-color: #6e3e9c; }  .metric  h2 { background: #6e3e9c; }
+.cv      { background: #e7faf9; border-left-color: #1a8a8a; }  .cv      h2 { background: #1a8a8a; }
+.tune    { background: #fbf2e6; border-left-color: #b06c0e; }  .tune    h2 { background: #b06c0e; }
+.diag    { background: #f7e6d5; border-left-color: #a05210; }  .diag    h2 { background: #a05210; }
+.deploy  { background: #ededed; border-left-color: #555;    }  .deploy  h2 { background: #555;    }
+.trap    { background: #fae0e0; border-left-color: #7a1a1a; }  .trap    h2 { background: #7a1a1a; }
+
+.p { margin: 0 0 2px 0; }
+.p .name { font-weight: bold; font-size: 7.2pt; }
+.p .name .tag { font-size: 6pt; color: #555; font-weight: normal; }
+.p .formula { display: block; background: rgba(255,255,255,0.55); padding: 0 4px;
+              border-left: 2px solid currentColor; margin: 1px 0; white-space: pre-wrap; }
+.p .py { display: block; background: rgba(0,0,0,0.04); padding: 1px 4px; margin: 1px 0;
+         border-left: 2px solid #555; white-space: pre-wrap; }
+.p .use { font-style: italic; color: #2a2a2a; font-size: 6.5pt; }
+.p .rf  { font-size: 6.1pt; color: #444; }
+
+.recipe ol { margin: 0; padding: 0 0 0 14px; }
+.recipe ol li { margin: 0; }
+.recipe .step { font-weight: bold; }
+table { border-collapse: collapse; width: 100%; font-size: 6.4pt; margin: 1px 0; }
+th, td { border: 1px solid #c0c0c0; padding: 0.5px 3px; text-align: left; vertical-align: top; }
+th { background: #e8e8e8; font-weight: bold; }
+ul.tight { margin: 0; padding: 0 0 0 13px; }
+ul.tight li { margin: 0; }
+
+.callout { background: #fff; border-left: 3px solid #d4a800; padding: 1px 4px; margin: 2px 0; font-size: 6.3pt; }
+.danger  { background: #fff; border-left: 3px solid #b8341a; padding: 1px 4px; margin: 2px 0; font-size: 6.3pt; }
+.danger b:first-child { color: #b8341a; }
+
+/* Top-level — standalone .py / .formula blocks need their own rule (not just inside .p) */
+.py { display: block; background: rgba(0,0,0,0.04); padding: 1px 4px; margin: 1px 0;
+      border-left: 2px solid #555; white-space: pre-wrap;
+      font-family: 'DejaVu Sans Mono', monospace; font-size: 6.6pt; }
+.formula { display: block; background: rgba(255,255,255,0.55); padding: 0 4px;
+           border-left: 2px solid currentColor; margin: 1px 0; white-space: pre-wrap;
+           font-family: 'DejaVu Sans Mono', monospace; font-size: 6.6pt; }
+
+/* === DENSE-FORMAT OVERRIDE (uniform across cards, mlflow_card parity) === */
+.cols { column-fill: balance !important; }
+.sec { break-inside: auto !important;
+       margin: 0 0 1px 0 !important;
+       padding: 1px 4px 2px 5px !important; }
+.sec h2 { margin: 0 !important; padding: 0 3px !important; }
+.sec h3 { margin: 1px 0 0 0 !important; }
+.sec > *:last-child { margin-bottom: 0 !important; }
+.p { margin: 0 !important; }
+.p .formula, .p .py { margin: 0 !important; padding: 0 4px !important; }
+.py, .formula { margin: 0 !important; padding: 0 4px !important; overflow-wrap: anywhere !important; }
+.callout, .danger { padding: 0 4px !important; margin: 1px 0 !important; }
+td code { word-break: break-all; overflow-wrap: anywhere; }
+.sec table, .sec ul.tight { break-inside: auto; }
+.sec.trap { break-inside: auto !important; }
+.sec h2 + *, .sec h3 + * { break-before: avoid; }
+</style>
+</head>
+<body>
+
+<div class="banner">
+  <h1>API Engineering (FastAPI) — Project Recipe Card</h1>
+  <div class="sub">Per-endpoint 5-step · layered arch · auth · DB · validation · middleware · streaming · OWASP. Deep companion: <code>api_engineering_cheatsheet.md</code> · Stack: <code>FastAPI ≥0.115 · Pydantic v2 · SQLAlchemy 2.0 · Python 3.12+</code></div>
+</div>
+
+<div class="cols">
+
+  <!-- ════════════ MASTER PATTERN ════════════ -->
+  <div class="sec master">
+    <h2>◆ Per-endpoint 5-step pattern</h2>
+    <ol class="recipe">
+      <li><span class="step">DECLARE</span> — verb, path, <code>response_model</code>, status, OpenAPI tags</li>
+      <li><span class="step">VALIDATE</span> — Pydantic request body @ boundary (422 on bad data)</li>
+      <li><span class="step">INJECT</span> — <code>Annotated[T, Depends(...)]</code>: session, settings, user</li>
+      <li><span class="step">DELEGATE</span> — service does the actual work (routes don't touch SQL)</li>
+      <li><span class="step">RETURN</span> — value conforming to <code>response_model</code> (filters output)</li>
+    </ol>
+    <div class="callout"><b>Smell test:</b> if the route imports <code>select</code> from SQLAlchemy, SQL has leaked out of the repository layer.</div>
+  </div>
+
+  <div class="sec master">
+    <h2>◆ Canonical endpoint (paste-able)</h2>
+    <div class="py">@router.post("/trades", response_model=TradeRead,
+              status_code=status.HTTP_201_CREATED)
+async def create_trade(
+    payload: TradeCreate,                  # 2. validate
+    session: SessionDep,                   # 3. inject (DB)
+    user:    CurrentUser,                  #    inject (auth+identity)
+) -> TradeRead:
+    return await TradeService(session).create(payload, owner_id=user.id)  # 4 + 5</div>
+  </div>
+
+  <div class="sec master">
+    <h2>◆ Project-level wiring (once at startup)</h2>
+    <ol class="recipe">
+      <li><b>settings</b> — <code>pydantic-settings</code> + <code>@lru_cache</code>; read env + <code>.env</code> in dev</li>
+      <li><b>lifespan</b> — <code>create_async_engine</code> + sessionmaker on startup; <code>engine.dispose()</code> on shutdown</li>
+      <li><b>middleware</b> — CORS, TrustedHost, GZip, security headers (order = onion; LAST added = FIRST hit)</li>
+      <li><b>routers</b> — include versioned modules (<code>app/api/v1/…</code>) with prefix + tags</li>
+      <li><b>handlers</b> — register <code>NotFoundError→404</code>, <code>ConflictError→409</code>, etc.</li>
+    </ol>
+  </div>
+
+  <div class="sec master">
+    <h2>◆ Request flow (mental model)</h2>
+    <div class="py">REQUEST
+   →  middleware     (CORS · rate-limit · security headers · request-id)
+   →  route          (Depends graph resolved · Pydantic validates payload)
+   →  service        (business logic · authz · calls repo)
+   →  repository     (SQL via select() + execute · returns ORM rows)
+   →  service        (compose, transform)
+   →  route returns  → response_model filters → response_class serialises
+RESPONSE</div>
+    <div class="callout"><b>Raise propagates UP</b> until caught by an exception handler (§10) or becomes a 500. Services raise <b>domain</b> exceptions (<code>NotFoundError</code>, <code>ConflictError</code>) — NEVER <code>HTTPException</code>. HTTP mapping is the routes' job.</div>
+  </div>
+
+  <div class="sec master">
+    <h2>◆ Layer responsibility (one-glance rule)</h2>
+    <table>
+      <tr><th>Layer</th><th>Knows</th><th>Doesn't know</th></tr>
+      <tr><td><b>routes</b> <code>app/api/v1/</code></td><td>HTTP (status, response_model, query/path/header)</td><td>SQL, business rules</td></tr>
+      <tr><td><b>services</b> <code>services.py</code></td><td>business logic, authz, transactions</td><td>HTTP, raw SQL</td></tr>
+      <tr><td><b>repositories</b> <code>repositories.py</code></td><td>SQL (<code>select() + execute</code>)</td><td>business rules, HTTP</td></tr>
+      <tr><td><b>schemas</b> <code>schemas.py</code></td><td>I/O shapes + validators (Pydantic)</td><td>anything stateful</td></tr>
+      <tr><td><b>models</b> <code>models.py</code></td><td>ORM mapping (<code>Mapped[]</code> + <code>mapped_column</code>)</td><td>application logic</td></tr>
+    </table>
+    <div class="danger"><b>Instant smell:</b> route imports <code>select</code> from SQLAlchemy → SQL leaked out of the repository.</div>
+  </div>
+
+  <!-- ════════════ STARTER A — imports + settings ════════════ -->
+  <div class="sec master">
+    <h2>◆ Starter · A: imports + settings</h2>
+    <div class="py">from contextlib import asynccontextmanager
+from typing import Annotated, AsyncIterator
+from functools import lru_cache
+from fastapi import FastAPI, Depends, Request, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import select
+from pydantic import BaseModel, ConfigDict, EmailStr, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    database_url: str
+    secret_key:   SecretStr
+
+@lru_cache
+def get_settings() -> Settings: return Settings()
+SettingsDep = Annotated[Settings, Depends(get_settings)]</div>
+  </div>
+
+  <!-- ════════════ STARTER B — lifespan + session ════════════ -->
+  <div class="sec master">
+    <h2>◆ Starter · B: lifespan + DB session</h2>
+    <div class="py">class Base(DeclarativeBase): pass
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    settings = get_settings()
+    engine = create_async_engine(settings.database_url, pool_pre_ping=True)
+    app.state.session_factory = async_sessionmaker(engine, expire_on_commit=False)
+    yield
+    await engine.dispose()
+
+async def get_session(req: Request) -> AsyncIterator[AsyncSession]:
+    async with req.app.state.session_factory() as s:
+        yield s
+SessionDep = Annotated[AsyncSession, Depends(get_session)]</div>
+  </div>
+
+  <!-- ════════════ STARTER C — app + endpoint ════════════ -->
+  <div class="sec master">
+    <h2>◆ Starter · C: app + first endpoint</h2>
+    <div class="py">app = FastAPI(lifespan=lifespan, title="Trades API", version="1.0.0")
+# Middleware ORDER matters: last added = first executed (outer → inner = onion)
+app.add_middleware(GZipMiddleware, minimum_size=500)
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["api.example.com"])
+app.add_middleware(CORSMiddleware,
+    allow_origins=["https://app.example.com"],
+    allow_methods=["GET","POST","PATCH","DELETE"],
+    allow_headers=["Authorization","Content-Type"])
+
+class User(Base):
+    __tablename__ = "users"
+    id:    Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(unique=True, index=True)
+
+class UserRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    email: EmailStr
+
+@app.get("/users/{uid}", response_model=UserRead)
+async def get_user(uid: int, session: SessionDep) -> UserRead:
+    user = await session.get(User, uid)   # PK lookup: cheaper than select+where
+    if user is None: raise NotFoundError("User")
+    return user</div>
+  </div>
+
+  <!-- ════════════ LIFESPAN ════════════ -->
+  <div class="sec frame">
+    <h2>● Lifespan (startup / shutdown)</h2>
+    <div class="py">@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # STARTUP
+    engine = create_async_engine(settings.database_url, pool_pre_ping=True,
+                                  pool_size=10, max_overflow=20)
+    app.state.session_factory = async_sessionmaker(engine, expire_on_commit=False)
+    # warm caches, ping deps, etc.
+    yield
+    # SHUTDOWN
+    await engine.dispose()
+
+app = FastAPI(lifespan=lifespan)</div>
+    <div class="danger"><b>Deprecated:</b> <code>@app.on_event("startup")</code> / <code>@app.on_event("shutdown")</code>. Use <code>lifespan</code> only.</div>
+  </div>
+
+  <!-- ════════════ DI ════════════ -->
+  <div class="sec frame">
+    <h2>● Dependency injection (Annotated)</h2>
+    <div class="py">from typing import Annotated
+from fastapi import Depends
+
+# 1. Define type aliases ONCE (reuse everywhere)
+SettingsDep = Annotated[Settings, Depends(get_settings)]
+SessionDep  = Annotated[AsyncSession, Depends(get_session)]
+CurrentUser = Annotated[User, Depends(get_current_user)]
+
+# 2. Use in route signatures
+@router.get("/me")
+async def me(user: CurrentUser) -> UserRead:
+    return user
+
+# 3. Dependencies can depend on each other (sub-deps)
+async def get_current_user(
+    token: Annotated[str, Depends(oauth2_scheme)],
+    session: SessionDep,
+) -> User: ...</div>
+    <div class="danger"><b>Deprecated:</b> <code>def route(x = Depends(dep))</code>. Use <code>Annotated[T, Depends(dep)]</code> — preserves typing for mypy + makes aliases reusable.</div>
+  </div>
+
+  <!-- ════════════ ORM MODELS ════════════ -->
+  <div class="sec frame">
+    <h2>● ORM models (SQLAlchemy 2.0)</h2>
+    <div class="py">from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy import String, ForeignKey, DateTime, Numeric
+from datetime import datetime, timezone
+from decimal import Decimal
+
+class Base(DeclarativeBase): pass
+
+class User(Base):
+    __tablename__ = "users"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(254), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(256))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc))   # datetime.utcnow deprecated in 3.12+
+    trades: Mapped[list["Trade"]] = relationship(
+        back_populates="owner", cascade="all, delete-orphan")
+
+class Trade(Base):
+    __tablename__ = "trades"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    symbol: Mapped[str] = mapped_column(String(10), index=True)
+    qty: Mapped[Decimal] = mapped_column(Numeric(18, 4))
+    price: Mapped[Decimal] = mapped_column(Numeric(18, 4))
+    owner: Mapped["User"] = relationship(back_populates="trades")</div>
+    <div class="rf"><b>Use <code>Mapped[T]</code> + <code>mapped_column(...)</code></b> (2.0 style). Legacy <code>Column()</code> still works but loses typing.</div>
+  </div>
+
+  <!-- ════════════ ASYNC DB ════════════ -->
+  <div class="sec frame">
+    <h2>● Async DB sessions + 2.0 queries</h2>
+
+    <div class="p">
+      <div class="name">Engine + session factory</div>
+      <div class="py">from sqlalchemy.ext.asyncio import (create_async_engine, async_sessionmaker, AsyncSession)
+engine = create_async_engine("postgresql+asyncpg://...", pool_pre_ping=True)
+SessionFactory = async_sessionmaker(engine, expire_on_commit=False)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Query patterns</div>
+      <div class="py">from sqlalchemy import select, update, delete, func
+
+# SCALAR — single column
+email = await session.scalar(select(User.email).where(User.id == uid))
+
+# SCALARS — list of ORM objects
+trades = (await session.scalars(
+    select(Trade).where(Trade.owner_id == uid).order_by(Trade.created_at.desc())
+)).all()
+
+# COUNT
+n = await session.scalar(select(func.count()).select_from(Trade))
+
+# JOIN
+stmt = select(Trade, User).join(User, Trade.owner_id == User.id)
+rows = (await session.execute(stmt)).all()
+
+# UPDATE / DELETE
+await session.execute(update(Trade).where(Trade.id == tid).values(price=p))
+await session.commit()</div>
+      <div class="danger"><b>Deprecated:</b> <code>session.query(Model).filter(...).all()</code>. Always <code>select() + execute/scalars/scalar</code>.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Eager loading (avoid N+1)</div>
+      <div class="py">from sqlalchemy.orm import selectinload, joinedload
+stmt = select(User).options(selectinload(User.trades))   # SELECT IN (separate query)
+stmt = select(User).options(joinedload(User.trades))     # LEFT OUTER JOIN</div>
+    </div>
+  </div>
+
+  <!-- ════════════ PYDANTIC ════════════ -->
+  <div class="sec model">
+    <h2>▲ Pydantic v2 — validation @ the boundary</h2>
+
+    <div class="p">
+      <div class="name">Typed fields (use the specific type)</div>
+      <div class="py">from pydantic import BaseModel, ConfigDict, EmailStr, SecretStr, HttpUrl, Field, field_validator
+from decimal import Decimal
+from datetime import datetime
+
+class TradeCreate(BaseModel):
+    symbol:  str = Field(..., min_length=1, max_length=10, pattern=r"^[A-Z]+$")
+    qty:     Decimal = Field(..., gt=0, decimal_places=4)
+    price:   Decimal = Field(..., gt=0, decimal_places=4)
+    notes:   str | None = Field(None, max_length=500)
+
+    @field_validator("symbol")
+    @classmethod
+    def upper(cls, v: str) -> str: return v.upper()
+
+class TradeRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)   # from ORM
+    id: int
+    symbol: str
+    qty: Decimal
+    price: Decimal
+    created_at: datetime
+
+class UserCreate(BaseModel):
+    email:    EmailStr            # validated email format
+    password: SecretStr            # hidden in repr/logs
+    site:     HttpUrl | None = None</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Model validator (cross-field rules)</div>
+      <div class="py">from pydantic import model_validator
+from typing_extensions import Self
+
+class DateRange(BaseModel):
+    start: datetime
+    end:   datetime
+
+    @model_validator(mode="after")
+    def check_range(self) -> Self:
+        if self.end &lt;= self.start:
+            raise ValueError("end must be after start")
+        return self</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Computed field</div>
+      <div class="py">from pydantic import computed_field
+
+class TradeRead(BaseModel):
+    qty: Decimal; price: Decimal
+    @computed_field
+    @property
+    def gross(self) -> Decimal:
+        return self.qty * self.price</div>
+    </div>
+  </div>
+
+  <!-- ════════════ ROUTES ════════════ -->
+  <div class="sec model">
+    <h2>▲ Routes — status, response_model, OpenAPI</h2>
+    <div class="py">from fastapi import APIRouter, status, Query, Path, Header
+router = APIRouter(prefix="/v1/trades", tags=["trades"])
+
+@router.get(
+    "/{trade_id}",
+    response_model=TradeRead,
+    responses={404: {"description": "Trade not found"}},
+    summary="Fetch a trade by ID",
+)
+async def get_trade(
+    trade_id: Annotated[int, Path(gt=0)],
+    session:  SessionDep,
+    user:     CurrentUser,
+    x_request_id: Annotated[str | None, Header()] = None,
+) -> TradeRead:
+    return await TradeService(session).get(trade_id, user.id)
+
+@router.get("/", response_model=list[TradeRead])
+async def list_trades(
+    session: SessionDep, user: CurrentUser,
+    limit:  Annotated[int, Query(ge=1, le=100)] = 20,
+    cursor: Annotated[int | None, Query()] = None,
+): ...</div>
+    <table>
+      <tr><th>Verb</th><th>Default status</th><th>Use</th></tr>
+      <tr><td>GET</td><td>200</td><td>read; idempotent</td></tr>
+      <tr><td>POST</td><td>201</td><td>create resource</td></tr>
+      <tr><td>PATCH</td><td>200</td><td>partial update</td></tr>
+      <tr><td>PUT</td><td>200/204</td><td>full replace (idempotent)</td></tr>
+      <tr><td>DELETE</td><td>204</td><td>no content on success</td></tr>
+    </table>
+  </div>
+
+  <!-- ════════════ AUTH ════════════ -->
+  <div class="sec metric">
+    <h2>◆ Auth — JWT + Argon2 (canonical 2026)</h2>
+
+    <div class="p">
+      <div class="name">Password hashing (pwdlib + Argon2id)</div>
+      <div class="py">from pwdlib import PasswordHash
+from pwdlib.hashers.argon2 import Argon2Hasher
+password_hash = PasswordHash((Argon2Hasher(),))
+
+def hash_pw(plain: str) -> str: return password_hash.hash(plain)
+def verify_pw(plain: str, hashed: str) -> bool:
+    return password_hash.verify(plain, hashed)</div>
+      <div class="rf">Argon2id (memory-hard) is OWASP's current first choice. Bcrypt OK as a fallback.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">JWT issuance + decode (PyJWT — canonical 2026)</div>
+      <div class="py">import jwt                                          # uv add pyjwt[crypto]
+from datetime import datetime, timedelta, timezone
+import uuid
+
+ALG = "HS256"
+ISS = "api.example.com"
+AUD = "api.example.com"
+
+def create_token(sub: str, secret: str, minutes: int = 15) -> str:
+    now = datetime.now(timezone.utc)
+    payload = {
+        "sub": sub,
+        "iat": now,
+        "exp": now + timedelta(minutes=minutes),
+        "iss": ISS, "aud": AUD,                     # prevent cross-service replay
+        "jti": str(uuid.uuid4()),                   # token id (for revocation list)
+    }
+    return jwt.encode(payload, secret, algorithm=ALG)
+
+def decode_token(tok: str, secret: str) -> dict:
+    try:
+        return jwt.decode(tok, secret, algorithms=[ALG],     # explicit list defends alg=none
+                          audience=AUD, issuer=ISS,
+                          options={"require": ["exp", "iat", "iss", "aud", "sub"]})
+    except jwt.PyJWTError: raise CredentialsError</div>
+      <div class="danger"><b>Don't use <code>python-jose</code></b> — unmaintained since 2024 with unpatched CVEs (CVE-2024-33663 algorithm-confusion, CVE-2024-33664 DoS). Use <code>PyJWT</code> (or <code>authlib</code>).</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Refresh-token rotation (prod auth)</div>
+      <div class="py"># Short-lived ACCESS (15m) + long-lived REFRESH (7d) with rotation + reuse detection.
+@router.post("/token/refresh")
+async def refresh(refresh_token: str, session: SessionDep, settings: SettingsDep):
+    payload = decode_token(refresh_token, settings.secret_key.get_secret_value())
+    jti = payload["jti"]
+    if await is_revoked(jti):                       # reuse detection
+        await revoke_user_all(payload["sub"])       # SECURITY: rotate everything
+        raise CredentialsError
+    await revoke(jti)                               # one-time use → blacklist old jti
+    return {
+        "access_token":  create_token(payload["sub"], ..., minutes=15),
+        "refresh_token": create_token(payload["sub"], ..., minutes=60*24*7),
+        "token_type": "bearer",
+    }</div>
+    </div>
+
+    <div class="p">
+      <div class="name">OAuth2 dep (`get_current_user`)</div>
+      <div class="py">from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/v1/auth/token")
+
+async def get_current_user(
+    token:    Annotated[str, Depends(oauth2_scheme)],
+    session:  SessionDep,
+    settings: SettingsDep,
+) -> User:
+    payload = decode_token(token, settings.secret_key.get_secret_value())
+    user = await session.scalar(select(User).where(User.id == int(payload["sub"])))
+    if user is None: raise CredentialsError
+    return user
+
+CurrentUser = Annotated[User, Depends(get_current_user)]</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Login route (OAuth2 form)</div>
+      <div class="py">@router.post("/token")
+async def login(
+    form:    Annotated[OAuth2PasswordRequestForm, Depends()],
+    session: SessionDep, settings: SettingsDep,
+):
+    user = await session.scalar(select(User).where(User.email == form.username))
+    if user is None or not verify_pw(form.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Bad credentials",
+                            headers={"WWW-Authenticate": "Bearer"})
+    secret = settings.secret_key.get_secret_value()
+    return {"access_token":  create_token(str(user.id), secret, minutes=15),
+            "refresh_token": create_token(str(user.id), secret, minutes=60*24*7),
+            "token_type": "bearer"}</div>
+    </div>
+  </div>
+
+  <!-- ════════════ AUTHZ ════════════ -->
+  <div class="sec metric">
+    <h2>◆ Authorization — close BOLA (OWASP API1)</h2>
+    <div class="py"># Every read/write of an object MUST verify owner_id (or role) in the SERVICE.
+class TradeService:
+    def __init__(self, session: AsyncSession): self.s = session
+
+    async def get(self, trade_id: int, user_id: int) -> Trade:
+        t = await self.s.scalar(select(Trade).where(Trade.id == trade_id))
+        if t is None: raise NotFoundError("Trade")
+        if t.owner_id != user_id:                  # ← BOLA check
+            raise ForbiddenError("Not your trade")
+        return t</div>
+    <div class="danger"><b>BOLA = Broken Object-Level Authz</b> = #1 API risk (OWASP). Default-deny. Every GET / PATCH / DELETE that takes an ID must verify ownership before returning. ID-only checks (request path parses to int) are NOT enough.</div>
+  </div>
+
+  <!-- ════════════ ERROR HANDLING ════════════ -->
+  <div class="sec metric">
+    <h2>◆ Error handling — one mapping</h2>
+    <div class="py"># app/exceptions.py — domain exceptions
+class NotFoundError(Exception):   pass
+class ConflictError(Exception):   pass
+class ForbiddenError(Exception):  pass
+class CredentialsError(Exception): pass
+
+# app/main.py — single registry, every domain exception → HTTP code
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(NotFoundError)
+async def _nf(req: Request, exc: NotFoundError):
+    return JSONResponse(status_code=404, content={"detail": str(exc) or "Not found"})
+
+@app.exception_handler(ConflictError)
+async def _conf(req: Request, exc: ConflictError):
+    return JSONResponse(status_code=409, content={"detail": str(exc) or "Conflict"})
+
+@app.exception_handler(ForbiddenError)
+async def _fb(req: Request, exc: ForbiddenError):
+    return JSONResponse(status_code=403, content={"detail": "Forbidden"})
+
+# Pydantic ValidationError handled automatically by FastAPI → 422</div>
+    <div class="danger"><b>NEVER</b> include stack traces / SQL / internal error text in JSON. Log it (with request_id), return a generic message.</div>
+  </div>
+
+  <!-- ════════════ CONFIG ════════════ -->
+  <div class="sec frame">
+    <h2>● Config — pydantic-settings + @lru_cache</h2>
+    <div class="py">from pydantic import SecretStr, PostgresDsn
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from functools import lru_cache
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore",
+                                       case_sensitive=False)
+    # nested: ENV var "DB__POOL_SIZE" overrides db.pool_size
+    database_url:   PostgresDsn
+    secret_key:     SecretStr                 # hidden in repr/logs
+    cors_origins:   list[str] = []
+    rate_limit_per_minute: int = 100
+
+@lru_cache
+def get_settings() -> Settings: return Settings()</div>
+    <div class="rf">Read once at startup; cached forever. Override via env vars (12-factor). Use <code>SecretStr</code> for any credential — never plain <code>str</code>.</div>
+  </div>
+
+  <!-- ════════════ MIDDLEWARE ════════════ -->
+  <div class="sec cv">
+    <h2>● Middleware stack (order = onion)</h2>
+    <div class="py"># LAST added = FIRST to hit the request (and LAST to see the response).
+# Add OUTER → INNER:
+app.add_middleware(GZipMiddleware, minimum_size=500)
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["api.example.com"])
+app.add_middleware(CORSMiddleware,
+    allow_origins=settings.cors_origins,        # specific URLs only
+    allow_credentials=True,
+    allow_methods=["GET","POST","PATCH","DELETE"],
+    allow_headers=["Authorization","Content-Type"])
+
+# Custom security headers + request-id middleware:
+@app.middleware("http")
+async def sec_headers(request: Request, call_next):
+    rid = request.headers.get("X-Request-Id") or str(uuid.uuid4())
+    request.state.request_id = rid
+    resp = await call_next(request)
+    resp.headers["X-Request-Id"] = rid
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    resp.headers["X-Frame-Options"] = "DENY"
+    resp.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    resp.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
+    return resp</div>
+    <div class="danger"><b>CORS:</b> NEVER <code>allow_origins=["*"]</code> with <code>allow_credentials=True</code> — silently dropped by browsers. Use explicit origins.</div>
+  </div>
+
+  <!-- ════════════ PAGINATION + RATE LIMIT ════════════ -->
+  <div class="sec cv">
+    <h2>● Pagination + rate limiting (OWASP API4)</h2>
+
+    <div class="p">
+      <div class="name">Cursor pagination (canonical for large tables)</div>
+      <div class="py">@router.get("/trades", response_model=Page[TradeRead])
+async def list_trades(
+    session: SessionDep, user: CurrentUser,
+    limit:  Annotated[int, Query(ge=1, le=100)] = 20,
+    cursor: Annotated[int | None, Query()] = None,
+):
+    stmt = (select(Trade).where(Trade.owner_id == user.id)
+             .order_by(Trade.id.desc()).limit(limit + 1))
+    if cursor: stmt = stmt.where(Trade.id &lt; cursor)
+    rows = (await session.scalars(stmt)).all()
+    next_cursor = rows[limit].id if len(rows) &gt; limit else None
+    return Page(items=rows[:limit], next_cursor=next_cursor)</div>
+      <div class="rf">Cursor is stable under inserts (offset isn't). Always cap <code>limit</code> with <code>le=</code>.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Rate limit (slowapi)</div>
+      <div class="py">from slowapi import Limiter
+from slowapi.util import get_remote_address
+limiter = Limiter(key_func=get_remote_address,
+                   default_limits=["100/minute"])
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_handler)
+
+@router.post("/trades")
+@limiter.limit("10/minute")              # per-route override
+async def create_trade(request: Request, ...): ...</div>
+    </div>
+  </div>
+
+  <!-- ════════════ BACKGROUND TASKS ════════════ -->
+  <div class="sec diag">
+    <h2>◆ Background tasks (fire-and-forget)</h2>
+    <div class="py">from fastapi import BackgroundTasks
+
+@router.post("/trades")
+async def create_trade(payload: TradeCreate, session: SessionDep,
+                        bg: BackgroundTasks, user: CurrentUser):
+    trade = await TradeService(session).create(payload, user.id)
+    bg.add_task(send_confirmation_email, user.email, trade.id)   # runs AFTER response
+    return trade</div>
+    <div class="danger"><b>Single-worker only.</b> If the worker crashes, the task is LOST. For multi-process / durable jobs use Celery / RQ / Arq / Dramatiq.</div>
+  </div>
+
+  <!-- ════════════ STREAMING ════════════ -->
+  <div class="sec diag">
+    <h2>◆ Streaming / SSE / WebSockets</h2>
+
+    <div class="p">
+      <div class="name">NDJSON streaming (large CSV / generators)</div>
+      <div class="py">from fastapi.responses import StreamingResponse
+import json
+
+@router.get("/trades/export")
+async def export(session: SessionDep, user: CurrentUser):
+    async def rows():
+        async for t in session.stream_scalars(
+                select(Trade).where(Trade.owner_id == user.id)):
+            yield json.dumps(TradeRead.model_validate(t).model_dump()) + "\n"
+    return StreamingResponse(rows(), media_type="application/x-ndjson")</div>
+    </div>
+
+    <div class="p">
+      <div class="name">SSE (server-sent events) — sse-starlette</div>
+      <div class="py">from sse_starlette import EventSourceResponse        # uv add sse-starlette
+
+@router.get("/stream")
+async def stream(user: CurrentUser):
+    async def gen():
+        async for chunk in llm.astream("..."):
+            yield {"event": "message", "data": chunk.content}
+    return EventSourceResponse(gen())</div>
+      <div class="rf">Use <code>sse-starlette</code> for correct SSE framing (heartbeats, retries). Don't roll your own <code>data: …\n\n</code> string.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">WebSockets (bidirectional)</div>
+      <div class="py">from fastapi import WebSocket, WebSocketDisconnect
+
+@app.websocket("/ws")
+async def ws(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        while True:
+            msg = await websocket.receive_json()
+            await websocket.send_json({"echo": msg})
+    except WebSocketDisconnect:
+        pass</div>
+      <div class="rf">Auth BEFORE <code>accept()</code>. <code>Depends</code> IS supported on WS routes, but you cannot <code>raise HTTPException</code> — reject with <code>await websocket.close(code=1008)</code> instead.</div>
+    </div>
+  </div>
+
+  <!-- ════════════ OBSERVABILITY ════════════ -->
+  <div class="sec deploy">
+    <h2>◆ Observability</h2>
+    <div class="py">import structlog, time, uuid
+log = structlog.get_logger()
+
+@app.middleware("http")
+async def access_log(request: Request, call_next):
+    t0 = time.perf_counter()
+    rid = getattr(request.state, "request_id", str(uuid.uuid4()))
+    try:
+        resp = await call_next(request)
+        log.info("http", request_id=rid, method=request.method,
+                 path=request.url.path, status=resp.status_code,
+                 latency_ms=round((time.perf_counter()-t0)*1000, 2))
+        return resp
+    except Exception:
+        log.exception("http_error", request_id=rid)
+        raise</div>
+    <div class="rf"><b>Stack:</b> <code>structlog</code> (JSON logs) + <code>opentelemetry-instrumentation-fastapi</code> (traces) + <code>prometheus-fastapi-instrumentator</code> (metrics). Pin <code>X-Request-Id</code> on every log line.</div>
+  </div>
+
+  <!-- ════════════ TESTING ════════════ -->
+  <div class="sec deploy">
+    <h2>◆ Testing — pytest + httpx + transactional rollback</h2>
+    <div class="py">import pytest, pytest_asyncio
+from httpx import AsyncClient, ASGITransport
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+
+@pytest_asyncio.fixture
+async def session():
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    Sess = async_sessionmaker(engine, expire_on_commit=False)
+    async with Sess() as s:
+        yield s
+    await engine.dispose()
+
+@pytest_asyncio.fixture
+async def client(session):
+    async def override(): yield session
+    app.dependency_overrides[get_session] = override
+    async with AsyncClient(transport=ASGITransport(app=app),
+                            base_url="http://t") as c:
+        yield c
+    app.dependency_overrides.clear()
+
+@pytest.mark.asyncio
+async def test_create_trade(client, auth_headers):
+    r = await client.post("/v1/trades",
+                           json={"symbol":"AAPL","qty":1,"price":100},
+                           headers=auth_headers)
+    assert r.status_code == 201
+    assert r.json()["symbol"] == "AAPL"</div>
+    <div class="rf"><b>Canonical patterns:</b> <code>AsyncClient(transport=ASGITransport(app=app))</code> (no live server); <code>dependency_overrides</code> for swap; one engine per test for isolation.</div>
+  </div>
+
+  <!-- ════════════ DEPLOY ════════════ -->
+  <div class="sec deploy">
+    <h2>◆ Deploy — uvicorn + gunicorn</h2>
+    <div class="py"># Production process: gunicorn manages N uvicorn workers
+uv run gunicorn app.main:app \
+    --workers 4 \                          # N = 2 × CPU + 1 (sync) or CPU (async)
+    --worker-class uvicorn.workers.UvicornWorker \
+    --bind 0.0.0.0:8000 \
+    --timeout 30 \
+    --graceful-timeout 30 \
+    --keep-alive 5 \
+    --access-logfile - --error-logfile -
+
+# Docker (slim multi-stage):
+FROM python:3.12-slim AS base
+RUN pip install uv
+WORKDIR /app
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev
+COPY . .
+EXPOSE 8000
+CMD ["uv","run","gunicorn","app.main:app",
+     "--workers","4","--worker-class","uvicorn.workers.UvicornWorker",
+     "--bind","0.0.0.0:8000"]</div>
+    <ul class="tight">
+      <li>Run behind a reverse proxy (nginx / Traefik) for TLS termination + buffering.</li>
+      <li>HSTS + <code>HTTPSRedirectMiddleware</code> at the proxy side.</li>
+      <li><b>Two healthchecks</b>: <code>/healthz</code> (liveness, cheap — process alive) vs <code>/readyz</code> (readiness — does DB ping). Conflating them causes restart storms on transient DB blips.</li>
+      <li><b>Workers</b>: <code>2×CPU+1</code> for sync; for ASYNC use <code>CPU count</code> (over-subscribing wastes connections).</li>
+      <li><b>Migrations</b>: separate step (NOT at lifespan), run once per deploy before workers start.</li>
+    </ul>
+  </div>
+
+  <!-- ════════════ ALEMBIC ════════════ -->
+  <div class="sec deploy">
+    <h2>◆ Migrations — Alembic (async-aware)</h2>
+    <div class="py"># 1. Bootstrap (one-time):
+uv add alembic
+alembic init -t async migrations
+
+# 2. Edit migrations/env.py — point to your Base.metadata:
+from app.models import Base
+target_metadata = Base.metadata
+# (and read DATABASE_URL from your Settings, not alembic.ini)
+
+# 3. Autogenerate + review + apply (per change):
+alembic revision --autogenerate -m "add trades table"
+# REVIEW generated SQL — autogenerate misses: index drops, enum changes,
+# server_default changes, custom types. Hand-edit before applying.
+alembic upgrade head
+
+# 4. Deploy ordering — migrations BEFORE new workers boot:
+#    a. apply alembic upgrade head     (separate CI job / init container)
+#    b. roll the new app workers
+#    c. roll the old workers out
+
+# Downgrade for rollback:
+alembic downgrade -1</div>
+    <div class="danger"><b>Test fixtures</b> use <code>Base.metadata.create_all</code> — that's DEV ONLY. Production tables MUST come through Alembic so every schema change has a reviewed migration + rollback path.</div>
+  </div>
+
+  <!-- ════════════ OWASP ════════════ -->
+  <div class="sec trap">
+    <h2>▲ OWASP API Top 10 (2023) — coverage</h2>
+    <table>
+      <tr><th>#</th><th>Risk</th><th>Defence</th></tr>
+      <tr><td>API1</td><td>BOLA</td><td>owner check in service for every object access</td></tr>
+      <tr><td>API2</td><td>Broken Auth</td><td>JWT + Argon2 + token expiry + rotate secrets</td></tr>
+      <tr><td>API3</td><td>Excessive data exposure</td><td><code>response_model</code> filters output to declared fields</td></tr>
+      <tr><td>API4</td><td>Unrestricted resource</td><td><code>limit</code> caps + rate limits</td></tr>
+      <tr><td>API5</td><td>Broken Function Authz</td><td>role check in dep (<code>require_role("admin")</code>)</td></tr>
+      <tr><td>API6</td><td>Unrestricted business flows</td><td>idempotency keys (<code>Idempotency-Key</code> header → dedupe table); per-resource quotas</td></tr>
+      <tr><td>API7</td><td>SSRF</td><td>validate <code>HttpUrl</code>; block private IP ranges</td></tr>
+      <tr><td>API8</td><td>Security misconfig</td><td>TrustedHost · CORS specific · security headers · no debug</td></tr>
+      <tr><td>API9</td><td>Inventory mgmt</td><td>version routers (<code>/v1</code>); deprecate old versions</td></tr>
+      <tr><td>API10</td><td>Unsafe API consumption</td><td>validate ALL upstream API responses with Pydantic too</td></tr>
+    </table>
+  </div>
+
+  <!-- ════════════ ASYNC DO/DONT ════════════ -->
+  <div class="sec trap">
+    <h2>▲ Async do/don't</h2>
+    <table>
+      <tr><th>DO</th><th>DON'T</th></tr>
+      <tr><td><code>async def</code> + <code>await</code> for all I/O</td><td>mix sync DB driver in async path</td></tr>
+      <tr><td><code>asyncio.gather(*tasks)</code> for concurrency</td><td>blocking <code>requests.get</code> — use <code>httpx.AsyncClient</code></td></tr>
+      <tr><td><code>asyncio.to_thread(fn)</code> for CPU/blocking libs</td><td>blocking sleep — use <code>asyncio.sleep</code></td></tr>
+      <tr><td><code>async with</code> session / client</td><td>forget to <code>await</code> a coroutine (silent bug)</td></tr>
+      <tr><td>async generators for streaming</td><td>open and not close async resources</td></tr>
+    </table>
+  </div>
+
+  <!-- ════════════ TRAPS ════════════ -->
+  <div class="sec trap">
+    <h2>▲ Top anti-patterns (6-month memory)</h2>
+    <ul class="tight">
+      <li><b>SQL in route</b> → bypass service; can't unit-test business logic.</li>
+      <li><b><code>HTTPException</code> in service</b> → couples business code to HTTP. Use domain exceptions.</li>
+      <li><b><code>response_model</code> missing</b> → output leaks <code>password_hash</code>, internal IDs.</li>
+      <li><b>Sync DB driver</b> (<code>psycopg2</code>) in async path → entire worker blocks. Use <code>asyncpg</code>.</li>
+      <li><b><code>on_event("startup")</code></b> deprecated → use <code>lifespan</code>.</li>
+      <li><b><code>x = Depends(...)</code></b> deprecated → use <code>Annotated[T, Depends(...)]</code>.</li>
+      <li><b><code>session.query()</code></b> legacy → use <code>select() + execute/scalars</code>.</li>
+      <li><b><code>Column()</code></b> legacy → use <code>Mapped[]</code> + <code>mapped_column</code>.</li>
+      <li><b>Plain <code>str</code> for password/email/URL</b> → use <code>SecretStr</code> / <code>EmailStr</code> / <code>HttpUrl</code>.</li>
+      <li><b>Stack traces in JSON errors</b> → leaks internals. Log it, return generic.</li>
+      <li><b>BackgroundTasks for "important" jobs</b> → lost on worker crash. Celery / RQ instead.</li>
+      <li><b><code>CORSMiddleware allow_origins=["*"]</code></b> with credentials → silently dropped.</li>
+      <li><b>Forgetting BOLA check</b> → user A reads user B's data. Default-deny in service.</li>
+      <li><b>Forgetting <code>.commit()</code></b> in async session → writes silently lost. <code>expire_on_commit=False</code> in factory.</li>
+      <li><b>N+1 query</b> → use <code>selectinload</code> / <code>joinedload</code> on relationships.</li>
+      <li><b><code>python-jose</code></b> unmaintained + CVEs → use <code>PyJWT</code>.</li>
+      <li><b><code>datetime.utcnow</code></b> deprecated 3.12+ → <code>datetime.now(timezone.utc)</code>.</li>
+      <li><b>slowapi without <code>request: Request</code></b> in route signature → silent no-op. Required as first non-self param.</li>
+      <li><b><code>asyncpg</code> + PgBouncer transaction pooling</b> conflicts (prepared statements). Use session pooling, or switch to <code>psycopg[binary,pool]</code> v3.</li>
+      <li><b><code>cors_origins=[]</code> env parsing</b>: pydantic-settings expects JSON (<code>CORS_ORIGINS='["a","b"]'</code>), not comma-sep. Add a <code>@field_validator</code> if you want commas.</li>
+      <li><b>One <code>/health</code></b> doing DB ping → restart storms on transient blips. Split <code>/healthz</code> (liveness) vs <code>/readyz</code> (readiness).</li>
+    </ul>
+  </div>
+
+  <!-- ════════════ QUICK REFERENCE ════════════ -->
+  <div class="sec master">
+    <h2>◆ Quick-reference (recall in 5 seconds)</h2>
+    <table>
+      <tr><th>Task</th><th>Canonical pattern</th></tr>
+      <tr><td>Startup/shutdown</td><td><code>@asynccontextmanager lifespan(app)</code> + <code>FastAPI(lifespan=lifespan)</code></td></tr>
+      <tr><td>DI</td><td><code>Annotated[T, Depends(dep)]</code> + type-alias <code>SessionDep</code></td></tr>
+      <tr><td>Settings</td><td><code>pydantic-settings BaseSettings</code> + <code>@lru_cache get_settings()</code></td></tr>
+      <tr><td>ORM model</td><td><code>class X(Base): id: Mapped[int] = mapped_column(primary_key=True)</code></td></tr>
+      <tr><td>Async DB</td><td><code>create_async_engine</code> + <code>async_sessionmaker(expire_on_commit=False)</code></td></tr>
+      <tr><td>Query</td><td><code>await session.scalars(select(M).where(...))</code></td></tr>
+      <tr><td>Eager load</td><td><code>.options(selectinload(M.rel))</code></td></tr>
+      <tr><td>Request body</td><td><code>payload: TradeCreate</code> (Pydantic v2 BaseModel)</td></tr>
+      <tr><td>Response shape</td><td><code>response_model=TradeRead</code> + <code>ConfigDict(from_attributes=True)</code></td></tr>
+      <tr><td>Status</td><td><code>status_code=status.HTTP_201_CREATED</code></td></tr>
+      <tr><td>Password</td><td><code>pwdlib + Argon2Hasher</code></td></tr>
+      <tr><td>JWT</td><td><code>python-jose</code> · HS256 · <code>exp</code> + <code>iat</code> always</td></tr>
+      <tr><td>Auth dep</td><td><code>OAuth2PasswordBearer(tokenUrl="/v1/auth/token")</code></td></tr>
+      <tr><td>BOLA check</td><td>service compares <code>obj.owner_id == user.id</code></td></tr>
+      <tr><td>Errors</td><td>domain exceptions + <code>@app.exception_handler</code> registry</td></tr>
+      <tr><td>Rate limit</td><td><code>slowapi</code> + <code>@limiter.limit("10/minute")</code></td></tr>
+      <tr><td>Pagination</td><td>cursor-based (<code>id &lt; cursor</code>) + <code>limit=Query(ge=1, le=100)</code></td></tr>
+      <tr><td>Background</td><td><code>BackgroundTasks</code> for fire-and-forget; Celery for durable</td></tr>
+      <tr><td>Streaming</td><td><code>StreamingResponse(async_gen(), media_type=...)</code></td></tr>
+      <tr><td>SSE</td><td><code>sse-starlette EventSourceResponse</code></td></tr>
+      <tr><td>WebSocket</td><td><code>@app.websocket("/ws")</code> + auth BEFORE <code>accept()</code></td></tr>
+      <tr><td>Tests</td><td><code>AsyncClient(transport=ASGITransport(app=app))</code> + <code>dependency_overrides</code></td></tr>
+      <tr><td>Deploy</td><td><code>gunicorn -k uvicorn.workers.UvicornWorker -w 4</code></td></tr>
+      <tr><td>Migrations</td><td><code>alembic upgrade head</code> — separate from lifespan</td></tr>
+    </table>
+  </div>
+
+</div> <!-- /cols -->
+
+</body>
+</html>

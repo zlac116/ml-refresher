@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LLM Pipeline (LangChain + LangGraph) — Project Recipe Card</title>
+<style>
+@page { size: A4 landscape; margin: 0.35cm 0.35cm 0.45cm 0.35cm;
+        @bottom-right { content: counter(page) " / " counter(pages); font: 6pt 'DejaVu Sans', sans-serif; color: #aaa; } }
+* { box-sizing: border-box; }
+body { font-family: 'DejaVu Sans', sans-serif; font-size: 7pt; line-height: 1.15; color: #1a1a1a; margin: 0; padding: 0; }
+code, .formula, .py, pre { font-family: 'DejaVu Sans Mono', monospace; font-size: 6.6pt; }
+
+.banner { background: #0e6e8a; color: #fff; padding: 3px 7px; margin-bottom: 3px; border-radius: 2px; }
+.banner h1 { font-size: 11pt; margin: 0; }
+.banner .sub { font-size: 6.6pt; color: #cfe7ee; margin-top: 0; }
+.banner .sub code { color: #fff; background: rgba(0,0,0,0.18); padding: 0 2px; border-radius: 1px; }
+
+.cols { column-count: 3; column-gap: 5px; column-rule: 1px solid #ccc; column-fill: auto; }
+
+.sec { break-inside: avoid; margin: 0 0 3px 0; padding: 2px 4px 3px 5px; border-radius: 2px; border-left: 3px solid; }
+.sec h2 { font-size: 7.8pt; font-weight: bold; margin: 0 0 1px 0; padding: 0px 4px; border-radius: 2px; color: #fff; display: inline-block; }
+.sec h3 { font-size: 6.7pt; font-weight: bold; margin: 2px 0 0 0; color: #0e6e8a; text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* Family palette — same scheme as ml/ cards for series consistency */
+.master  { background: #fff8d9; border-left-color: #806c0e; }  .master  h2 { background: #806c0e; }
+.frame   { background: #e7f2fa; border-left-color: #2e6b9c; }  .frame   h2 { background: #2e6b9c; }
+.model   { background: #e7fae9; border-left-color: #2e9c47; }  .model   h2 { background: #2e9c47; }
+.metric  { background: #f0e7fa; border-left-color: #6e3e9c; }  .metric  h2 { background: #6e3e9c; }
+.cv      { background: #e7faf9; border-left-color: #1a8a8a; }  .cv      h2 { background: #1a8a8a; }
+.tune    { background: #fbf2e6; border-left-color: #b06c0e; }  .tune    h2 { background: #b06c0e; }
+.diag    { background: #f7e6d5; border-left-color: #a05210; }  .diag    h2 { background: #a05210; }
+.deploy  { background: #ededed; border-left-color: #555;    }  .deploy  h2 { background: #555;    }
+.trap    { background: #fae0e0; border-left-color: #7a1a1a; }  .trap    h2 { background: #7a1a1a; }
+
+.p { margin: 0 0 2px 0; }
+.p .name { font-weight: bold; font-size: 7.2pt; }
+.p .name .tag { font-size: 6pt; color: #555; font-weight: normal; }
+.p .formula { display: block; background: rgba(255,255,255,0.55); padding: 0 4px;
+              border-left: 2px solid currentColor; margin: 1px 0; white-space: pre-wrap; }
+.p .py { display: block; background: rgba(0,0,0,0.04); padding: 1px 4px; margin: 1px 0;
+         border-left: 2px solid #555; white-space: pre-wrap; }
+.p .use { font-style: italic; color: #2a2a2a; font-size: 6.5pt; }
+.p .rf  { font-size: 6.1pt; color: #444; }
+
+.recipe ol { margin: 0; padding: 0 0 0 14px; }
+.recipe ol li { margin: 0; }
+.recipe .step { font-weight: bold; }
+table { border-collapse: collapse; width: 100%; font-size: 6.4pt; margin: 1px 0; }
+th, td { border: 1px solid #c0c0c0; padding: 0.5px 3px; text-align: left; vertical-align: top; }
+th { background: #e8e8e8; font-weight: bold; }
+ul.tight { margin: 0; padding: 0 0 0 13px; }
+ul.tight li { margin: 0; }
+
+.callout { background: #fff; border-left: 3px solid #d4a800; padding: 1px 4px; margin: 2px 0; font-size: 6.3pt; }
+.danger  { background: #fff; border-left: 3px solid #b8341a; padding: 1px 4px; margin: 2px 0; font-size: 6.3pt; }
+.danger b:first-child { color: #b8341a; }
+
+/* Top-level — standalone .py / .formula blocks need their own rule (not just inside .p) */
+.py { display: block; background: rgba(0,0,0,0.04); padding: 1px 4px; margin: 1px 0;
+      border-left: 2px solid #555; white-space: pre-wrap;
+      font-family: 'DejaVu Sans Mono', monospace; font-size: 6.6pt; }
+.formula { display: block; background: rgba(255,255,255,0.55); padding: 0 4px;
+           border-left: 2px solid currentColor; margin: 1px 0; white-space: pre-wrap;
+           font-family: 'DejaVu Sans Mono', monospace; font-size: 6.6pt; }
+
+/* === DENSE-FORMAT OVERRIDE (uniform across cards, mlflow_card parity) === */
+.cols { column-fill: balance !important; }
+.sec { break-inside: auto !important;
+       margin: 0 0 1px 0 !important;
+       padding: 1px 4px 2px 5px !important; }
+.sec h2 { margin: 0 !important; padding: 0 3px !important; }
+.sec h3 { margin: 1px 0 0 0 !important; }
+.sec > *:last-child { margin-bottom: 0 !important; }
+.p { margin: 0 !important; }
+.p .formula, .p .py { margin: 0 !important; padding: 0 4px !important; }
+.py, .formula { margin: 0 !important; padding: 0 4px !important; overflow-wrap: anywhere !important; }
+.callout, .danger { padding: 0 4px !important; margin: 1px 0 !important; }
+td code { word-break: break-all; overflow-wrap: anywhere; }
+.sec table, .sec ul.tight { break-inside: auto; }
+.sec.trap { break-inside: auto !important; }
+.sec h2 + *, .sec h3 + * { break-before: avoid; }
+</style>
+</head>
+<body>
+
+<div class="banner">
+  <h1>LLM Pipeline (LangChain + LangGraph) — Project Recipe Card</h1>
+  <div class="sub">2 paradigms · 10-line agent · LCEL · StateGraph · tools · RAG · multi-agent · HITL · streaming · observability. Deep companion: <code>llm_cheatsheet.md</code> + <code>llm_pipeline.ipynb</code></div>
+</div>
+
+<div class="cols">
+
+  <!-- ════════════ MASTER PATTERN ════════════ -->
+  <div class="sec master">
+    <h2>◆ The 2 paradigms (decide FIRST)</h2>
+    <table>
+      <tr><th>Work shape</th><th>Tool</th></tr>
+      <tr><td>Linear: input → transform → model → parse</td><td><b>LCEL</b> (<code>|</code> pipe)</td></tr>
+      <tr><td>RAG (retrieve → augment → generate)</td><td><b>LCEL</b></td></tr>
+      <tr><td>Few-shot · summarise · structured extract</td><td><b>LCEL</b></td></tr>
+      <tr><td>Tool-calling agent (loop until done)</td><td><b>LangGraph</b></td></tr>
+      <tr><td>Multi-agent · routing</td><td><b>LangGraph</b></td></tr>
+      <tr><td>HITL approval gates</td><td><b>LangGraph</b></td></tr>
+      <tr><td>Branching/long-running conversation</td><td><b>LangGraph</b></td></tr>
+    </table>
+    <div class="callout"><b>Rule:</b> linear = LCEL. Conditional / iterative = LangGraph. Don't shoehorn a state machine into LCEL; don't wrap a 3-line RAG chain in a graph.</div>
+  </div>
+
+  <div class="sec master">
+    <h2>◆ LCEL pattern (4 steps, always the same)</h2>
+    <div class="py">chain = prompt | model | parser              # 1. COMPOSE: pipe Runnables
+chain.invoke({"input": ...})                  # 2. INVOKE: sync, single shot
+async for chunk in chain.astream({...}): ...  # 3. STREAM: async tokens
+chain.batch([{...}, {...}, {...}])             # 4. BATCH: concurrent runs
+# Every Runnable supports invoke / ainvoke / stream / astream / batch / abatch</div>
+  </div>
+
+  <div class="sec master">
+    <h2>◆ LangGraph pattern (5 steps, always the same)</h2>
+    <div class="py">from typing import Annotated, TypedDict
+from langgraph.graph import StateGraph, START, END
+from langgraph.graph.message import add_messages
+from langgraph.checkpoint.memory import InMemorySaver
+
+# 1. STATE — shape that flows between nodes (TypedDict + reducers)
+class State(TypedDict):
+    messages: Annotated[list, add_messages]
+
+# 2. NODES — pure functions state -> state-update (dict)
+def my_node(state: State) -> dict:
+    return {"messages": [{"role": "assistant", "content": "..."}]}
+
+# 3. GRAPH — add nodes + edges + START/END
+builder = StateGraph(State)
+builder.add_node("step1", my_node)
+builder.add_edge(START, "step1")
+builder.add_edge("step1", END)
+
+# 4. COMPILE with checkpointer (for memory + HITL)
+graph = builder.compile(checkpointer=InMemorySaver())
+
+# 5. RUN with thread_id for persistence
+config = {"configurable": {"thread_id": "user-42"}}
+out = graph.invoke({"messages": [{"role": "user", "content": "hi"}]}, config)</div>
+    <div class="callout"><b>Everything is a Runnable.</b> Both <code>graph</code> and <code>chain</code> implement the same interface (<code>invoke/stream/batch</code>).</div>
+  </div>
+
+  <!-- ════════════ STARTER ════════════ -->
+  <div class="sec master">
+    <h2>◆ Starter · 10-line tool-calling agent (LangChain 1.x)</h2>
+    <div class="py"># Canonical create_agent (LangChain ≥1.3 + LangGraph ≥1.2)
+from langchain.agents import create_agent
+from langchain.tools  import tool
+
+@tool
+def get_weather(city: str) -> str:
+    """Get weather for a given city."""
+    return f"It's sunny in {city}"
+
+agent = create_agent(
+    model="anthropic:claude-sonnet-4-6",   # provider:model string
+    tools=[get_weather],
+    system_prompt="You are a helpful assistant.",
+)
+
+out = agent.invoke({"messages": [{"role": "user", "content": "weather in Paris?"}]})
+print(out["messages"][-1].content)</div>
+    <div class="danger"><b>API change:</b> <code>langgraph.prebuilt.create_react_agent</code> (legacy) → <code>langchain.agents.create_agent</code> (1.x). <b><code>prompt=</code> kwarg → <code>system_prompt=</code></b>.</div>
+  </div>
+
+  <!-- ════════════ SETUP / ENV ════════════ -->
+  <div class="sec frame">
+    <h2>● Setup + env</h2>
+
+    <div class="p">
+      <div class="name">Install (uv)</div>
+      <div class="py">uv add langchain langgraph langsmith \
+       langchain-openai langchain-anthropic \
+       langchain-mcp-adapters chromadb \
+       pydantic tenacity</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Required env vars</div>
+      <div class="py">export OPENAI_API_KEY=sk-...
+export ANTHROPIC_API_KEY=sk-ant-...
+export LANGSMITH_API_KEY=lsv2_...
+export LANGSMITH_TRACING=true            # auto-traces ALL LC runs
+export LANGSMITH_PROJECT=my-project</div>
+      <div class="callout"><b>Trace by default.</b> Setting <code>LANGSMITH_TRACING=true</code> is the cheapest observability win in the ecosystem.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Version floors (1.x)</div>
+      <ul class="tight">
+        <li><code>langchain &gt;= 1.3</code> — <code>create_agent</code>, unified imports</li>
+        <li><code>langgraph &gt;= 1.2</code> — <code>Command</code>, modern checkpointers</li>
+        <li><code>langsmith &gt;= 0.2</code> — datasets + LLM-as-judge</li>
+        <li>Pin in <code>pyproject.toml</code> — ecosystem moves weekly</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ════════════ MODELS ════════════ -->
+  <div class="sec frame">
+    <h2>● Models — init + invoke</h2>
+
+    <div class="p">
+      <div class="name">Provider-agnostic init</div>
+      <div class="py">from langchain.chat_models import init_chat_model
+
+# String form (recommended) — "provider:model"
+m = init_chat_model("anthropic:claude-sonnet-4-6", temperature=0)
+m = init_chat_model("openai:gpt-4o", temperature=0)
+m = init_chat_model("openai:gpt-4o-mini",
+                     temperature=0.7, max_tokens=1024)
+
+# Explicit class (alternative, more knobs)
+from langchain_anthropic import ChatAnthropic
+m = ChatAnthropic(model="claude-sonnet-4-6", temperature=0)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Invoke / stream</div>
+      <div class="py">m.invoke("hi")                       # → AIMessage
+m.invoke([{"role":"user", "content":"hi"}])
+async for chunk in m.astream("hi"):
+    print(chunk.content, end="", flush=True)
+m.batch(["q1", "q2", "q3"])           # concurrent</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Structured output (typed)</div>
+      <div class="py">from pydantic import BaseModel, Field
+
+class Joke(BaseModel):
+    setup: str
+    punchline: str
+    rating: int = Field(..., ge=1, le=10)
+
+llm = init_chat_model("openai:gpt-4o").with_structured_output(Joke)
+joke = llm.invoke("Tell me a programming joke")
+print(joke.setup, joke.punchline)        # already a Joke instance
+
+# Include raw AIMessage alongside parsed:
+llm = m.with_structured_output(Joke, include_raw=True)
+res = llm.invoke("..."); res["parsed"]; res["raw"]</div>
+      <div class="rf">Accepts Pydantic / TypedDict / JSON Schema. Pydantic = best UX.</div>
+    </div>
+  </div>
+
+  <!-- ════════════ MESSAGES ════════════ -->
+  <div class="sec frame">
+    <h2>● Messages</h2>
+    <div class="py">from langchain.messages import (
+    SystemMessage, HumanMessage, AIMessage, ToolMessage)
+
+msgs = [
+    SystemMessage("You are concise."),
+    HumanMessage("Summarise quantum tunnelling"),
+]
+m.invoke(msgs)
+
+# OpenAI-style dicts also accepted everywhere:
+m.invoke([{"role": "system",  "content": "..."},
+          {"role": "user",    "content": "..."},
+          {"role": "assistant","content": "..."}])</div>
+    <table>
+      <tr><th>Type</th><th>Use</th></tr>
+      <tr><td>SystemMessage</td><td>persona, rules, format requirements</td></tr>
+      <tr><td>HumanMessage</td><td>user input</td></tr>
+      <tr><td>AIMessage</td><td>model response (returned)</td></tr>
+      <tr><td>ToolMessage</td><td>tool result (paired with tool_call_id)</td></tr>
+    </table>
+  </div>
+
+  <!-- ════════════ PROMPTS ════════════ -->
+  <div class="sec frame">
+    <h2>● Prompts (templates)</h2>
+
+    <div class="p">
+      <div class="name">Chat template</div>
+      <div class="py">from langchain_core.prompts import ChatPromptTemplate
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You translate {src} to {dst}."),
+    ("human",  "{text}"),
+])
+prompt.invoke({"src": "EN", "dst": "FR", "text": "hello"})</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Few-shot</div>
+      <div class="py">from langchain_core.prompts import (
+    ChatPromptTemplate, FewShotChatMessagePromptTemplate)
+examples = [
+    {"q": "2+2", "a": "4"},
+    {"q": "3*5", "a": "15"},
+]
+ex_prompt = ChatPromptTemplate.from_messages(
+    [("human", "{q}"), ("ai", "{a}")])
+few = FewShotChatMessagePromptTemplate(
+    examples=examples, example_prompt=ex_prompt)
+final = ChatPromptTemplate.from_messages([
+    ("system", "You answer arithmetic."), few, ("human", "{q}")])</div>
+    </div>
+
+    <div class="p">
+      <div class="name">MessagesPlaceholder (history)</div>
+      <div class="py">from langchain_core.prompts import MessagesPlaceholder
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "..."),
+    MessagesPlaceholder("history"),
+    ("human", "{input}"),
+])
+prompt.invoke({"history": prior_msgs, "input": "..."})</div>
+    </div>
+  </div>
+
+  <!-- ════════════ LCEL ════════════ -->
+  <div class="sec model">
+    <h2>▲ LCEL composition</h2>
+
+    <div class="p">
+      <div class="name">The 5 building blocks</div>
+      <table>
+        <tr><th>Runnable</th><th>Use</th></tr>
+        <tr><td><code>RunnablePassthrough</code></td><td>identity; pass-through</td></tr>
+        <tr><td><code>RunnableLambda(fn)</code></td><td>wrap any callable</td></tr>
+        <tr><td><code>RunnableParallel({a:r1, b:r2})</code></td><td>fan-out, concurrent</td></tr>
+        <tr><td><code>RunnableBranch</code></td><td>if/else routing</td></tr>
+        <tr><td><code>RunnableSequence</code></td><td>what <code>|</code> builds</td></tr>
+      </table>
+    </div>
+
+    <div class="p">
+      <div class="name">Common pipe patterns</div>
+      <div class="py">from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough, RunnableParallel
+
+# Simple
+chain = prompt | model | StrOutputParser()
+
+# Parallel branches (single input, multiple outputs)
+chain = RunnableParallel({
+    "answer":   prompt | model | StrOutputParser(),
+    "language": detect_lang_chain,
+})
+
+# Pass extra context alongside the input
+chain = (
+    RunnablePassthrough.assign(context=retriever)
+    | prompt | model | StrOutputParser()
+)
+
+# Make any function a step
+chain = RunnableLambda(lambda x: x.upper()) | model</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Modifiers</div>
+      <div class="py">chain.with_config(tags=["prod"], metadata={"env":"v1"})
+chain.with_retry(stop_after_attempt=3,
+                  wait_exponential_jitter=True)
+chain.with_fallbacks([cheaper_model_chain])
+chain.with_listeners(on_start=..., on_end=..., on_error=...)</div>
+    </div>
+  </div>
+
+  <!-- ════════════ TOOLS ════════════ -->
+  <div class="sec model">
+    <h2>▲ Tools (function calling)</h2>
+
+    <div class="p">
+      <div class="name">@tool decorator (canonical)</div>
+      <div class="py">from langchain.tools import tool
+from pydantic import BaseModel, Field
+import yfinance as yf
+
+@tool
+def get_price(symbol: str) -> float:
+    """Return latest close price for the given ticker (USD)."""
+    return float(yf.Ticker(symbol).history(period="1d")["Close"].iloc[-1])
+
+# Structured args via Pydantic for richer schemas:
+class SearchInput(BaseModel):
+    query: str = Field(..., description="search query")
+    k: int = Field(default=5, ge=1, le=20)
+
+@tool(args_schema=SearchInput)
+def search(query: str, k: int = 5) -> list[str]:
+    """Search the knowledge base."""
+    return retriever.invoke(query)[:k]</div>
+      <div class="rf">Docstring becomes the tool description sent to the model — write it for the model.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Bind to model directly (no agent)</div>
+      <div class="py">m_with_tools = m.bind_tools([get_price, search])
+out = m_with_tools.invoke("price of AAPL?")
+# out.tool_calls == [{"name":"get_price","args":{"symbol":"AAPL"},"id":"..."}]
+for tc in out.tool_calls:
+    result = {"get_price": get_price, "search": search}[tc["name"]].invoke(tc["args"])
+    # Feed result back as ToolMessage with matching id...</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Error handling</div>
+      <div class="py">from langchain_core.tools import ToolException
+
+@tool
+def risky():
+    """Do something that might fail."""
+    raise ToolException("retryable error msg")
+# Agent will receive the exception message as a ToolMessage and can recover.</div>
+    </div>
+  </div>
+
+  <!-- ════════════ AGENTS ════════════ -->
+  <div class="sec tune">
+    <h2>▲ Agents — create_agent (1.x)</h2>
+
+    <div class="p">
+      <div class="name">Canonical agent</div>
+      <div class="py">from langchain.agents import create_agent
+from langgraph.checkpoint.memory import InMemorySaver
+
+agent = create_agent(
+    model="anthropic:claude-sonnet-4-6",   # or an instantiated model
+    tools=[get_price, search],
+    system_prompt="You answer using the supplied tools.",
+    checkpointer=InMemorySaver(),          # thread-scoped memory
+)
+config = {"configurable": {"thread_id": "user-42"}}
+agent.invoke({"messages": [{"role":"user","content":"q?"}]}, config)</div>
+      <div class="danger"><b>Old API:</b> <code>create_react_agent(model, tools, prompt=...)</code> → <b>New API:</b> <code>create_agent(model, tools, system_prompt=...)</code>. The deprecated wrapper still works as of 1.3 but emits warnings.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Customising (1.x kwargs)</div>
+      <ul class="tight">
+        <li><code>response_format=PydanticModel</code> — typed final answer (read via <code>out["structured_response"]</code>, NOT messages)</li>
+        <li><code>state_schema=MyState</code> — extend the default messages-only state</li>
+        <li><code>middleware=[...]</code> — pre/post/around model hooks (1.x replacement for legacy hooks). See Middleware section.</li>
+        <li><code>checkpointer=InMemorySaver()</code> — thread-scoped memory + HITL prerequisite</li>
+      </ul>
+      <div class="danger"><b>API change in 1.x:</b> <code>interrupt_before=</code>, <code>pre_model_hook=</code>, <code>post_model_hook=</code> are GONE. HITL + hooks are now configured via <code>middleware=[...]</code>.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Stream agent steps</div>
+      <div class="py">for ev in agent.stream({"messages": [...]}, config, stream_mode="updates"):
+    print(ev)         # node-by-node state updates
+# stream_mode: "values" (full state) / "messages" (tokens) / "updates" (deltas)</div>
+    </div>
+  </div>
+
+  <!-- ════════════ MIDDLEWARE FOR AGENTS ════════════ -->
+  <div class="sec tune">
+    <h2>▲ Middleware (the 1.x extensibility primitive)</h2>
+    <div class="py">from langchain.agents import create_agent
+from langchain.agents.middleware import (
+    HumanInTheLoopMiddleware,        # HITL approval gates per tool
+    SummarizationMiddleware,         # context-window management
+    ModelFallbackMiddleware,         # auto-fallback to cheaper model
+    # plus AnthropicPromptCachingMiddleware, PIIRedactionMiddleware, etc.
+)
+
+agent = create_agent(
+    model="anthropic:claude-sonnet-4-6",
+    tools=[get_price, search],
+    system_prompt="You are a trading assistant.",
+    middleware=[
+        HumanInTheLoopMiddleware(interrupt_on={"get_price": True}),    # approve only get_price
+        SummarizationMiddleware(model="openai:gpt-4o-mini", max_tokens=4000),
+        ModelFallbackMiddleware(fallback_model="openai:gpt-4o-mini"),
+    ],
+    checkpointer=InMemorySaver(),
+)</div>
+    <div class="callout"><b>Use middleware for:</b> HITL gates, context summarisation, model fallback, retries, prompt caching, PII redaction, dynamic prompts, dynamic tools. Compose multiple — order matters (outermost first).</div>
+  </div>
+
+  <!-- ════════════ TOOLNODE ════════════ -->
+  <div class="sec tune">
+    <h2>▲ ToolNode (canonical tool executor for graphs)</h2>
+    <div class="py">from langgraph.prebuilt import ToolNode, tools_condition
+
+tools = [get_price, search]
+tool_node = ToolNode(tools)         # parallel calls + error handling + ToolMessage shaping
+m_with_tools = m.bind_tools(tools)
+
+def call_model(state):
+    return {"messages": [m_with_tools.invoke(state["messages"])]}
+
+builder = StateGraph(MessagesState)
+builder.add_node("agent", call_model)
+builder.add_node("tools", tool_node)
+builder.add_edge(START, "agent")
+builder.add_conditional_edges("agent", tools_condition)   # built-in router
+builder.add_edge("tools", "agent")
+graph = builder.compile()</div>
+    <div class="rf">Use <code>ToolNode</code> in custom graphs; <code>create_agent</code> wires it for you.</div>
+  </div>
+
+  <!-- ════════════ STATEGRAPH ════════════ -->
+  <div class="sec cv">
+    <h2>● LangGraph StateGraph (custom)</h2>
+
+    <div class="p">
+      <div class="name">Built-in reducer</div>
+      <div class="py">from langgraph.graph import MessagesState
+# MessagesState = TypedDict with messages: Annotated[list, add_messages]
+# Use directly if your state is just messages.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Custom state with reducers</div>
+      <div class="py">from typing import Annotated, TypedDict
+import operator
+
+class State(TypedDict):
+    messages: Annotated[list, add_messages]   # append + dedupe by ID
+    scratch:  Annotated[list[str], operator.add]   # plain concat
+    count:    int                                  # plain overwrite</div>
+      <div class="rf"><code>Annotated[T, reducer]</code> tells LangGraph how to merge concurrent updates.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Conditional edges</div>
+      <div class="py">def router(state: State) -> str:
+    return "yes" if needs_tool(state) else "no"
+
+builder.add_conditional_edges(
+    "agent", router, {"yes": "tools", "no": END})
+
+# Or: return list of next nodes (parallel fan-out)
+def fan_out(state) -> list[str]: return ["a", "b"]
+builder.add_conditional_edges("split", fan_out, ["a", "b"])</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Visualise</div>
+      <div class="py">from IPython.display import Image
+Image(graph.get_graph().draw_mermaid_png())
+# Or text:  print(graph.get_graph().draw_mermaid())</div>
+    </div>
+  </div>
+
+  <!-- ════════════ MULTI-AGENT ════════════ -->
+  <div class="sec tune">
+    <h2>▲ Multi-agent (Command + supervisor)</h2>
+
+    <div class="p">
+      <div class="name">Command (state-update + routing)</div>
+      <div class="py">from langgraph.types import Command
+from typing import Literal
+
+def supervisor(state) -> Command[Literal["researcher","writer","__end__"]]:
+    decision = decide_next(state)
+    return Command(
+        update={"messages": [...]},        # state update (optional)
+        goto=decision,                      # next node — overrides static edges
+    )
+# Use in node return; with conditional edges; or to resume an interrupt
+# (resume= is INPUT-only to invoke/stream — don't conflate with goto/update).</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Supervisor pattern</div>
+      <div class="py">researcher = create_agent(model, tools=[search], system_prompt="research")
+writer     = create_agent(model, tools=[],       system_prompt="write")
+
+class State(MessagesState):
+    next: str
+
+def supervisor(state):
+    # LLM decides next worker
+    return Command(goto="researcher" if needs_data(state) else "writer")
+
+builder = StateGraph(State)
+builder.add_node("supervisor", supervisor)
+builder.add_node("researcher", researcher)
+builder.add_node("writer",     writer)
+builder.add_edge(START, "supervisor")
+builder.add_edge("researcher", "supervisor")   # loop back to supervisor
+builder.add_edge("writer",     END)
+graph = builder.compile(checkpointer=InMemorySaver())</div>
+    </div>
+  </div>
+
+  <!-- ════════════ HITL ════════════ -->
+  <div class="sec diag">
+    <h2>◆ HITL — interrupt + resume</h2>
+    <div class="py">from langgraph.types import interrupt, Command
+
+def review(state):
+    decision = interrupt({"propose": state["draft"]})   # pauses execution
+    return {"messages": [{"role":"user","content": decision}]}
+
+config = {"configurable": {"thread_id": "1"}}
+# Run hits interrupt; returned state contains __interrupt__:
+out = graph.invoke({"draft": "..."}, config)
+
+# Resume with user's answer:
+graph.invoke(Command(resume="approved"), config)</div>
+    <div class="callout"><b>Requires checkpointer.</b> Interrupt persists state to the checkpointer; resume hydrates it. No checkpointer = no HITL.</div>
+    <div class="danger"><b>Don't confuse:</b> <code>Command(resume=...)</code> = INPUT to <code>invoke/stream</code>. <code>Command(update=..., goto=...)</code> = RETURN from a node. They are different roles of the same class.</div>
+  </div>
+
+  <!-- ════════════ MEMORY ════════════ -->
+  <div class="sec diag">
+    <h2>◆ Memory + persistence</h2>
+
+    <div class="p">
+      <div class="name">Short-term (within a thread)</div>
+      <div class="py">from langgraph.checkpoint.memory import InMemorySaver         # dev
+from langgraph.checkpoint.sqlite import SqliteSaver            # local prod
+from langgraph.checkpoint.postgres import PostgresSaver        # cloud prod
+
+graph = builder.compile(checkpointer=InMemorySaver())
+config = {"configurable": {"thread_id": "user-42"}}
+graph.invoke({"messages": [...]}, config)    # state saved at thread "user-42"
+graph.invoke({"messages": [...]}, config)    # auto-loads prior state</div>
+      <div class="rf"><code>MemorySaver</code> was renamed <code>InMemorySaver</code>. Old name still works (deprecated).</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Long-term (across threads — Store API)</div>
+      <div class="py">from langgraph.store.memory import InMemoryStore
+from langgraph.store.base import BaseStore
+
+store = InMemoryStore()
+def remember_node(state, *, store: BaseStore):
+    user_id = state["user_id"]
+    store.put(("memories", user_id), key="profile", value={"role": "trader"})
+    # Retrieve:
+    mem = store.get(("memories", user_id), key="profile")
+    return {"messages": [...]}
+
+graph = builder.compile(checkpointer=InMemorySaver(), store=store)</div>
+    </div>
+  </div>
+
+  <!-- ════════════ RAG ════════════ -->
+  <div class="sec metric">
+    <h2>◆ RAG patterns</h2>
+
+    <div class="p">
+      <div class="name">Basic RAG (LCEL)</div>
+      <div class="py">from langchain_chroma import Chroma
+from langchain_openai import OpenAIEmbeddings
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
+
+def format_docs(docs):                  # define before use!
+    return "\n\n".join(d.page_content for d in docs)
+
+splits = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=100
+       ).split_documents(docs)
+vs = Chroma.from_documents(splits, OpenAIEmbeddings())
+retriever = vs.as_retriever(search_kwargs={"k": 4})
+
+rag = (
+    {"context": retriever | format_docs, "question": RunnablePassthrough()}
+    | prompt | model | StrOutputParser()
+)
+rag.invoke("How does X work?")</div>
+    </div>
+
+    <div class="p">
+      <div class="name">RAG with citations (structured output)</div>
+      <div class="py">class Answer(BaseModel):
+    answer: str
+    sources: list[str]    # doc ids cited
+
+rag_struct = (
+    {"context": retriever, "question": RunnablePassthrough()}
+    | prompt | model.with_structured_output(Answer)
+)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Advanced retrieval</div>
+      <table>
+        <tr><th>Pattern</th><th>Win</th></tr>
+        <tr><td>Multi-query (LLM rewrites)</td><td>+recall for ambiguous q</td></tr>
+        <tr><td>Parent-document</td><td>embed small / return large</td></tr>
+        <tr><td>Reranker (Cohere/Voyage)</td><td>+precision on top-k</td></tr>
+        <tr><td>HyDE (hypothetical doc)</td><td>q rewrite for sparse corpora</td></tr>
+        <tr><td>Self-query</td><td>LLM emits structured filter</td></tr>
+      </table>
+      <div class="py"># Legacy retrievers moved to langchain_classic in 1.x:
+from langchain_classic.retrievers import MultiQueryRetriever, ParentDocumentRetriever
+from langchain_classic.retrievers.contextual_compression import ContextualCompressionRetriever
+from langchain_cohere import CohereRerank        # uv add langchain-cohere
+rr = ContextualCompressionRetriever(
+    base_retriever=retriever, base_compressor=CohereRerank())</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Retriever as a tool (for agents)</div>
+      <div class="py">from langchain.tools.retriever import create_retriever_tool
+search_tool = create_retriever_tool(retriever, name="kb_search",
+                                      description="Search internal KB")
+agent = create_agent(model, [search_tool], system_prompt="Use kb_search.")</div>
+    </div>
+  </div>
+
+  <!-- ════════════ STREAMING ════════════ -->
+  <div class="sec diag">
+    <h2>◆ Streaming</h2>
+    <table>
+      <tr><th>stream_mode</th><th>Yields</th></tr>
+      <tr><td><code>"values"</code></td><td>full state after each node</td></tr>
+      <tr><td><code>"updates"</code></td><td>just the delta per node</td></tr>
+      <tr><td><code>"messages"</code></td><td>token-by-token (LLM chunks)</td></tr>
+      <tr><td><code>"custom"</code></td><td>via <code>config['callbacks']</code></td></tr>
+      <tr><td><code>"debug"</code></td><td>verbose internal events</td></tr>
+    </table>
+    <div class="py">async for chunk in graph.astream(inp, config, stream_mode="messages"):
+    if isinstance(chunk[0], AIMessageChunk):
+        print(chunk[0].content, end="", flush=True)
+
+# Stream multiple modes at once:
+for ev in graph.stream(inp, config, stream_mode=["updates","messages"]):
+    mode, payload = ev    # tuple form when list of modes</div>
+  </div>
+
+  <!-- ════════════ MIDDLEWARE ════════════ -->
+  <div class="sec deploy">
+    <h2>◆ Middleware + reliability</h2>
+
+    <div class="p">
+      <div class="name">RunnableConfig (settings propagation)</div>
+      <div class="py">cfg = {"configurable": {"thread_id": "1"},
+        "tags": ["prod"],
+        "metadata": {"user": "x"},
+        "max_concurrency": 5,
+        "recursion_limit": 25}
+chain.invoke(inp, config=cfg)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Caching (skip identical LLM calls)</div>
+      <div class="py">from langchain.globals import set_llm_cache
+from langchain_community.cache import InMemoryCache, SQLiteCache
+set_llm_cache(SQLiteCache(database_path=".llm_cache.db"))</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Rate limit (provider quota)</div>
+      <div class="py">from langchain_core.rate_limiters import InMemoryRateLimiter
+limiter = InMemoryRateLimiter(requests_per_second=2,
+                               check_every_n_seconds=0.1,
+                               max_bucket_size=10)
+m = init_chat_model("openai:gpt-4o", rate_limiter=limiter)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Retry + fallback</div>
+      <div class="py">from openai import RateLimitError      # provider-specific; or anthropic.RateLimitError
+resilient = (
+    chain.with_retry(stop_after_attempt=3,
+                     wait_exponential_jitter=True,
+                     retry_if_exception_type=(RateLimitError,))
+         .with_fallbacks([cheaper_chain])
+)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Callbacks</div>
+      <div class="py">from langchain_core.callbacks import BaseCallbackHandler
+
+class CostTracker(BaseCallbackHandler):
+    def on_llm_end(self, response, **k):
+        # Provider-agnostic: use AIMessage.usage_metadata (set on every chat model).
+        for gen in response.generations:
+            usage = getattr(gen[0].message, "usage_metadata", None)
+            if usage:
+                log.info(f"in={usage['input_tokens']} out={usage['output_tokens']} "
+                         f"total={usage['total_tokens']}")
+
+chain.invoke(inp, config={"callbacks": [CostTracker()]})</div>
+    </div>
+  </div>
+
+  <!-- ════════════ OBSERVABILITY ════════════ -->
+  <div class="sec deploy">
+    <h2>◆ LangSmith (observability + eval)</h2>
+
+    <div class="p">
+      <div class="name">Auto-trace (env-var only)</div>
+      <div class="py"># Already set above:
+#   LANGSMITH_API_KEY, LANGSMITH_TRACING=true, LANGSMITH_PROJECT
+# Every invoke/stream now writes a trace to the LangSmith UI.
+
+# Add per-run tags / metadata:
+chain.invoke(inp, config={"tags":["prod","v2"],
+                           "metadata":{"user_id":"42"}})</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Evaluation</div>
+      <div class="py">from langsmith import Client
+from langsmith.evaluation import evaluate
+
+client = Client()
+# 1. Create dataset (one-time)
+ds = client.create_dataset("qa_v1")
+client.create_examples(
+    inputs=[{"q": "what is X?"}, ...],
+    outputs=[{"a": "X is ..."}, ...],
+    dataset_id=ds.id)
+
+# 2. Run evaluation with built-in + LLM-as-judge evaluators
+def my_evaluator(run, example):
+    pred = run.outputs["answer"]; gold = example.outputs["a"]
+    return {"key": "exact_match", "score": int(pred.strip() == gold.strip())}
+
+results = evaluate(
+    lambda inp: rag.invoke(inp["q"]),
+    data="qa_v1",
+    evaluators=[my_evaluator],
+    experiment_prefix="rag-v1",
+)</div>
+    </div>
+  </div>
+
+  <!-- ════════════ DEPLOYMENT ════════════ -->
+  <div class="sec deploy">
+    <h2>◆ Deployment (FastAPI)</h2>
+    <div class="py">from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
+from langgraph.checkpoint.postgres import AsyncPostgresSaver
+import json
+
+app = FastAPI()
+
+class Req(BaseModel):
+    q: str
+    thread_id: str
+
+# Async-first: agent.ainvoke / agent.astream do NOT block the event loop.
+@app.post("/invoke")
+async def invoke(r: Req):
+    cfg = {"configurable": {"thread_id": r.thread_id}}
+    out = await agent.ainvoke({"messages": [{"role":"user","content": r.q}]}, cfg)
+    return {"answer": out["messages"][-1].content}
+
+@app.post("/stream")
+async def stream(r: Req):
+    cfg = {"configurable": {"thread_id": r.thread_id}}
+    async def gen():
+        async for ev in agent.astream(
+                {"messages":[{"role":"user","content": r.q}]},
+                cfg, stream_mode="messages"):
+            chunk = ev[0]
+            yield f"data: {json.dumps({'chunk': chunk.content})}\n\n"
+    return StreamingResponse(gen(), media_type="text/event-stream")</div>
+    <div class="rf"><b>Production checklist:</b> async endpoints + <code>ainvoke/astream</code>; load agent at FastAPI <code>lifespan</code> (not import-time); use <code>AsyncPostgresSaver</code> for cross-process checkpointing; set <code>recursion_limit</code> + per-request timeouts; auth BEFORE trusting <code>thread_id</code>.</div>
+  </div>
+
+  <!-- ════════════ TRAPS ════════════ -->
+  <div class="sec trap">
+    <h2>▲ Top traps (6-month memory)</h2>
+    <ul class="tight">
+      <li><b><code>create_react_agent</code> is legacy.</b> Use <code>langchain.agents.create_agent</code>; <code>prompt=</code> → <code>system_prompt=</code>.</li>
+      <li><b><code>MemorySaver</code> renamed</b> → <code>InMemorySaver</code>. Old name deprecated.</li>
+      <li><b><code>set_entry_point</code>/<code>set_finish_point</code> legacy.</b> Use <code>add_edge(START, ...)</code> / <code>add_edge(..., END)</code>.</li>
+      <li><b>Command roles:</b> <code>resume=</code> is INPUT to <code>invoke</code>; <code>update=</code> + <code>goto=</code> are RETURN from a node. Don't conflate.</li>
+      <li><b>No checkpointer = no HITL, no memory.</b> Add one at compile time.</li>
+      <li><b>Tools without docstrings</b> → model can't see what they do; treat docstring as the model's prompt.</li>
+      <li><b>Streaming mode mismatch:</b> "messages" = tokens; "updates" = node deltas; "values" = full state. Pick deliberately.</li>
+      <li><b>Forgetting <code>thread_id</code></b> → fresh state every call; memory invisible.</li>
+      <li><b>State schema:</b> prefer <code>TypedDict</code>; use Pydantic only when you need validation at node boundaries.</li>
+      <li><b><code>response_format=</code> result</b> lives at <code>out["structured_response"]</code>, NOT in <code>out["messages"][-1]</code>. Easy silent miss.</li>
+      <li><b><code>llm_output</code> is provider-specific (often None)</b>; prefer <code>msg.usage_metadata</code> for token counts.</li>
+      <li><b>Sync FastAPI <code>def</code> with <code>agent.invoke</code></b> blocks the event loop. Use <code>async def</code> + <code>await agent.ainvoke(...)</code>.</li>
+      <li><b>Caching with structured output:</b> cache key is the prompt — same prompt + different schema returns stale.</li>
+      <li><b>No tracing</b> → debugging is guessing. Set <code>LANGSMITH_TRACING=true</code> as table-stakes.</li>
+      <li><b>Recursion limit</b> defaults to 25 — agent loops can silently truncate. Raise via <code>config["recursion_limit"]</code>.</li>
+    </ul>
+  </div>
+
+  <!-- ════════════ QUICK REFERENCE ════════════ -->
+  <div class="sec master">
+    <h2>◆ Quick-reference (recall in 5 seconds)</h2>
+    <table>
+      <tr><th>Task</th><th>Canonical pattern</th></tr>
+      <tr><td>Init model</td><td><code>init_chat_model("provider:model", temperature=0)</code></td></tr>
+      <tr><td>Structured output</td><td><code>model.with_structured_output(PydanticClass)</code></td></tr>
+      <tr><td>Tool</td><td><code>@tool</code> on function with docstring + typed args</td></tr>
+      <tr><td>LCEL pipe</td><td><code>prompt | model | StrOutputParser()</code></td></tr>
+      <tr><td>RAG</td><td><code>{"context": retriever, "question": passthrough} | prompt | model</code></td></tr>
+      <tr><td>10-line agent</td><td><code>create_agent(model="...", tools=[...], system_prompt="...")</code></td></tr>
+      <tr><td>State graph</td><td><code>StateGraph(State) → add_node → add_edge(START, …) → compile(checkpointer=)</code></td></tr>
+      <tr><td>State reducer</td><td><code>Annotated[list, add_messages]</code> (built-in)</td></tr>
+      <tr><td>Routing + update</td><td><code>return Command(update=…, goto=…)</code> from a node</td></tr>
+      <tr><td>HITL</td><td><code>interrupt(payload)</code> inside node; <code>Command(resume=v)</code> to <code>invoke</code></td></tr>
+      <tr><td>Short-term memory</td><td>checkpointer + <code>config["configurable"]["thread_id"]</code></td></tr>
+      <tr><td>Long-term memory</td><td><code>InMemoryStore</code> / <code>PostgresStore</code> + <code>store.put / get</code></td></tr>
+      <tr><td>Stream tokens</td><td><code>graph.astream(inp, cfg, stream_mode="messages")</code></td></tr>
+      <tr><td>Trace</td><td><code>LANGSMITH_TRACING=true</code> in env</td></tr>
+      <tr><td>Eval</td><td><code>langsmith.evaluation.evaluate(fn, data=ds, evaluators=[…])</code></td></tr>
+      <tr><td>Retry</td><td><code>chain.with_retry(stop_after_attempt=3, wait_exponential_jitter=True)</code></td></tr>
+      <tr><td>Fallback</td><td><code>chain.with_fallbacks([cheaper_chain])</code></td></tr>
+      <tr><td>Rate limit</td><td><code>InMemoryRateLimiter(requests_per_second=N)</code> passed to model</td></tr>
+      <tr><td>Cache</td><td><code>set_llm_cache(SQLiteCache(...))</code></td></tr>
+      <tr><td>Visualise</td><td><code>graph.get_graph().draw_mermaid_png()</code></td></tr>
+    </table>
+  </div>
+
+</div> <!-- /cols -->
+
+</body>
+</html>
