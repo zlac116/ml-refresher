@@ -69,20 +69,26 @@ class Instrument(ABC):
 @dataclass(frozen=True)
 class FXForward(Instrument):
     foreign_notional: float; fx0: float; strike: float; T: float
-    def revalue(self, market): raise NotImplementedError
+    def revalue(self, market):
+        return self.foreign_notional * (self.fx0 * market.fx_factor() - self.strike) * market.df(self.T)
 
 # TASK 2 — FRA:  fwd=(DF(T1)/DF(T2)−1)/tau ; notional·(fwd−strike)·tau·DF(T2)            -> 0.0859
 @dataclass(frozen=True)
 class FRA(Instrument):
     notional: float; T1: float; T2: float; tau: float; strike: float
-    def revalue(self, market): raise NotImplementedError
+    def revalue(self, market):
+        df1, df2 = market.df(self.T1), market.df(self.T2)
+        fwd = 1/self.tau * (df1 / df2 - 1)
+        return self.notional * (fwd - self.strike) * self.tau * df2
 
 # TASK 3 — Inflation Swap (ZC receiver): b=breakeven+infl_shock_bp/1e4 ;
 #   notional·DF(T)·((1+b)^T − (1+strike)^T)                                              -> 0.9088
 @dataclass(frozen=True)
 class InflationSwap(Instrument):
     notional: float; T: float; breakeven: float; strike: float
-    def revalue(self, market): raise NotImplementedError
+    def revalue(self, market):
+        dfT = market.df(self.T)
+        return self.notional * dfT * ((1 + self.breakeven)**self.T - (1 + self.strike)**self.T)
 
 # TASK 4 — Linker:  Σ real_cfₜ·(1+b)^t·DF(t)                                              -> 101.1778
 @dataclass(frozen=True)
