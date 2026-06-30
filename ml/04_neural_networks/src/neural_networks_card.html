@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Neural Networks (PyTorch) — Project Recipe Card</title>
+<style>
+@page { size: A4 landscape; margin: 0.35cm 0.35cm 0.45cm 0.35cm;
+        @bottom-right { content: counter(page) " / " counter(pages); font: 6pt 'DejaVu Sans', sans-serif; color: #aaa; } }
+* { box-sizing: border-box; }
+body { font-family: 'DejaVu Sans', sans-serif; font-size: 7pt; line-height: 1.15; color: #1a1a1a; margin: 0; padding: 0; }
+code, .formula, .py, pre { font-family: 'DejaVu Sans Mono', monospace; font-size: 6.6pt; }
+
+.banner { background: #c75a1a; color: #fff; padding: 3px 7px; margin-bottom: 3px; border-radius: 2px; }
+.banner h1 { font-size: 11pt; margin: 0; }
+.banner .sub { font-size: 6.6pt; color: #f5dccc; margin-top: 0; }
+
+.cols { column-count: 3; column-gap: 5px; column-rule: 1px solid #ccc; column-fill: auto; }
+
+.sec { break-inside: avoid; margin: 0 0 3px 0; padding: 2px 4px 3px 5px; border-radius: 2px; border-left: 3px solid; }
+.sec h2 { font-size: 7.8pt; font-weight: bold; margin: 0 0 1px 0; padding: 0px 4px; border-radius: 2px; color: #fff; display: inline-block; }
+.sec h3 { font-size: 6.7pt; font-weight: bold; margin: 2px 0 0 0; color: #c75a1a; text-transform: uppercase; letter-spacing: 0.04em; }
+
+.master  { background: #fff8d9; border-left-color: #806c0e; }  .master  h2 { background: #806c0e; }
+.frame   { background: #e7f2fa; border-left-color: #2e6b9c; }  .frame   h2 { background: #2e6b9c; }
+.model   { background: #e7fae9; border-left-color: #2e9c47; }  .model   h2 { background: #2e9c47; }
+.metric  { background: #f0e7fa; border-left-color: #6e3e9c; }  .metric  h2 { background: #6e3e9c; }
+.cv      { background: #e7faf9; border-left-color: #1a8a8a; }  .cv      h2 { background: #1a8a8a; }
+.tune    { background: #fbf2e6; border-left-color: #b06c0e; }  .tune    h2 { background: #b06c0e; }
+.diag    { background: #f7e6d5; border-left-color: #a05210; }  .diag    h2 { background: #a05210; }
+.deploy  { background: #ededed; border-left-color: #555;    }  .deploy  h2 { background: #555;    }
+.trap    { background: #fae0e0; border-left-color: #7a1a1a; }  .trap    h2 { background: #7a1a1a; }
+
+.p { margin: 0 0 2px 0; }
+.p .name { font-weight: bold; font-size: 7.2pt; }
+.p .name .tag { font-size: 6pt; color: #555; font-weight: normal; }
+.p .formula { display: block; background: rgba(255,255,255,0.55); padding: 0 4px;
+              border-left: 2px solid currentColor; margin: 1px 0; white-space: pre-wrap; }
+.p .py { display: block; background: rgba(0,0,0,0.04); padding: 1px 4px; margin: 1px 0;
+         border-left: 2px solid #555; white-space: pre-wrap; }
+.p .use { font-style: italic; color: #2a2a2a; font-size: 6.5pt; }
+.p .rf  { font-size: 6.1pt; color: #444; }
+
+.recipe ol { margin: 0; padding: 0 0 0 14px; }
+.recipe ol li { margin: 0; }
+.recipe .step { font-weight: bold; }
+table { border-collapse: collapse; width: 100%; font-size: 6.4pt; margin: 1px 0; }
+th, td { border: 1px solid #c0c0c0; padding: 0.5px 3px; text-align: left; vertical-align: top; }
+th { background: #e8e8e8; font-weight: bold; }
+ul.tight { margin: 0; padding: 0 0 0 13px; }
+ul.tight li { margin: 0; }
+
+.callout { background: #fff; border-left: 3px solid #d4a800; padding: 1px 4px; margin: 2px 0; font-size: 6.3pt; }
+.danger  { background: #fff; border-left: 3px solid #b8341a; padding: 1px 4px; margin: 2px 0; font-size: 6.3pt; }
+.danger b:first-child { color: #b8341a; }
+
+/* Top-level — standalone .py / .formula blocks need their own rule (not just inside .p) */
+.py { display: block; background: rgba(0,0,0,0.04); padding: 1px 4px; margin: 1px 0;
+      border-left: 2px solid #555; white-space: pre-wrap;
+      font-family: 'DejaVu Sans Mono', monospace; font-size: 6.6pt; }
+.formula { display: block; background: rgba(255,255,255,0.55); padding: 0 4px;
+           border-left: 2px solid currentColor; margin: 1px 0; white-space: pre-wrap;
+           font-family: 'DejaVu Sans Mono', monospace; font-size: 6.6pt; }
+</style>
+</head>
+<body>
+
+<div class="banner">
+  <h1>Neural Networks (PyTorch) — Project Recipe Card</h1>
+  <div class="sub">9-step recipe · training loop · loss/optimizer table · regularisation · debug checklist · persistence. Deep companion: <code>neural_networks_cheatsheet.md</code> + <code>neural_networks.ipynb</code></div>
+</div>
+
+<div class="cols">
+
+  <!-- ════════════ MASTER RECIPE ════════════ -->
+  <div class="sec master">
+    <h2>◆ 9-step recipe</h2>
+    <ol class="recipe">
+      <li><span class="step">Setup</span> — seeds, device, deterministic flags</li>
+      <li><span class="step">Split</span> — train / val / test (3 sets, NOT 2)</li>
+      <li><span class="step">Scale</span> — fit scaler on TRAIN only; transform val/test</li>
+      <li><span class="step">Tensors + DataLoader</span> — shuffle TRAIN only; batch size powers of 2</li>
+      <li><span class="step">Model</span> — <code>nn.Module</code> subclass or <code>nn.Sequential</code></li>
+      <li><span class="step">Loss + Optimizer</span> — match to task; Adam @ 1e-3 default</li>
+      <li><span class="step">Training loop</span> — <code>zero_grad → forward → loss → backward → step</code></li>
+      <li><span class="step">Evaluate on TEST</span> — once, after tuning is done</li>
+      <li><span class="step">Diagnose</span> — loss curves, regularise, refit</li>
+    </ol>
+    <div class="callout"><b>Universal contract:</b> output layer + dtype + loss MUST agree. Mismatch = silent bug (NaN loss, near-random accuracy, exploding gradients).</div>
+  </div>
+
+  <!-- ════════════ PROJECT SKELETON — PART A ════════════ -->
+  <div class="sec master">
+    <h2>◆ Starter skeleton · A: setup + data</h2>
+    <div class="py">import numpy as np, random, torch, torch.nn as nn
+from torch.utils.data import TensorDataset, DataLoader
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
+# 1. SETUP — reproducibility
+SEED = 42
+np.random.seed(SEED); torch.manual_seed(SEED); torch.cuda.manual_seed_all(SEED)
+torch.backends.cudnn.deterministic = True; torch.backends.cudnn.benchmark = False
+# Full determinism (small speed cost):
+# torch.use_deterministic_algorithms(True)        # also set CUBLAS_WORKSPACE_CONFIG=:4096:8
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("device:", device)
+
+# 2. SPLIT (3 sets)
+X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, random_state=SEED,
+                                           stratify=y if classification else None)
+X_tr, X_va, y_tr, y_va = train_test_split(X_tr, y_tr, test_size=0.2, random_state=SEED,
+                                           stratify=y_tr if classification else None)
+
+# 3. SCALE — fit on TRAIN only (avoid leakage)
+sc = StandardScaler().fit(X_tr)
+X_tr_s, X_va_s, X_te_s = sc.transform(X_tr), sc.transform(X_va), sc.transform(X_te)
+
+# 4. TENSORS + DATALOADER
+to_t = lambda a, dt=torch.float32: torch.tensor(a, dtype=dt)
+y_dt = torch.long if multiclass else torch.float32
+dl_tr = DataLoader(TensorDataset(to_t(X_tr_s), to_t(y_tr, y_dt)),
+                    batch_size=64, shuffle=True,
+                    drop_last=True,            # avoid BN(batch=1) crash
+                    num_workers=2, pin_memory=(device.type=="cuda"))
+dl_va = DataLoader(TensorDataset(to_t(X_va_s), to_t(y_va, y_dt)),
+                    batch_size=256, shuffle=False,
+                    num_workers=2, pin_memory=(device.type=="cuda"))
+dl_te = DataLoader(TensorDataset(to_t(X_te_s), to_t(y_te, y_dt)),
+                    batch_size=256, shuffle=False)</div>
+  </div>
+
+  <!-- ════════════ PROJECT SKELETON — PART B ════════════ -->
+  <div class="sec master">
+    <h2>◆ Starter skeleton · B: model + train loop</h2>
+    <div class="py"># 5. MODEL (MLP)
+class MLP(nn.Module):
+    def __init__(self, in_dim, hidden=64, out_dim=1, p=0.2):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(in_dim, hidden), nn.ReLU(), nn.Dropout(p),
+            nn.Linear(hidden, hidden), nn.ReLU(), nn.Dropout(p),
+            nn.Linear(hidden, out_dim))
+    def forward(self, x): return self.net(x)
+
+model = MLP(X_tr.shape[1], hidden=64, out_dim=1).to(device)
+
+# 6. LOSS + OPTIMIZER (regression example)
+loss_fn = nn.MSELoss()
+opt = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, patience=5, factor=0.5)
+
+# 7. TRAIN LOOP with early stopping
+best_val, patience, bad = float("inf"), 10, 0
+hist = {"tr": [], "va": []}
+for epoch in range(200):
+    model.train()
+    tr_loss = 0.0
+    for xb, yb in dl_tr:
+        xb, yb = xb.to(device), yb.to(device)
+        opt.zero_grad()
+        pred = model(xb).squeeze(-1)
+        loss = loss_fn(pred, yb)
+        loss.backward()
+        opt.step()
+        tr_loss += loss.item() * xb.size(0)
+    tr_loss /= len(dl_tr.dataset)
+
+    model.eval()
+    va_loss = 0.0
+    with torch.no_grad():
+        for xb, yb in dl_va:
+            xb, yb = xb.to(device), yb.to(device)
+            pred = model(xb).squeeze(-1)
+            va_loss += loss_fn(pred, yb).item() * xb.size(0)
+    va_loss /= len(dl_va.dataset)
+    scheduler.step(va_loss)
+    hist["tr"].append(tr_loss); hist["va"].append(va_loss)
+
+    if va_loss &lt; best_val - 1e-4:
+        best_val, bad = va_loss, 0
+        torch.save(model.state_dict(), "best.pt")
+    else:
+        bad += 1
+        if bad &gt;= patience:
+            print(f"early stop at epoch {epoch}, best val={best_val:.4f}")
+            break
+
+# 8. EVAL on TEST — ONCE
+model.load_state_dict(torch.load("best.pt"))
+model.eval()
+with torch.no_grad():
+    preds = torch.cat([model(xb.to(device)).cpu() for xb, _ in dl_te]).squeeze(-1).numpy()
+# Compute metrics in sklearn (RMSE, R², ROC-AUC, F1, ...)</div>
+  </div>
+
+  <!-- ════════════ LOSS / OUTPUT TABLE ════════════ -->
+  <div class="sec frame">
+    <h2>● Output layer · loss · dtype · metrics</h2>
+
+    <table>
+      <tr><th>Task</th><th>Output layer</th><th>Loss</th><th>y dtype</th><th>Metrics</th></tr>
+      <tr><td>Regression</td><td><code>nn.Linear(h, 1)</code></td><td><code>nn.MSELoss</code> (or <code>L1Loss</code>, <code>HuberLoss</code>)</td><td>float32</td><td>RMSE, R²</td></tr>
+      <tr><td>Binary cls</td><td><code>nn.Linear(h, 1)</code> (LOGITS)</td><td><code>nn.BCEWithLogitsLoss</code></td><td>float32 (0/1)</td><td>Acc, ROC-AUC, F1</td></tr>
+      <tr><td>Multi-class</td><td><code>nn.Linear(h, K)</code> (LOGITS)</td><td><code>nn.CrossEntropyLoss</code></td><td>long (class idx)</td><td>Acc, macro-F1</td></tr>
+      <tr><td>Multi-label</td><td><code>nn.Linear(h, K)</code> (LOGITS)</td><td><code>nn.BCEWithLogitsLoss</code></td><td>float32 (0/1 per col)</td><td>per-label F1</td></tr>
+      <tr><td>Counts</td><td><code>nn.Linear(h, 1)</code> + softplus</td><td><code>nn.PoissonNLLLoss</code></td><td>float32</td><td>RMSE</td></tr>
+      <tr><td>Quantile</td><td><code>nn.Linear(h, Q)</code></td><td>pinball (custom)</td><td>float32</td><td>quantile loss</td></tr>
+    </table>
+
+    <div class="danger"><b>Double-sigmoid trap:</b> sigmoid + <code>BCELoss</code> = correct but numerically unstable. <b>NO sigmoid + <code>BCEWithLogitsLoss</code></b> = correct AND stable. Same for softmax + NLLLoss vs raw logits + CrossEntropyLoss.</div>
+  </div>
+
+  <!-- ════════════ MODEL ARCHITECTURE ════════════ -->
+  <div class="sec model">
+    <h2>▲ Architecture patterns</h2>
+
+    <div class="p">
+      <div class="name">Tabular MLP (the default)</div>
+      <div class="py">class MLP(nn.Module):
+    def __init__(self, in_dim, hidden=(128, 64), out_dim=1, p=0.2, bn=False):
+        super().__init__()
+        layers = []
+        prev = in_dim
+        for h in hidden:
+            layers += [nn.Linear(prev, h)]
+            if bn: layers += [nn.BatchNorm1d(h)]
+            layers += [nn.ReLU(inplace=True), nn.Dropout(p)]
+            prev = h
+        layers += [nn.Linear(prev, out_dim)]
+        self.net = nn.Sequential(*layers)
+    def forward(self, x): return self.net(x)</div>
+      <div class="rf">2-3 hidden layers, hidden width 64-256, ReLU, Dropout 0.1-0.3, optional BN.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Embeddings for categorical</div>
+      <div class="py">class TabularNN(nn.Module):
+    def __init__(self, cat_cardinalities, n_cont, hidden=128, out_dim=1):
+        super().__init__()
+        # Embedding dim heuristic: min(50, (k+1)//2)
+        self.embs = nn.ModuleList([
+            nn.Embedding(k, min(50, (k+1)//2)) for k in cat_cardinalities])
+        emb_dim = sum(e.embedding_dim for e in self.embs)
+        self.bn  = nn.BatchNorm1d(n_cont)
+        self.head = nn.Sequential(
+            nn.Linear(emb_dim + n_cont, hidden), nn.ReLU(), nn.Dropout(0.2),
+            nn.Linear(hidden, out_dim))
+    def forward(self, x_cat, x_cont):
+        z = torch.cat([e(x_cat[:, i]) for i, e in enumerate(self.embs)], dim=1)
+        return self.head(torch.cat([z, self.bn(x_cont)], dim=1))</div>
+    </div>
+
+    <div class="p">
+      <div class="name">CNN (images)</div>
+      <div class="py"># Use a pretrained backbone — almost never train from scratch
+import torchvision.models as M
+weights = M.ResNet50_Weights.DEFAULT
+model = M.resnet50(weights=weights)
+preprocess = weights.transforms()                 # the right input transforms FREE
+# Replace head:
+model.fc = nn.Linear(model.fc.in_features, num_classes)
+# Freeze backbone for transfer learning:
+for p in model.parameters(): p.requires_grad = False
+for p in model.fc.parameters(): p.requires_grad = True</div>
+    </div>
+
+    <div class="p">
+      <div class="name">LSTM / GRU (sequence)</div>
+      <div class="py">class SeqModel(nn.Module):
+    def __init__(self, in_dim, hidden=64, out_dim=1, p=0.2):
+        super().__init__()
+        self.lstm = nn.LSTM(in_dim, hidden, num_layers=2,
+                             batch_first=True, dropout=p)
+        self.head = nn.Linear(hidden, out_dim)
+    def forward(self, x):                # x: (batch, seq_len, in_dim)
+        out, _ = self.lstm(x)
+        return self.head(out[:, -1, :])   # last timestep</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Transformer (sequence/text)</div>
+      <div class="py"># Use pretrained — almost never from scratch:
+from transformers import AutoModel, AutoTokenizer
+tok = AutoTokenizer.from_pretrained("bert-base-uncased")
+backbone = AutoModel.from_pretrained("bert-base-uncased")
+# Fine-tune head:
+class Classifier(nn.Module):
+    def __init__(self, backbone, K):
+        super().__init__()
+        self.b = backbone
+        self.head = nn.Linear(backbone.config.hidden_size, K)
+    def forward(self, ids, mask):
+        out = self.b(input_ids=ids, attention_mask=mask).last_hidden_state[:, 0]
+        return self.head(out)</div>
+    </div>
+  </div>
+
+  <!-- ════════════ TRAINING LOOP ════════════ -->
+  <div class="sec model">
+    <h2>▲ Canonical training loop</h2>
+
+    <div class="py">def train_epoch(model, dl, loss_fn, opt, device):
+    model.train()
+    tot, n = 0.0, 0
+    for xb, yb in dl:
+        xb, yb = xb.to(device), yb.to(device)
+        opt.zero_grad(set_to_none=True)       # faster than zero_grad()
+        pred = model(xb).squeeze(-1)
+        loss = loss_fn(pred, yb)
+        loss.backward()
+        # Optional: clip gradient
+        # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+        opt.step()
+        tot += loss.item() * xb.size(0); n += xb.size(0)
+    return tot / n
+
+@torch.no_grad()
+def eval_epoch(model, dl, loss_fn, device):
+    model.eval()                              # disables Dropout, BN uses running stats
+    tot, n = 0.0, 0
+    for xb, yb in dl:
+        xb, yb = xb.to(device), yb.to(device)
+        pred = model(xb).squeeze(-1)
+        tot += loss_fn(pred, yb).item() * xb.size(0); n += xb.size(0)
+    return tot / n</div>
+
+    <div class="danger"><b>Things that MUST be in every loop:</b> <code>opt.zero_grad()</code> before backward; <code>model.train()</code>/<code>model.eval()</code> toggles; <code>with torch.no_grad()</code> on eval; move tensors to device.</div>
+  </div>
+
+  <!-- ════════════ OPTIMIZER / SCHEDULER ════════════ -->
+  <div class="sec tune">
+    <h2>▲ Optimizer + scheduler</h2>
+
+    <div class="p">
+      <div class="name">Optimizer picker</div>
+      <table>
+        <tr><th>Optimizer</th><th>When</th></tr>
+        <tr><td><b>Adam @ 1e-3</b></td><td>default for tabular / general</td></tr>
+        <tr><td><b>AdamW @ 1e-3, wd=1e-2</b></td><td>large NN / transformers (decoupled weight decay)</td></tr>
+        <tr><td>SGD + momentum 0.9</td><td>vision (with proper LR + nesterov)</td></tr>
+        <tr><td>RMSprop</td><td>RNN/LSTM (sometimes)</td></tr>
+      </table>
+      <div class="py">opt = torch.optim.AdamW(model.parameters(),
+                          lr=1e-3, weight_decay=1e-2,
+                          betas=(0.9, 0.999), eps=1e-8)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">LR scheduler</div>
+      <div class="py">from torch.optim.lr_scheduler import (
+    ReduceLROnPlateau, CosineAnnealingLR, OneCycleLR)
+
+# Reduce on plateau (simple, robust):
+sched = ReduceLROnPlateau(opt, mode="min", factor=0.5, patience=5)
+sched.step(va_loss)         # call AFTER eval
+
+# Cosine annealing (transformer-style):
+sched = CosineAnnealingLR(opt, T_max=epochs, eta_min=1e-6)
+sched.step()                # call once per epoch
+
+# OneCycle (super-fast convergence; Smith 2018):
+sched = OneCycleLR(opt, max_lr=1e-2, total_steps=epochs * len(dl_tr))
+# Call after EVERY batch.step()</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Mixed precision (Ampere+ GPU)</div>
+      <div class="py"># PyTorch 2.4+ canonical API (torch.cuda.amp.* deprecated):
+DEV = device.type      # "cuda" or "cpu"  — works on either
+scaler = torch.amp.GradScaler(DEV, enabled=(DEV=="cuda"))
+for xb, yb in dl_tr:
+    opt.zero_grad(set_to_none=True)
+    with torch.autocast(device_type=DEV, dtype=torch.float16, enabled=(DEV=="cuda")):
+        pred = model(xb)
+        loss = loss_fn(pred, yb)
+    scaler.scale(loss).backward()
+    scaler.step(opt)
+    scaler.update()
+# ~2× speed, ~50% memory; use bf16 on H100/A100 for numerical stability</div>
+    </div>
+  </div>
+
+  <!-- ════════════ REGULARISATION ════════════ -->
+  <div class="sec cv">
+    <h2>● Regularisation toolkit</h2>
+
+    <div class="p">
+      <div class="name">Layer-level</div>
+      <table>
+        <tr><th>Technique</th><th>Where</th></tr>
+        <tr><td><b>Dropout p=0.1-0.5</b></td><td>after activation; not before output</td></tr>
+        <tr><td><b>BatchNorm1d</b></td><td>between Linear + ReLU (tabular); after Conv (CNN)</td></tr>
+        <tr><td><b>LayerNorm</b></td><td>transformers / when batch dependence is bad</td></tr>
+        <tr><td><b>Weight decay</b></td><td><code>optimizer(weight_decay=1e-4)</code> (L2)</td></tr>
+      </table>
+    </div>
+
+    <div class="p">
+      <div class="name">Training-level</div>
+      <ul class="tight">
+        <li><b>Early stopping</b>: monitor val loss; patience 10-30 epochs</li>
+        <li><b>Data augmentation</b>: images = torchvision.transforms; tabular = noise injection</li>
+        <li><b>Gradient clipping</b>: <code>clip_grad_norm_(p, 1.0)</code> for RNN / unstable training</li>
+        <li><b>Label smoothing</b>: <code>CrossEntropyLoss(label_smoothing=0.1)</code> regularises classifiers</li>
+        <li><b>Mixup / Cutmix</b>: vision augmentation that boosts cal+acc</li>
+      </ul>
+    </div>
+
+    <div class="p">
+      <div class="name">Early stopping (canonical)</div>
+      <div class="py">best_val, patience, bad = float("inf"), 15, 0
+for epoch in range(max_epochs):
+    tr = train_epoch(model, dl_tr, loss_fn, opt, device)
+    va = eval_epoch (model, dl_va, loss_fn, device)
+    if va &lt; best_val - 1e-4:
+        best_val, bad = va, 0
+        torch.save(model.state_dict(), "best.pt")
+    else:
+        bad += 1
+        if bad &gt;= patience: break
+# Restore best:
+model.load_state_dict(torch.load("best.pt"))</div>
+    </div>
+  </div>
+
+  <!-- ════════════ DIAGNOSTICS ════════════ -->
+  <div class="sec diag">
+    <h2>◆ Diagnose loss curves</h2>
+
+    <div class="p">
+      <div class="name">Loss-curve signatures</div>
+      <table>
+        <tr><th>Pattern</th><th>Diagnosis</th><th>Fix</th></tr>
+        <tr><td>Both flat-high</td><td>underfitting</td><td>bigger model / longer train / lower wd</td></tr>
+        <tr><td>Train ↓, val ↑ after ep N</td><td>overfitting at ep N</td><td>early stop / dropout ↑ / data ↑</td></tr>
+        <tr><td>Train ≫ val</td><td>data leak / val too small</td><td>re-check split + scaler fit</td></tr>
+        <tr><td>NaN loss after few steps</td><td>LR too high / numerical bug</td><td>LR / 10 / log scale / check loss API</td></tr>
+        <tr><td>Loss oscillates</td><td>LR too high / batch too small</td><td>LR ↓ / batch ↑ / smoothing</td></tr>
+        <tr><td>Train stuck at chance</td><td>label/scaler mismatch / dead ReLU</td><td>print pred shape, dtype, range</td></tr>
+      </table>
+    </div>
+
+    <div class="p">
+      <div class="name">Sanity-check first batch</div>
+      <div class="py"># Before training a full run:
+xb, yb = next(iter(dl_tr))
+print("x shape", xb.shape, "x mean/std", xb.mean().item(), xb.std().item())
+print("y shape", yb.shape, "y dtype", yb.dtype, "y range", yb.min(), yb.max())
+model(xb.to(device)).shape    # output shape sanity
+# Overfit a single batch — if you can't, the model/loss is wrong:
+xb, yb = xb.to(device), yb.to(device)
+for _ in range(200):
+    opt.zero_grad(); l = loss_fn(model(xb).squeeze(-1), yb); l.backward(); opt.step()
+print(l.item())                # should be ~0</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Plot training history</div>
+      <div class="py">import matplotlib.pyplot as plt
+plt.plot(hist["tr"], label="train"); plt.plot(hist["va"], label="val")
+plt.yscale("log"); plt.legend(); plt.xlabel("epoch"); plt.ylabel("loss")</div>
+    </div>
+  </div>
+
+  <!-- ════════════ TUNING ════════════ -->
+  <div class="sec tune">
+    <h2>▲ Hyperparameter tuning</h2>
+
+    <div class="p">
+      <div class="name">Optuna with PyTorch</div>
+      <div class="py">import optuna
+def objective(trial):
+    hidden = trial.suggest_categorical("h", [32, 64, 128, 256])
+    n_lay  = trial.suggest_int("n_lay", 1, 4)
+    p      = trial.suggest_float("p", 0.0, 0.5)
+    lr     = trial.suggest_float("lr", 1e-4, 1e-2, log=True)
+    wd     = trial.suggest_float("wd", 1e-6, 1e-2, log=True)
+    model = MLP(in_dim, hidden=tuple([hidden]*n_lay), p=p).to(device)
+    opt   = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=wd)
+    best_va = train_to_convergence(model, opt, dl_tr, dl_va)
+    return best_va
+
+study = optuna.create_study(direction="minimize",
+                             pruner=optuna.pruners.MedianPruner())
+study.optimize(objective, n_trials=50, n_jobs=1)
+print(study.best_params)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Tuning priority order</div>
+      <ol class="recipe">
+        <li><b>Learning rate</b> (log scale 1e-4 to 1e-2)</li>
+        <li><b>Batch size</b> (power of 2; affects LR scaling)</li>
+        <li><b>Architecture</b> (hidden width, depth)</li>
+        <li><b>Dropout / weight decay</b> (regularisation strength)</li>
+        <li><b>Scheduler</b> (ReduceLROnPlateau vs OneCycle)</li>
+        <li><b>Optimizer</b> (Adam vs AdamW vs SGD)</li>
+      </ol>
+    </div>
+
+    <div class="p">
+      <div class="name">LR finder (smith 2017)</div>
+      <div class="py"># Quick LR sweep — increase LR exponentially each batch, find where loss explodes
+lrs, losses = [], []
+opt = torch.optim.SGD(model.parameters(), lr=1e-7)
+for i, (xb, yb) in enumerate(dl_tr):
+    lr = 1e-7 * (10 ** (i / 30))
+    for g in opt.param_groups: g["lr"] = lr
+    opt.zero_grad(); l = loss_fn(model(xb.to(device)).squeeze(-1), yb.to(device))
+    l.backward(); opt.step()
+    lrs.append(lr); losses.append(l.item())
+    if l.item() &gt; 4 * min(losses): break
+# Plot lrs vs losses; pick LR one decade below the explosion point</div>
+    </div>
+  </div>
+
+  <!-- ════════════ DEPLOY ════════════ -->
+  <div class="sec deploy">
+    <h2>◆ Deployment</h2>
+
+    <div class="p">
+      <div class="name">Save / Load (canonical)</div>
+      <div class="py"># Save state_dict, not the whole model (portable, smaller)
+torch.save(model.state_dict(), "model.pt")
+# Load (PyTorch 2.6+ defaults weights_only=True — safer):
+model = MLP(in_dim, hidden=(128, 64), out_dim=1)   # same architecture!
+model.load_state_dict(torch.load("model.pt", map_location="cpu", weights_only=True))
+model.eval()
+
+# Full checkpoint (resume-on-crash):
+ckpt = {
+    "epoch":     epoch,
+    "model":     model.state_dict(),
+    "opt":       opt.state_dict(),
+    "scheduler": scheduler.state_dict(),
+    "amp_scaler": scaler.state_dict() if 'scaler' in locals() else None,  # AMP only
+    "best_val":  best_val,
+    "rng":       {"py": random.getstate(), "np": np.random.get_state(),
+                   "torch": torch.get_rng_state()},
+    "arch_kwargs": {"in_dim": in_dim, "hidden": (128, 64), "out_dim": 1},
+    "torch_version": torch.__version__,
+}
+torch.save(ckpt, "ckpt.pt")
+# Resume (weights_only=False because we have non-tensor state):
+c = torch.load("ckpt.pt", map_location="cpu", weights_only=False)
+model = MLP(**c["arch_kwargs"]); model.load_state_dict(c["model"])
+opt.load_state_dict(c["opt"]); scheduler.load_state_dict(c["scheduler"])
+start_epoch = c["epoch"] + 1
+# Save SKLEARN scaler SEPARATELY (cross-version safer than embedding in torch.save):
+import joblib; joblib.dump(sc, "scaler.joblib")</div>
+      <div class="rf"><b>torch.compile</b> for free 1.3-2× speedup (PT 2.x): <code>model = torch.compile(model)</code> after instantiation.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">TorchScript (production-ready)</div>
+      <div class="py">model.eval()
+# Trace (best for static graphs):
+example = torch.randn(1, in_dim)
+ts = torch.jit.trace(model, example)
+ts.save("model_ts.pt")
+# Or script (handles control flow):
+ts = torch.jit.script(model)
+# Load in C++/Java/iOS/Android — no Python needed.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">ONNX export</div>
+      <div class="py">torch.onnx.export(model, example, "model.onnx",
+                   input_names=["x"], output_names=["y"],
+                   dynamic_axes={"x": {0: "batch"}, "y": {0: "batch"}},
+                   opset_version=17)
+# Serve with ONNXRuntime: 10-50× faster CPU inference.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">FastAPI inference</div>
+      <div class="py">from fastapi import FastAPI
+from pydantic import BaseModel
+import torch, joblib
+app = FastAPI()
+# Load the SAME ckpt dict + separate scaler.joblib produced above:
+ckpt = torch.load("ckpt.pt", map_location="cpu", weights_only=False)
+model = MLP(**ckpt["arch_kwargs"])
+model.load_state_dict(ckpt["model"]); model.eval()
+sc = joblib.load("scaler.joblib")            # sklearn StandardScaler
+class Req(BaseModel): features: list[float]
+@app.post("/predict")
+def predict(r: Req):
+    x = torch.tensor(sc.transform([r.features]), dtype=torch.float32)
+    with torch.no_grad():
+        return {"y_hat": float(model(x).squeeze().item())}</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Monitor</div>
+      <ul class="tight">
+        <li><b>Input drift</b>: feature dist vs training (PSI / KS)</li>
+        <li><b>Prediction drift</b>: ŷ distribution over time</li>
+        <li><b>Latency</b>: p50/p95/p99 per request</li>
+        <li><b>Re-train trigger</b>: PSI &gt; 0.25 OR rolling metric degrades 10%</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ════════════ TRAPS ════════════ -->
+  <div class="sec trap">
+    <h2>▲ Top traps (6-month memory)</h2>
+    <ul class="tight">
+      <li><b>Forgetting <code>opt.zero_grad()</code></b> — gradients accumulate; training silently breaks.</li>
+      <li><b>Double sigmoid/softmax</b> — sigmoid + <code>BCEWithLogitsLoss</code> = double-applied. Use raw logits + <code>BCEWithLogitsLoss</code>.</li>
+      <li><b>Scaler fit on all data</b> — leakage. Fit on TRAIN only, transform val/test.</li>
+      <li><b>Peeking at test during tuning</b> — every peek poisons the held-out estimate. Use val for tuning.</li>
+      <li><b>Missing <code>model.eval()</code></b> — Dropout still active + BN uses batch stats → noisy/wrong predictions.</li>
+      <li><b>Reporting in scaled units</b> — inverse-transform predictions before metric calls.</li>
+      <li><b>Judging imbalanced classifiers by accuracy</b> — 99% acc on 1% positives = "predict 0 always".</li>
+      <li><b>Dtype mismatch</b> — <code>CrossEntropyLoss</code> wants <code>long</code>; <code>BCEWithLogitsLoss</code> wants <code>float</code>. Mismatch silently fails or NaNs.</li>
+      <li><b>No deterministic seed for cuDNN</b> — set <code>torch.backends.cudnn.deterministic = True</code> for full reproducibility (small speed cost).</li>
+      <li><b>Not overfit-testing a single batch</b> — first sanity check; if you can't overfit one batch, the model/loss is wrong.</li>
+    </ul>
+  </div>
+
+  <!-- ════════════ QUICK REF ════════════ -->
+  <div class="sec master">
+    <h2>◆ Quick-reference (recall in 5 seconds)</h2>
+    <table>
+      <tr><th>Task</th><th>Canonical pattern</th></tr>
+      <tr><td>Seed</td><td><code>np.random.seed(42); torch.manual_seed(42)</code></td></tr>
+      <tr><td>Device</td><td><code>torch.device("cuda" if torch.cuda.is_available() else "cpu")</code></td></tr>
+      <tr><td>Split</td><td>3-way: train (60%) / val (20%) / test (20%), stratify if cls</td></tr>
+      <tr><td>Scale</td><td>StandardScaler fit on TRAIN only</td></tr>
+      <tr><td>DataLoader</td><td>shuffle=True on train only; batch_size power of 2</td></tr>
+      <tr><td>Tabular model</td><td>MLP(2-3 layers, hidden 64-256, ReLU, Dropout 0.2)</td></tr>
+      <tr><td>Loss · binary</td><td><code>BCEWithLogitsLoss</code> + raw linear output</td></tr>
+      <tr><td>Loss · multi</td><td><code>CrossEntropyLoss</code> + raw linear, y=long</td></tr>
+      <tr><td>Loss · regression</td><td><code>MSELoss</code> / <code>L1Loss</code> / <code>HuberLoss</code></td></tr>
+      <tr><td>Optimizer</td><td><code>AdamW(lr=1e-3, weight_decay=1e-4)</code></td></tr>
+      <tr><td>Scheduler</td><td><code>ReduceLROnPlateau(patience=5, factor=0.5)</code></td></tr>
+      <tr><td>Train step</td><td><code>zero_grad → forward → loss → backward → step</code></td></tr>
+      <tr><td>Eval step</td><td><code>model.eval()</code> + <code>torch.no_grad()</code></td></tr>
+      <tr><td>Early stop</td><td>patience 10-30 on val loss; restore best state_dict</td></tr>
+      <tr><td>Mixed precision</td><td><code>autocast() + GradScaler()</code> (Ampere+)</td></tr>
+      <tr><td>Persist</td><td>bundle dict {state_dict, scaler, arch_kwargs, cols}</td></tr>
+    </table>
+  </div>
+
+</div> <!-- /cols -->
+
+</body>
+</html>

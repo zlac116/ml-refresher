@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Regression — Project Recipe Card</title>
+<style>
+@page { size: A4 landscape; margin: 0.35cm 0.35cm 0.45cm 0.35cm;
+        @bottom-right { content: counter(page) " / " counter(pages); font: 6pt 'DejaVu Sans', sans-serif; color: #aaa; } }
+* { box-sizing: border-box; }
+body { font-family: 'DejaVu Sans', sans-serif; font-size: 7pt; line-height: 1.15; color: #1a1a1a; margin: 0; padding: 0; }
+code, .formula, .py, pre { font-family: 'DejaVu Sans Mono', monospace; font-size: 6.6pt; }
+
+.banner { background: #1a3a5c; color: #fff; padding: 3px 7px; margin-bottom: 3px; border-radius: 2px; }
+.banner h1 { font-size: 11pt; margin: 0; }
+.banner .sub { font-size: 6.6pt; color: #cfd9e6; margin-top: 0; }
+
+.cols { column-count: 3; column-gap: 5px; column-rule: 1px solid #ccc; column-fill: auto; }
+
+.sec { break-inside: avoid; margin: 0 0 3px 0; padding: 2px 4px 3px 5px; border-radius: 2px; border-left: 3px solid; }
+.sec h2 { font-size: 7.8pt; font-weight: bold; margin: 0 0 1px 0; padding: 0px 4px; border-radius: 2px; color: #fff; display: inline-block; }
+.sec h3 { font-size: 6.7pt; font-weight: bold; margin: 2px 0 0 0; color: #1a3a5c; text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* Family palette — consistent across all 4 ml/ cards */
+.master  { background: #fff8d9; border-left-color: #806c0e; }  .master  h2 { background: #806c0e; }
+.frame   { background: #e7f2fa; border-left-color: #2e6b9c; }  .frame   h2 { background: #2e6b9c; }
+.model   { background: #e7fae9; border-left-color: #2e9c47; }  .model   h2 { background: #2e9c47; }
+.metric  { background: #f0e7fa; border-left-color: #6e3e9c; }  .metric  h2 { background: #6e3e9c; }
+.cv      { background: #e7faf9; border-left-color: #1a8a8a; }  .cv      h2 { background: #1a8a8a; }
+.tune    { background: #fbf2e6; border-left-color: #b06c0e; }  .tune    h2 { background: #b06c0e; }
+.diag    { background: #f7e6d5; border-left-color: #a05210; }  .diag    h2 { background: #a05210; }
+.deploy  { background: #ededed; border-left-color: #555;    }  .deploy  h2 { background: #555;    }
+.trap    { background: #fae0e0; border-left-color: #7a1a1a; }  .trap    h2 { background: #7a1a1a; }
+
+.p { margin: 0 0 2px 0; }
+.p .name { font-weight: bold; font-size: 7.2pt; }
+.p .name .tag { font-size: 6pt; color: #555; font-weight: normal; }
+.p .formula { display: block; background: rgba(255,255,255,0.55); padding: 0 4px;
+              border-left: 2px solid currentColor; margin: 1px 0; white-space: pre-wrap; }
+.p .py { display: block; background: rgba(0,0,0,0.04); padding: 1px 4px; margin: 1px 0;
+         border-left: 2px solid #555; white-space: pre-wrap; }
+.p .use { font-style: italic; color: #2a2a2a; font-size: 6.5pt; }
+.p .rf  { font-size: 6.1pt; color: #444; }
+
+.recipe ol { margin: 0; padding: 0 0 0 14px; }
+.recipe ol li { margin: 0; }
+.recipe .step { font-weight: bold; }
+table { border-collapse: collapse; width: 100%; font-size: 6.4pt; margin: 1px 0; }
+th, td { border: 1px solid #c0c0c0; padding: 0.5px 3px; text-align: left; vertical-align: top; }
+th { background: #e8e8e8; font-weight: bold; }
+ul.tight { margin: 0; padding: 0 0 0 13px; }
+ul.tight li { margin: 0; }
+
+.callout { background: #fff; border-left: 3px solid #d4a800; padding: 1px 4px; margin: 2px 0; font-size: 6.3pt; }
+.danger  { background: #fff; border-left: 3px solid #b8341a; padding: 1px 4px; margin: 2px 0; font-size: 6.3pt; }
+.danger b:first-child { color: #b8341a; }
+
+/* Top-level — standalone .py / .formula blocks need their own rule (not just inside .p) */
+.py { display: block; background: rgba(0,0,0,0.04); padding: 1px 4px; margin: 1px 0;
+      border-left: 2px solid #555; white-space: pre-wrap;
+      font-family: 'DejaVu Sans Mono', monospace; font-size: 6.6pt; }
+.formula { display: block; background: rgba(255,255,255,0.55); padding: 0 4px;
+           border-left: 2px solid currentColor; margin: 1px 0; white-space: pre-wrap;
+           font-family: 'DejaVu Sans Mono', monospace; font-size: 6.6pt; }
+</style>
+</head>
+<body>
+
+<div class="banner">
+  <h1>Regression — Project Recipe Card</h1>
+  <div class="sub">End-to-end recipe · model toolbox · metrics · CV · tuning · diagnostics · deployment. Deep companion: <code>regression_cheatsheet.md</code> + <code>regression.ipynb</code></div>
+</div>
+
+<div class="cols">
+
+  <!-- ════════════ MASTER RECIPE ════════════ -->
+  <div class="sec master">
+    <h2>◆ Project recipe (11 steps)</h2>
+    <ol class="recipe">
+      <li><span class="step">Frame</span> — target, units, success metric, decision the model serves</li>
+      <li><span class="step">Split FIRST</span> — train/val/test BEFORE any look at the data (avoid leakage)</li>
+      <li><span class="step">EDA</span> — target dist, missing, outliers, leakage candidates, target/feature correlations</li>
+      <li><span class="step">Feature pipeline</span> — <code>ColumnTransformer</code> → impute → encode → scale</li>
+      <li><span class="step">Baseline</span> — DummyRegressor (mean) + OLS; everything must beat it</li>
+      <li><span class="step">Model toolbox</span> — start linear, add Ridge/Lasso, then GBM</li>
+      <li><span class="step">CV</span> — KFold(5) or TimeSeriesSplit if temporal; nested for unbiased tuning</li>
+      <li><span class="step">Tune</span> — Optuna TPE (or GridSearchCV for ≤3 hp)</li>
+      <li><span class="step">Diagnostics</span> — residuals vs ŷ / feature / time; Q-Q plot</li>
+      <li><span class="step">Test ONCE</span> — final score on held-out test set</li>
+      <li><span class="step">Deploy</span> — pickle pipeline + log metrics + drift monitor</li>
+    </ol>
+    <div class="callout"><b>Universal skeleton:</b> <code>Pipeline([("prep", ColumnTransformer(...)), ("model", Estimator())])</code> → fit on (X_tr, y_tr), grid-search, evaluate.</div>
+  </div>
+
+  <!-- ════════════ PROJECT SKELETON ════════════ -->
+  <div class="sec master">
+    <h2>◆ Starter notebook skeleton</h2>
+    <div class="py">import numpy as np, pandas as pd
+from sklearn.model_selection import train_test_split, KFold, GridSearchCV
+from sklearn.pipeline       import Pipeline
+from sklearn.compose        import ColumnTransformer
+from sklearn.impute         import SimpleImputer
+from sklearn.preprocessing  import StandardScaler, OneHotEncoder
+from sklearn.linear_model   import Ridge
+from sklearn.metrics        import mean_squared_error, r2_score
+import matplotlib.pyplot as plt
+np.random.seed(42)
+
+# 1. Split FIRST (3-way: train / val / test) — DO NOT touch test until step 4
+X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, random_state=42)
+X_tr, X_va, y_tr, y_va = train_test_split(X_tr, y_tr, test_size=0.2, random_state=42)
+# 60/20/20 final split; val used for early stopping + threshold-style decisions
+
+# 2. Build pipeline
+num = ["age", "income"];  cat = ["region", "segment"]
+prep = ColumnTransformer([
+    ("num", Pipeline([("imp", SimpleImputer(strategy="median")),
+                       ("sc",  StandardScaler())]), num),
+    ("cat", OneHotEncoder(handle_unknown="ignore"), cat),
+])
+pipe = Pipeline([("prep", prep), ("model", Ridge())])
+
+# 3. CV + grid search
+grid = {"model__alpha": [0.01, 0.1, 1, 10, 100]}
+gs = GridSearchCV(pipe, grid, cv=KFold(5, shuffle=True, random_state=42),
+                  scoring="neg_root_mean_squared_error", n_jobs=-1)
+gs.fit(X_tr, y_tr)
+
+# 4. Test ONCE
+y_hat = gs.predict(X_te)
+print(np.sqrt(mean_squared_error(y_te, y_hat)), r2_score(y_te, y_hat))</div>
+  </div>
+
+  <!-- ════════════ FRAME + EDA ════════════ -->
+  <div class="sec frame">
+    <h2>● Frame + EDA</h2>
+
+    <div class="p">
+      <div class="name">Frame checklist</div>
+      <ul class="tight">
+        <li><b>Target</b>: y_pred unit, range, what business decision uses it</li>
+        <li><b>Train domain</b>: which rows will the model see in prod?</li>
+        <li><b>Loss → metric</b>: symmetric (RMSE) or asymmetric (Pinball)?</li>
+        <li><b>Latency</b>: ms (linear) / s (GBM) / minutes (GP)?</li>
+        <li><b>Causal vs predictive</b>: do you need coefficients to mean something?</li>
+      </ul>
+    </div>
+
+    <div class="p">
+      <div class="name">EDA snippets</div>
+      <div class="py">df.info(); df.describe(include="all")
+df.isna().sum().sort_values(ascending=False)
+df[target].hist(bins=50); df[target].skew()
+df.corr(numeric_only=True)[target].sort_values()
+# pairplot for small dims:
+import seaborn as sns; sns.pairplot(df.sample(500))</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Target audit</div>
+      <ul class="tight">
+        <li><b>Skew &gt; 1</b> → try <code>np.log1p(y)</code>; inverse via <code>np.expm1</code></li>
+        <li><b>Heavy tail</b> → quantile loss (GBM <code>objective="quantile"</code>) or Huber</li>
+        <li><b>Bounded (0,1)</b> → logit transform or Beta regression</li>
+        <li><b>Counts</b> → Poisson / NegBin GLM (not OLS)</li>
+      </ul>
+      <div class="py"># Canonical fix for log-target (no manual inverse needed):
+from sklearn.compose import TransformedTargetRegressor
+ttr = TransformedTargetRegressor(regressor=pipe,
+                                  func=np.log1p, inverse_func=np.expm1)
+ttr.fit(X_tr, y_tr); y_hat = ttr.predict(X_te)   # already in original units</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Leakage candidates</div>
+      <div class="danger"><b>Drop / quarantine before split:</b> any feature derived from target, post-event features, future timestamps, ID columns, perfectly correlated proxies (e.g., `revenue` predicting `profit`).</div>
+    </div>
+  </div>
+
+  <!-- ════════════ FEATURE PIPELINE ════════════ -->
+  <div class="sec frame">
+    <h2>● Feature pipeline (sklearn ≥1.5)</h2>
+
+    <div class="p">
+      <div class="name">ColumnTransformer (canonical)</div>
+      <div class="py">prep = ColumnTransformer(
+    transformers=[
+        ("num", num_pipe, num_cols),
+        ("cat", OneHotEncoder(handle_unknown="ignore",
+                              sparse_output=False), cat_cols),
+        ("txt", TfidfVectorizer(max_features=5000), "text_col"),
+    ],
+    remainder="drop",         # drop unspecified
+    verbose_feature_names_out=False,
+).set_output(transform="pandas")</div>
+      <div class="use">Use <code>set_output("pandas")</code> for dbg-friendly column names.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Imputation patterns</div>
+      <ul class="tight">
+        <li><b>Median</b> numeric (robust to outliers)</li>
+        <li><b>Most frequent</b> categorical</li>
+        <li><b>Missing-as-category</b> for cat ('UNK')</li>
+        <li><b>KNNImputer</b> when correlated features predict missing</li>
+        <li><b>IterativeImputer</b> for MICE (slow, multivariate)</li>
+      </ul>
+    </div>
+
+    <div class="p">
+      <div class="name">Scaling</div>
+      <table>
+        <tr><th>Scaler</th><th>When</th></tr>
+        <tr><td>StandardScaler</td><td>linear, SVR, NN (default)</td></tr>
+        <tr><td>RobustScaler</td><td>outliers present</td></tr>
+        <tr><td>MinMaxScaler</td><td>NN with sigmoid, image data</td></tr>
+        <tr><td>None</td><td>tree-based models (invariant)</td></tr>
+      </table>
+    </div>
+
+    <div class="p">
+      <div class="name">Feature engineering</div>
+      <div class="py"># Date features (no leakage — current row only):
+df["dow"] = df["dt"].dt.dayofweek
+df["month"] = df["dt"].dt.month
+# Interactions: PolynomialFeatures(degree=2, interaction_only=True)
+# Target encoding inside CV via category_encoders.TargetEncoder</div>
+    </div>
+  </div>
+
+  <!-- ════════════ MODEL TOOLBOX ════════════ -->
+  <div class="sec model">
+    <h2>▲ Model toolbox (climb the ladder)</h2>
+
+    <div class="p">
+      <div class="name">1 · Dummy baseline</div>
+      <div class="py">from sklearn.dummy import DummyRegressor
+DummyRegressor(strategy="mean").fit(X_tr, y_tr).score(X_te, y_te)</div>
+      <div class="use">If your model can't beat this, something is wrong.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">2 · OLS (LinearRegression)</div>
+      <div class="py">from sklearn.linear_model import LinearRegression
+LinearRegression().fit(X_tr, y_tr)</div>
+      <div class="use">Interpretable; no hyperparams; can overfit with many features.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">3 · Ridge / Lasso / ElasticNet</div>
+      <div class="py">from sklearn.linear_model import Ridge, Lasso, ElasticNet
+Ridge(alpha=1.0).fit(X_tr, y_tr)         # L2 — keep all, shrink coefs
+Lasso(alpha=0.1).fit(X_tr, y_tr)         # L1 — feature selection
+ElasticNet(alpha=0.1, l1_ratio=0.5)      # blend</div>
+      <div class="rf"><b>α</b> via CV (RidgeCV/LassoCV); <b>scale features first</b>.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">4 · GLM family</div>
+      <div class="py">from sklearn.linear_model import PoissonRegressor, GammaRegressor, TweedieRegressor
+PoissonRegressor(alpha=0.5).fit(X_tr, y_tr)   # counts / non-neg
+GammaRegressor().fit(X_tr, y_tr)              # positive, right-skew
+TweedieRegressor(power=1.5).fit(X_tr, y_tr)   # zero-inflated continuous</div>
+    </div>
+
+    <div class="p">
+      <div class="name">5 · Tree-based: RandomForest</div>
+      <div class="py">from sklearn.ensemble import RandomForestRegressor
+RandomForestRegressor(n_estimators=500, max_depth=None,
+                       min_samples_leaf=5, n_jobs=-1).fit(X_tr, y_tr)</div>
+      <div class="use">Non-linear, robust, no scaling needed. Bias OOB-error available.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">6 · Gradient boosting (THE workhorse)</div>
+      <div class="py">import lightgbm as lgb
+m = lgb.LGBMRegressor(
+    n_estimators=2000, learning_rate=0.05,
+    num_leaves=63, min_child_samples=20,
+    subsample=0.8, colsample_bytree=0.8,
+    reg_alpha=0.0, reg_lambda=1.0,
+    n_jobs=-1, random_state=42)
+m.fit(X_tr, y_tr,
+      eval_set=[(X_va, y_va)],
+      callbacks=[lgb.early_stopping(50)])</div>
+      <div class="rf">XGBoost + CatBoost are interchangeable; CatBoost handles categoricals natively.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">7 · SVR / GP / NN (advanced)</div>
+      <ul class="tight">
+        <li><b>SVR</b>: small-N, non-linear, slow O(N²)-O(N³)</li>
+        <li><b>GaussianProcess</b>: probabilistic, small-N</li>
+        <li><b>MLP / Tabular NN</b>: only when N &gt; 100k or non-tabular</li>
+      </ul>
+    </div>
+
+    <div class="p">
+      <div class="name">Model picker</div>
+      <table>
+        <tr><th>Situation</th><th>Start with</th></tr>
+        <tr><td>Need interpretability</td><td>OLS / Ridge</td></tr>
+        <tr><td>Sparse high-dim</td><td>Lasso / ElasticNet</td></tr>
+        <tr><td>Tabular, non-linear, &gt;1k rows</td><td>LightGBM</td></tr>
+        <tr><td>Small N, smooth</td><td>SVR (RBF) / GP</td></tr>
+        <tr><td>Counts / positives</td><td>Poisson / Gamma GLM</td></tr>
+        <tr><td>Quantiles (P10/P90)</td><td>quantile GBM</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ════════════ METRICS ════════════ -->
+  <div class="sec metric">
+    <h2>◆ Metrics</h2>
+
+    <div class="p">
+      <div class="name">RMSE / MAE / MAPE</div>
+      <table>
+        <tr><th>Metric</th><th>Formula</th><th>When</th></tr>
+        <tr><td>RMSE</td><td>√mean((y−ŷ)²)</td><td>default; penalises large errors</td></tr>
+        <tr><td>MAE</td><td>mean|y−ŷ|</td><td>robust to outliers</td></tr>
+        <tr><td>MAPE</td><td>mean|y−ŷ|/|y|</td><td>units = %; FAILS at y≈0</td></tr>
+        <tr><td>sMAPE</td><td>2·|y−ŷ|/(|y|+|ŷ|)</td><td>bounded MAPE alternative</td></tr>
+        <tr><td>R²</td><td>1 − SSE/SST</td><td>relative fit; can be negative</td></tr>
+        <tr><td>Pinball</td><td>quantile loss</td><td>asymmetric / quantile reg</td></tr>
+      </table>
+    </div>
+
+    <div class="p">
+      <div class="name">Canonical use</div>
+      <div class="py">from sklearn.metrics import (mean_squared_error, mean_absolute_error,
+                              mean_absolute_percentage_error, r2_score)
+rmse = np.sqrt(mean_squared_error(y, y_hat))
+mae  = mean_absolute_error(y, y_hat)
+mape = mean_absolute_percentage_error(y, y_hat)
+r2   = r2_score(y, y_hat)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Picking the metric</div>
+      <ul class="tight">
+        <li><b>Symmetric, no outliers</b> → RMSE</li>
+        <li><b>Symmetric, outliers</b> → MAE</li>
+        <li><b>Relative errors</b> → MAPE (units don't matter)</li>
+        <li><b>Asymmetric loss</b> → Pinball / Huber</li>
+        <li><b>Report R²</b> alongside; never as the only metric</li>
+      </ul>
+      <div class="danger"><b>Log-target trap:</b> RMSE on log(y) is NOT in original units. Always inverse-transform predictions before metrics.</div>
+    </div>
+  </div>
+
+  <!-- ════════════ CV ════════════ -->
+  <div class="sec cv">
+    <h2>● Cross-validation</h2>
+
+    <div class="p">
+      <div class="name">KFold (iid)</div>
+      <div class="py">from sklearn.model_selection import KFold, cross_val_score
+kf = KFold(n_splits=5, shuffle=True, random_state=42)
+scores = cross_val_score(pipe, X_tr, y_tr, cv=kf,
+                          scoring="neg_root_mean_squared_error", n_jobs=-1)
+print(-scores.mean(), scores.std())</div>
+    </div>
+
+    <div class="p">
+      <div class="name">TimeSeriesSplit (temporal)</div>
+      <div class="py">from sklearn.model_selection import TimeSeriesSplit
+tscv = TimeSeriesSplit(n_splits=5, test_size=30, gap=0)
+# Expanding window by default; for rolling pass max_train_size</div>
+      <div class="use">Never shuffle on temporal data. Train always precedes val in time.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">GroupKFold (grouped data)</div>
+      <div class="py">from sklearn.model_selection import GroupKFold
+gkf = GroupKFold(n_splits=5)
+# groups = customer_id, batch_id, anything that must not split across folds</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Nested CV (unbiased tuning)</div>
+      <div class="py">outer = KFold(5, shuffle=True, random_state=42)
+inner = KFold(3, shuffle=True, random_state=42)
+gs = GridSearchCV(pipe, grid, cv=inner, scoring="neg_root_mean_squared_error")
+nested_score = cross_val_score(gs, X, y, cv=outer,
+                                scoring="neg_root_mean_squared_error")</div>
+      <div class="use">Use when reporting performance estimate AND tuning. ~5× slower.</div>
+    </div>
+  </div>
+
+  <!-- ════════════ TUNING ════════════ -->
+  <div class="sec tune">
+    <h2>▲ Hyperparameter tuning</h2>
+
+    <div class="p">
+      <div class="name">GridSearchCV (small grids)</div>
+      <div class="py">grid = {"model__alpha": [0.01, 0.1, 1, 10]}
+gs = GridSearchCV(pipe, grid, cv=5, scoring="neg_root_mean_squared_error",
+                   n_jobs=-1, refit=True)
+gs.fit(X_tr, y_tr)
+print(gs.best_params_, -gs.best_score_)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Optuna TPE (≥3 hp)</div>
+      <div class="py">import optuna
+def objective(trial):
+    params = {
+        "learning_rate": trial.suggest_float("lr", 1e-3, 0.3, log=True),
+        "num_leaves":    trial.suggest_int("leaves", 15, 255, log=True),
+        "min_child_samples": trial.suggest_int("mcs", 5, 100),
+        "reg_lambda":    trial.suggest_float("rl", 1e-3, 10, log=True),
+    }
+    model = lgb.LGBMRegressor(**params, n_estimators=2000)
+    scores = cross_val_score(model, X_tr, y_tr, cv=5,
+                              scoring="neg_root_mean_squared_error", n_jobs=-1)
+    return -scores.mean()
+study = optuna.create_study(direction="minimize",
+                             sampler=optuna.samplers.TPESampler(seed=42),
+                             pruner=optuna.pruners.MedianPruner())
+study.optimize(objective, n_trials=100, n_jobs=1)
+print(study.best_params, study.best_value)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">GBM tuning priority order</div>
+      <ol class="recipe">
+        <li><b>n_estimators + learning_rate</b> (with early stopping)</li>
+        <li><b>num_leaves / max_depth</b> (capacity)</li>
+        <li><b>min_child_samples</b> (overfitting guard)</li>
+        <li><b>subsample / colsample_bytree</b> (variance reduction)</li>
+        <li><b>reg_alpha / reg_lambda</b> (L1/L2)</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ════════════ DIAGNOSTICS ════════════ -->
+  <div class="sec diag">
+    <h2>◆ Residual diagnostics</h2>
+
+    <div class="p">
+      <div class="name">Standard 4-plot</div>
+      <div class="py">resid = y_te - y_hat
+fig, ax = plt.subplots(2, 2, figsize=(10, 8))
+ax[0,0].scatter(y_hat, resid);  ax[0,0].set_title("Resid vs ŷ")
+ax[0,0].axhline(0, c='r')
+ax[0,1].hist(resid, bins=30);    ax[0,1].set_title("Hist")
+import scipy.stats as st
+st.probplot(resid, dist="norm", plot=ax[1,0])  # Q-Q
+ax[1,1].scatter(range(len(resid)), resid)       # vs index/time
+ax[1,1].set_title("Resid vs order")</div>
+    </div>
+
+    <div class="p">
+      <div class="name">What to look for</div>
+      <table>
+        <tr><th>Pattern</th><th>Cause</th><th>Fix</th></tr>
+        <tr><td>Funnel (resid ↑ with ŷ)</td><td>heteroskedastic</td><td>log target / WLS / GBM</td></tr>
+        <tr><td>U-shape vs ŷ</td><td>missing non-linearity</td><td>add interactions / GBM</td></tr>
+        <tr><td>Trend vs time</td><td>concept drift</td><td>add time feature / re-train cadence</td></tr>
+        <tr><td>Q-Q tail deviation</td><td>fat-tailed residuals</td><td>Huber / quantile loss</td></tr>
+        <tr><td>Autocorr (DW≠2)</td><td>serial dependence</td><td>TS model / add lags</td></tr>
+      </table>
+    </div>
+
+    <div class="p">
+      <div class="name">Feature importance + SHAP</div>
+      <div class="py">import shap
+explainer = shap.TreeExplainer(model)
+sv = explainer(X_tr.sample(500))
+shap.plots.beeswarm(sv); shap.plots.bar(sv)
+# Single prediction:
+shap.plots.waterfall(sv[0])</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Prediction intervals</div>
+      <div class="py">from sklearn.ensemble import GradientBoostingRegressor
+lo = GradientBoostingRegressor(loss="quantile", alpha=0.1).fit(X_tr, y_tr)
+hi = GradientBoostingRegressor(loss="quantile", alpha=0.9).fit(X_tr, y_tr)
+# Or LGBM: objective="quantile", alpha=0.1
+# Or MAPIE for conformal prediction (distribution-free):
+from mapie.regression import MapieRegressor
+mapie = MapieRegressor(estimator=pipe, cv=5).fit(X_tr, y_tr)
+y_pred, intervals = mapie.predict(X_te, alpha=0.10)</div>
+    </div>
+  </div>
+
+  <!-- ════════════ DEPLOY ════════════ -->
+  <div class="sec deploy">
+    <h2>◆ Persistence + deployment</h2>
+
+    <div class="p">
+      <div class="name">Joblib (canonical)</div>
+      <div class="py">import joblib
+joblib.dump(gs.best_estimator_, "model.joblib", compress=3)
+# Load in prod (Python only):
+pipe = joblib.load("model.joblib")
+y_hat = pipe.predict(X_new)
+# Safer alternative — sklearn-recommended since 1.3:
+import skops.io as sio
+sio.dump(gs.best_estimator_, "model.skops")   # explicit type allowlist on load</div>
+      <div class="danger"><b>Pickle/joblib are Python-version + sklearn-version locked AND can execute arbitrary code on load.</b> Pin versions in pyproject.toml; prefer <code>skops</code> for shareable artifacts.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">ONNX (cross-runtime)</div>
+      <div class="py">from skl2onnx import to_onnx
+onx = to_onnx(pipe, X_tr[:1].astype(np.float32))
+with open("model.onnx", "wb") as f: f.write(onx.SerializeToString())
+# Serve with ONNXRuntime in C++/Rust/Java/JS</div>
+    </div>
+
+    <div class="p">
+      <div class="name">FastAPI service skeleton</div>
+      <div class="py">from fastapi import FastAPI
+from pydantic import BaseModel
+app = FastAPI()
+class Req(BaseModel): age: float; income: float; region: str
+pipe = joblib.load("model.joblib")
+@app.post("/predict")
+def predict(r: Req):
+    X = pd.DataFrame([r.dict()])
+    return {"y_hat": float(pipe.predict(X)[0])}</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Monitoring (drift)</div>
+      <ul class="tight">
+        <li><b>Input drift</b>: PSI / KS test on each feature vs train</li>
+        <li><b>Prediction drift</b>: distribution of ŷ over time</li>
+        <li><b>Performance drift</b>: rolling RMSE when y arrives (lag)</li>
+        <li><b>Re-train trigger</b>: PSI &gt; 0.25 OR RMSE &gt; baseline · 1.2</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ════════════ TRAPS ════════════ -->
+  <div class="sec trap">
+    <h2>▲ Top traps (6-month memory)</h2>
+    <ul class="tight">
+      <li><b>Leakage via scaler-on-all-data</b> — fit scaler on X_train ONLY, transform val/test with fitted scaler. <code>Pipeline</code> enforces this.</li>
+      <li><b>Random split on temporal data</b> — always use <code>TimeSeriesSplit</code> when rows have a time stamp.</li>
+      <li><b>Touching test more than once</b> — every peek "spends" your held-out estimate. Final test = ONE call.</li>
+      <li><b>Optimising R² without residual checks</b> — high R² + funnel pattern = wrong loss / heteroskedastic.</li>
+      <li><b>Reporting RMSE on log(y) as original units</b> — inverse-transform BEFORE the metric call.</li>
+      <li><b>Polynomial features without regularisation</b> — explodes p in p&gt;&gt;n regime.</li>
+      <li><b>Trusting single-model feature importance</b> — different models disagree; use SHAP + permutation importance.</li>
+      <li><b>No baseline</b> — your model isn't "good" until it beats DummyRegressor(mean) and a single-feature OLS.</li>
+    </ul>
+  </div>
+
+  <!-- ════════════ QUICK REF ════════════ -->
+  <div class="sec master">
+    <h2>◆ Quick-reference (recall in 5 seconds)</h2>
+    <table>
+      <tr><th>Task</th><th>Canonical pattern</th></tr>
+      <tr><td>Split</td><td><code>train_test_split(test_size=0.2, random_state=42)</code></td></tr>
+      <tr><td>Preprocess</td><td><code>Pipeline([prep, model])</code> + <code>ColumnTransformer</code></td></tr>
+      <tr><td>Baseline</td><td><code>DummyRegressor</code> + <code>LinearRegression</code></td></tr>
+      <tr><td>CV</td><td><code>KFold(5, shuffle=True, random_state=42)</code></td></tr>
+      <tr><td>Tune (small)</td><td><code>GridSearchCV(pipe, grid, cv=5, scoring="neg_root_mean_squared_error")</code></td></tr>
+      <tr><td>Tune (large)</td><td>Optuna TPE, 100 trials, MedianPruner</td></tr>
+      <tr><td>Best model (tabular)</td><td>LightGBM + early stopping</td></tr>
+      <tr><td>Diagnostics</td><td>Resid vs ŷ, Q-Q, SHAP beeswarm</td></tr>
+      <tr><td>Intervals</td><td>Quantile GBM or MAPIE</td></tr>
+      <tr><td>Persist</td><td><code>joblib.dump(best_estimator_)</code></td></tr>
+    </table>
+  </div>
+
+</div> <!-- /cols -->
+
+</body>
+</html>

@@ -129,12 +129,10 @@ Every product in this document is a special case of **one identity**. Learn this
 
 ```
                                           (no-arbitrage / risk-neutral price)
-              ┌──────────────────────────────┐
-              │     T                        │
-        V₀ =  │    Σ    E^Q[ CF_t ]  ·  DF(t) │
-              │   t=t₁                       │
-              └──────────────────────────────┘
-                     │                  │
+                    T
+        V₀ =       Σ    E^Q[ CF_t ]  ·  DF(t)
+                  t=t₁
+
             "expected cashflow"  "today's price of $1 at t"
             under the right         (curve-derived)
             risk-neutral measure
@@ -347,7 +345,6 @@ This is the meta-skill for ALM, LDI, treasury risk: think in vectors of factors,
 
 ```
 V  =  N_for · S · fx_factor
-       └──┬──┘  └────┬──────┘
        foreign      today's FX rate
        amount       (× 1 + fx_shock)
 ```
@@ -380,7 +377,6 @@ V  =  80 · 1.25 · 1.0   =   100.00
 
 ```
 V  =  N · (1 + r_repo · T) · DF(T)  −  N
-      └──────────┬──────────────────┘   └┬┘
        PV of repaid cash + interest      cash you advanced
                                           (cost basis)
 ```
@@ -455,7 +451,6 @@ V  =  0.002 · 100 · 2.75073   =   0.5501
                   n
    V  =        Σ      cf_i  ·  DF(i, spread_bp)
                   i=1
-                  └────────┬────────────────────┘
                   PV of declining-balance interest +
                   constant principal amortisation,
                   discounted at credit-adjusted curve
@@ -499,7 +494,6 @@ V  =  Σ cf_i · DF(i, spread+200bp)   ≈   96.12
 
 ```
 V  =  N_for · ( S · fx_factor  −  K ) · DF(T)
-       └──┬──┘  └───────┬──────────┘   └──┬──┘
        size     today's spot vs contract   PV
                 (per unit of foreign)
 ```
@@ -618,7 +612,6 @@ V  ≈  92.07
 
 ```
 V  =  ( Σ cf_i · DF(t_i, spread_bp) )  ·  S · fx_factor
-       └────────────┬──────────────────┘   └────┬──────┘
        local-currency PV (like §7)         FX conversion
 ```
 
@@ -651,7 +644,6 @@ V         =  89.94 · 1.25 · 1.0  =  112.43
 
 ```
    V  =  Σ  cf_real_i  ·  (1 + b)^t_i  ·  DF(t_i)
-            └────┬────┘  └──────┬──────┘   └──┬──┘
             real          inflation         discount
             cashflow      uplift            (nominal curve)
 ```
@@ -670,7 +662,6 @@ y2:    1.5 · 1.03^2   · 0.91576  =   1.457
 y3:    1.5 · 1.03^3   · 0.87897  =   1.441
 y4:    1.5 · 1.03^4   · 0.84366  =   1.424
 y5:  101.5 · 1.03^5   · 0.81058  =  95.379
-                                    ───────
                               V ≈  101.178
 ```
 
@@ -694,7 +685,6 @@ y5:  101.5 · 1.03^5   · 0.81058  =  95.379
 
 ```
    V  =  N  ·  [ c · τ · Σ DF(t_i)  −  ( 1 − DF(T) ) ]
-                └────┬──────────────┘  └─────┬───────┘
                 fixed leg PV               floating leg PV
                 (N · c · A(T))             (single-curve telescope)
 ```
@@ -772,7 +762,6 @@ V  =  100 · 0.81058 · 0.01124   ≈   0.909
 
 ```
    V  =  b · N · Σ τ · DF(t_i)             with  b = (basis_bp + tenor_shock_bp) / 1e4
-         └┬┘
          basis in
          decimal
 ```
@@ -807,7 +796,6 @@ V  =  0.0015 · 100 · 4.40498   =   0.6607
 
 ```
    V  =  N_for · S · fx_factor · b · Σ τ · DF(t_i)
-         └──┬──┘  └────┬─────┘
         foreign       FX
         notional      conversion
 ```
@@ -844,7 +832,6 @@ V  =  100 · 1.25 · (−0.002) · 4.40498   =   −1.1012
 
 ```
    V  =  PV(reference asset)  −  funding_notional
-         └────────┬──────────┘    └──────┬──────────┘
          reprice using current        the financing
          market state                 leg's notional
 ```
@@ -1048,7 +1035,6 @@ y7:  −5 · 1.03^7  · 0.75417   =   −4.640
 y8:  −5 · 1.03^8  · 0.72714   =   −4.611
 y9:  −5 · 1.03^9  · 0.70088   =   −4.582
 y10: −5 · 1.03^10 · 0.66365   =   −4.464
-                                  ─────────
                           V ≈   −46.79
 ```
 
@@ -1230,7 +1216,6 @@ At each t_i:  pays  (L_i + spread) · τ · face
 At maturity:  pays  face
 
 Value today (just after a fixing)  =  face · spread · Σ τ · DF(t_i)  +  face
-                                      └─────────┬──────────────────┘
                                       spread × annuity            ← floating part is par
 ```
 
@@ -1350,7 +1335,6 @@ Index spread quoted in bp (e.g. CDX IG = 65 bp).
 
 ```
 PV  =  Σ E[CF_t | prepay model] · DF(t, spread)
-                    └────────┬──────────┘
                     requires Monte Carlo over interest rate paths
                     with a prepayment model (CPR/PSA)
 ```

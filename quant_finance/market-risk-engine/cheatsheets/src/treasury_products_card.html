@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Treasury Products — Quick Reference Card</title>
+<style>
+@page { size: A4 landscape; margin: 0.35cm 0.35cm 0.45cm 0.35cm;
+        @bottom-right { content: counter(page) " / " counter(pages); font: 6pt 'DejaVu Sans', sans-serif; color: #aaa; } }
+* { box-sizing: border-box; }
+body { font-family: 'DejaVu Sans', sans-serif; font-size: 7pt; line-height: 1.15; color: #1a1a1a; margin: 0; padding: 0; }
+code, .formula, pre { font-family: 'DejaVu Sans Mono', monospace; font-size: 6.6pt; }
+
+/* Header banner — page 1 only, then flow */
+.banner { background: #1a3a5c; color: #fff; padding: 3px 7px; margin-bottom: 3px; border-radius: 2px; }
+.banner h1 { font-size: 11pt; margin: 0; }
+.banner .sub { font-size: 6.6pt; color: #cfd9e6; margin-top: 0; }
+
+/* Single multi-column flow — column-fill:auto stacks top-down, no balance whitespace */
+.cols { column-count: 3; column-gap: 5px; column-rule: 1px solid #ccc; column-fill: auto; }
+
+/* Section block: coloured left rule (family anchor), tight padding, no break inside */
+.sec { break-inside: avoid; margin: 0 0 3px 0; padding: 2px 4px 3px 5px; border-radius: 2px; border-left: 3px solid; }
+.sec h2 { font-size: 7.8pt; font-weight: bold; margin: 0 0 1px 0; padding: 0px 4px; border-radius: 2px; color: #fff; display: inline-block; }
+.sec h3 { font-size: 6.7pt; font-weight: bold; margin: 2px 0 0 0; color: #1a3a5c;
+          text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* Family colours — light bg + dark text + matching left rule + h2 banner. Glyph in h2 makes B&W readable. */
+.cash    { background: #e7f2fa; border-left-color: #2e6b9c; }  .cash    h2 { background: #2e6b9c; }
+.fwd     { background: #e7fae9; border-left-color: #2e9c47; }  .fwd     h2 { background: #2e9c47; }
+.bond    { background: #fbf2e6; border-left-color: #b06c0e; }  .bond    h2 { background: #b06c0e; }
+.swap    { background: #f0e7fa; border-left-color: #6e3e9c; }  .swap    h2 { background: #6e3e9c; }
+.credit  { background: #fae7e7; border-left-color: #b8341a; }  .credit  h2 { background: #b8341a; }
+.opt     { background: #e7faf9; border-left-color: #1a8a8a; }  .opt     h2 { background: #1a8a8a; }
+.liab    { background: #fae0e0; border-left-color: #7a1a1a; }  .liab    h2 { background: #7a1a1a; }
+.risk    { background: #ededed; border-left-color: #555;    }  .risk    h2 { background: #555;    }
+.meta    { background: #fff8d9; border-left-color: #806c0e; }  .meta    h2 { background: #806c0e; }
+
+/* Product entry — name + formula + use, ultra-tight */
+.p { margin: 0 0 2px 0; }
+.p .name { font-weight: bold; font-size: 7.2pt; }
+.p .name .tag { font-size: 6pt; color: #777; font-weight: normal; }
+/* Formula box: translucent white so family colour shows through (Posit-style anchor) */
+.p .formula { display: block; background: rgba(255,255,255,0.55); padding: 0 4px;
+              border-left: 2px solid currentColor; margin: 1px 0; white-space: pre-wrap; }
+.p .use { font-style: italic; color: #2a2a2a; font-size: 6.5pt; }
+.p .rf  { font-size: 6.1pt; color: #444; }
+
+/* Recipe + tables */
+.recipe ol { margin: 0 0 2px 12px; padding: 0; }
+.recipe ol li { margin: 0; }
+.recipe .step { font-weight: bold; }
+table { border-collapse: collapse; width: 100%; font-size: 6.4pt; margin: 1px 0; }
+th, td { border: 1px solid #c0c0c0; padding: 0.5px 3px; text-align: left; vertical-align: top; }
+th { background: #e8e8e8; font-weight: bold; }
+ul.tight { margin: 0 0 2px 11px; padding: 0; }
+ul.tight li { margin: 0; }
+
+/* Callout boxes — solid white anchor so they're noticeable inside a coloured section */
+.callout { background: #fff; border-left: 3px solid #d4a800; padding: 1px 4px; margin: 2px 0; font-size: 6.3pt; }
+.danger  { background: #fff; border-left: 3px solid #b8341a; padding: 1px 4px; margin: 2px 0; font-size: 6.3pt; }
+.danger b:first-child { color: #b8341a; }
+
+hr { border: none; border-top: 1px solid rgba(0,0,0,0.18); margin: 2px 0; }
+</style>
+</head>
+<body>
+
+<div class="banner">
+  <h1>Treasury Products — Quick Reference Card</h1>
+  <div class="sub">Universal pricing recipe · 33 products · risk metrics · ALM patterns. Deep companion: <code>treasury_products_cheatsheet.pdf</code></div>
+</div>
+
+<div class="cols">
+
+  <!-- ════════════ FOUNDATIONS ════════════ -->
+  <div class="sec meta">
+    <h2>◆ Universal Symbols</h2>
+    <table>
+      <tr><td><code>N</code></td><td>notional (domestic)</td></tr>
+      <tr><td><code>T, τ</code></td><td>maturity / year fraction</td></tr>
+      <tr><td><code>K</code></td><td>strike / contracted rate (LOCKED)</td></tr>
+      <tr><td><code>DF(t)</code></td><td><code>exp(−z(t)·t)</code></td></tr>
+      <tr><td><code>DF(t,s)</code></td><td><code>exp(−(z(t)+s/1e4)·t)</code></td></tr>
+      <tr><td><code>S, fx</code></td><td>FX spot (dom/foreign)</td></tr>
+      <tr><td><code>b</code></td><td>breakeven inflation</td></tr>
+      <tr><td><code>A(T)</code></td><td><code>Σ τ·DF(t_i)</code> (annuity)</td></tr>
+      <tr><td><code>σ, N(·)</code></td><td>vol, std normal CDF</td></tr>
+    </table>
+    <div class="callout"><b>Master skeleton</b>: <code>V = (market_implied − contract) · scale · discount</code></div>
+  </div>
+
+  <div class="sec meta">
+    <h2>◆ Master Recipe (4 steps)</h2>
+    <ol class="recipe">
+      <li><span class="step">List cashflows</span> — when, ccy, contingent on what</li>
+      <li><span class="step">Substitute each random CF</span> with risk-neutral expectation (↓)</li>
+      <li><span class="step">Discount</span> by <code>DF(t)</code> (or <code>DF(t,s)</code> for credit)</li>
+      <li><span class="step">Sum:</span> <code>V = Σ E[CF_t]·DF(t)</code></li>
+    </ol>
+    <h3>Substitution table</h3>
+    <table>
+      <tr><th>Random CF</th><th>Replace with</th></tr>
+      <tr><td>floating rate <code>L</code></td><td><code>(D₁/D₂ − 1)/τ</code></td></tr>
+      <tr><td>spot FX at T</td><td><code>S·DF_f/DF_d</code></td></tr>
+      <tr><td>inflation index</td><td><code>(1+b)^T</code></td></tr>
+      <tr><td>option <code>max(S−K,0)</code></td><td><code>DF(T)·[F·N(d₁)−K·N(d₂)]</code></td></tr>
+      <tr><td>survival to t</td><td><code>Q(t) = exp(−λt)</code></td></tr>
+      <tr><td>default in (t₁,t₂]</td><td><code>Q(t₁) − Q(t₂)</code></td></tr>
+      <tr><td>swap rate (CMS)</td><td>fwd + convexity adj.</td></tr>
+    </table>
+  </div>
+
+  <div class="sec meta">
+    <h2>◆ Universal Patterns</h2>
+    <h3>A — Linear-in-strike</h3>
+    <code>V = (market − contract) · scale · disc</code><br>
+    Par strike = market-implied (set V=0).<br>
+    <i>Used by:</i> FX fwd, FRA, ZCIS, IRS, CDS
+    <h3>B — Basis × annuity</h3>
+    <code>V = b · N · A(T) [· FX]</code><br>
+    <i>Used by:</i> Sec lending, tenor basis, XCCY basis
+    <h3>C — Cashflow strip PV</h3>
+    <code>V = ± Σ cf_i · uplift_i · DF(t_i, s)</code><br>
+    <i>Used by:</i> Bond, FB, Linker, Loan, Annuity Liab
+    <div class="callout">Recognise the pattern → recall the formula. Each product is one of these three shapes.</div>
+  </div>
+
+  <div class="sec meta">
+    <h2>◆ Walk-through: FRA via recipe</h2>
+    <div class="formula">1. CF: N(L−K)τ at T₂
+2. L → (D₁/D₂−1)/τ = fwd
+3. discount: · DF(T₂)
+4. V = N(fwd−K)τ·DF(T₂)</div>
+    <div class="callout">Every entry below is a 1-line output of the same recipe.</div>
+  </div>
+
+  <div class="sec meta">
+    <h2>◆ Reference Curve (toy examples)</h2>
+    <table>
+      <tr><th>t</th><th>z(t)</th><th>DF(t)</th></tr>
+      <tr><td>1y</td><td>4.50%</td><td>0.95600</td></tr>
+      <tr><td>2y</td><td>4.40%</td><td>0.91576</td></tr>
+      <tr><td>3y</td><td>4.30%</td><td>0.87897</td></tr>
+      <tr><td>5y</td><td>4.20%</td><td>0.81058</td></tr>
+      <tr><td>10y</td><td>4.10%</td><td>0.66365</td></tr>
+    </table>
+    <code>A(5y) = Σ τ·DF(1..5) = 4.40498</code>
+  </div>
+
+  <div class="sec meta">
+    <h2>◆ Portfolio Recipe (ALM)</h2>
+    <ol class="recipe">
+      <li><span class="step">Exposure vector</span> — bucket by KRD (2y/5y/10y/30y), IE01, CS01, FX Δ, vega</li>
+      <li><span class="step">Aggregate</span> signed contributions (assets +, liabs −)</li>
+      <li><span class="step">Hedging set</span> — IRS strip + Linker strip + nominal bonds + OIS + ZCIS</li>
+      <li><span class="step">Solve linear system</span> → hedge notionals; report residuals</li>
+    </ol>
+    <div class="callout">Parallel DV01 ≠ KRD. A 10y liab hedged with 5y IRS is parallel-neutral but long-end exposed. KRD-mismatch = canonical pension failure mode.</div>
+  </div>
+
+  <div class="sec meta">
+    <h2>◆ Convention reminders</h2>
+    <ul class="tight">
+      <li>bp → decimal: <code>/ 1e4</code>. 15bp = 0.0015.</li>
+      <li>Inflation compounds: <code>(1+b)^t</code> (NOT 1+b·t).</li>
+      <li>τ must match contract day-count.</li>
+      <li>Annuity liability is NEGATIVE.</li>
+      <li>FRA fwd: SIMPLE <code>(D₁/D₂−1)/τ</code>, not continuous.</li>
+      <li>Swap float telescope: <code>1 − DF(T)</code> (single-curve).</li>
+      <li>CDS hazard: <code>λ ≈ s/(1−R)</code>; <code>Q(t)=exp(−λt)</code>.</li>
+      <li>Black option vol: lognormal in <b>F</b>, not S.</li>
+      <li>Multi-curve (post-2008): OIS discount + LIBOR/SOFR project — drills ignore.</li>
+    </ul>
+  </div>
+
+  <!-- ════════════ I — CASH & MONEY MARKET ════════════ -->
+  <div class="sec cash">
+    <h2>● I — Cash &amp; Money Market</h2>
+
+    <div class="p">
+      <div class="name">FX Spot <span class="tag">(§1)</span></div>
+      <div class="formula">V = N_for · S · fx_factor</div>
+      <div class="use">Own foreign currency. Pure FX delta; no rate or time.</div>
+      <div class="rf"><b>Risk:</b> FX</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Repo / Reverse Repo <span class="tag">(§2)</span></div>
+      <div class="formula">V = N(1 + r·T)·DF(T) − N</div>
+      <div class="use">Secured short-term borrow (repo) / lend (reverse). V≈0 at par; small DV01.</div>
+      <div class="rf"><b>Risk:</b> rate (small)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Sec Lending <span class="tag">(§3)</span></div>
+      <div class="formula">V = (fee_bp/1e4) · N · A(T)</div>
+      <div class="use">Lend securities; receive fee per period. Pattern B.</div>
+      <div class="rf"><b>Risk:</b> rate (tiny)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Amortising Loan <span class="tag">(§4, linear amort)</span></div>
+      <div class="formula">V = Σ cf_i · DF(i, spread_bp)
+amort = P/n,  cf_i = amort + c·outstanding</div>
+      <div class="use">Equal principal/period + interest on remainder. For annuity-style (equal total pmt) use <code>pmt = P·c/(1−(1+c)^−n)</code>.</div>
+      <div class="rf"><b>Risk:</b> rate, credit spread (CS01)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">E1 T-Bill / discount paper</div>
+      <div class="formula">V = face · DF(T)   (zero coupon, govt)
+dy = (face−P)/face · 360/days</div>
+      <div class="rf"><b>Risk:</b> rate</div>
+    </div>
+
+    <div class="p">
+      <div class="name">E2 Commercial Paper</div>
+      <div class="formula">V = face · DF(T, spread_bp)</div>
+      <div class="use">Short corp/bank discount paper.</div>
+      <div class="rf"><b>Risk:</b> rate, credit</div>
+    </div>
+  </div>
+
+  <!-- ════════════ II — FORWARDS ════════════ -->
+  <div class="sec fwd">
+    <h2>▲ II — Forwards</h2>
+
+    <div class="p">
+      <div class="name">FX Forward <span class="tag">(§5)</span></div>
+      <div class="formula">V = N_for · (S·fx_factor − K) · DF(T)</div>
+      <div class="use">Locked-rate currency exchange at T. K_par = S·DF_f/DF_d (IRP).</div>
+      <div class="rf"><b>Risk:</b> FX, rate</div>
+    </div>
+
+    <div class="p">
+      <div class="name">FRA <span class="tag">(§6)</span></div>
+      <div class="formula">fwd = (DF(T₁)/DF(T₂) − 1)/τ
+V   = N·(fwd − K)·τ·DF(T₂)</div>
+      <div class="use">Locked rate on future deposit [T₁,T₂]. K_par = fwd.</div>
+      <div class="rf"><b>Risk:</b> rate</div>
+      <div class="callout">MTM uses curve-implied fwd; real settle = N(L−K)τ/(1+L·τ) paid at T₁.</div>
+    </div>
+  </div>
+
+  <!-- ════════════ III — BONDS ════════════ -->
+  <div class="sec bond">
+    <h2>■ III — Bonds (Pattern C — cashflow strips)</h2>
+
+    <div class="p">
+      <div class="name">Vanilla Bond <span class="tag">(§7)</span></div>
+      <div class="formula">V = Σ cf_i · DF(t_i, spread_bp)</div>
+      <div class="use">Coupons + principal, discounted at issuer's credit curve.</div>
+      <div class="rf"><b>Risk:</b> rate (DV01), credit (CS01)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Foreign Bond <span class="tag">(§8)</span></div>
+      <div class="formula">V = (Σ cf_i · DF(t_i, s_bp)) · S · fx_factor</div>
+      <div class="use">Bond in foreign currency, translated at spot.</div>
+      <div class="rf"><b>Risk:</b> rate, credit, FX</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Linker (inflation-linked) <span class="tag">(§9)</span></div>
+      <div class="formula">V = Σ cf_real_i · (1+b)^t_i · DF(t_i)</div>
+      <div class="use">CFs uplifted by inflation. Long inflation = b ↑ → V ↑.</div>
+      <div class="rf"><b>Risk:</b> rate, breakeven (IE01)</div>
+      <div class="callout">Indexation lag: 3M (Gilts) / 8M (TIPS) — adds small IE01 basis.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">E3 Zero-Coupon Bond (long)</div>
+      <div class="formula">V = face · DF(T, s)
+D_mac = T;  D_mod = T / (1 + y/m)</div>
+      <div class="use">No coupons; max duration per $ of face.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">E4 Floating-Rate Note (FRN) <span class="tag">(at reset)</span></div>
+      <div class="formula">V (at fixing) ≈ face·spread·A + face</div>
+      <div class="use">Resets to ~par; duration ≈ time-to-next-fixing. Between resets the locked coupon adds accrual.</div>
+      <div class="rf"><b>Risk:</b> spread (dominant), tiny rate</div>
+    </div>
+
+    <div class="p">
+      <div class="name">E5 Callable Bond</div>
+      <div class="formula">V = V_straight − V_call_option</div>
+      <div class="use">Issuer's right to redeem early → bondholder bears asymmetric risk; <b>negative convexity</b>.</div>
+      <div class="rf"><b>Risk:</b> rate, credit, vol</div>
+    </div>
+
+    <div class="p">
+      <div class="name">E6 Convertible Bond</div>
+      <div class="formula">V = V_straight + V_equity_call</div>
+      <div class="use">Bond + long call on issuer's equity. Multi-factor.</div>
+      <div class="rf"><b>Risk:</b> rate, credit, equity, equity vol</div>
+    </div>
+  </div>
+
+  <!-- ════════════ IV — SWAPS ════════════ -->
+  <div class="sec swap">
+    <h2>◆ IV — Swaps</h2>
+
+    <div class="p">
+      <div class="name">Interest Rate Swap (IRS) <span class="tag">(§10)</span></div>
+      <div class="formula">V_rec = N·[c·A(T) − (1 − DF(T))]
+       where A(T) = Σ τ·DF(t_i)
+c_par = (1 − DF(T)) / A(T)</div>
+      <div class="use">Exchange fixed-c vs floating; receive-fix sign shown. Pay-fix flips sign.</div>
+      <div class="rf"><b>Risk:</b> rate (THE rates instrument)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">ZCIS Inflation Swap <span class="tag">(§11)</span></div>
+      <div class="formula">V = N · DF(T) · [(1+b)^T − (1+K)^T]
+K_par = b</div>
+      <div class="use">Single payment at T: inflation index vs fixed.</div>
+      <div class="rf"><b>Risk:</b> rate, breakeven</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Tenor Basis Swap <span class="tag">(§12)</span></div>
+      <div class="formula">V = b · N · A(T)
+b = (basis_bp + shock_bp)/1e4</div>
+      <div class="use">e.g. 3M vs 6M floating spread. Pattern B.</div>
+      <div class="rf"><b>Risk:</b> rate, tenor-basis</div>
+    </div>
+
+    <div class="p">
+      <div class="name">XCCY Basis Swap <span class="tag">(§13)</span></div>
+      <div class="formula">V = N_for · S · fx_factor · b · A(T)</div>
+      <div class="use">Cross-currency basis leg in foreign ccy; FX sensitive.</div>
+      <div class="rf"><b>Risk:</b> rate, xccy-basis, FX</div>
+      <div class="callout">Real XCCY: principal exchange + MtM resets (drill omits).</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Total Return Swap (TRS) <span class="tag">(§14)</span></div>
+      <div class="formula">V = PV(reference asset) − funding_notional</div>
+      <div class="use">Synthetic long the reference (balance-sheet light).</div>
+      <div class="rf"><b>Risk:</b> inherits reference's risks</div>
+    </div>
+
+    <div class="p">
+      <div class="name">E7 Overnight Index Swap (OIS)</div>
+      <div class="formula">Same as IRS; float leg = compounded O/N</div>
+      <div class="use">Risk-free swap; benchmark discount curve post-2008.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">E8 CMS</div>
+      <div class="formula">float leg = swap rate (e.g. 10y) → convexity adj. needed (SABR surface dependent)</div>
+      <div class="use">Bet on curve shape (steepening/flattening).</div>
+    </div>
+
+    <div class="p">
+      <div class="name">E9 Asset Swap (ASW)</div>
+      <div class="formula">Bond + offsetting IRS → synthetic floater
+ASW spread ≈ bond coupon − par swap rate</div>
+      <div class="use">Isolates credit spread, neutralises rate.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">E10 YoY Inflation Swap</div>
+      <div class="formula">Each year: N·(π_i − K)·τ
+(vs ZCIS = single compounded payment)</div>
+      <div class="use">Hedge year-by-year inflation; convexity adj vs ZCIS.</div>
+    </div>
+  </div>
+
+  <!-- ════════════ V — CREDIT ════════════ -->
+  <div class="sec credit">
+    <h2>▲ V — Credit</h2>
+
+    <div class="p">
+      <div class="name">Credit Default Swap (CDS) <span class="tag">(§15)</span></div>
+      <div class="formula">λ = market_spread / (1−R)
+Q(t) = exp(−λ·t)
+premium = Σ τ·DF·Q
+protect = Σ (Q_prev − Q)·DF
+V_buyer = N·[protect·(1−R) − premium·K]</div>
+      <div class="use">Buyer pays K, receives (1−R)·N on default. Buyer wins when spread widens. K_par = market_spread.</div>
+      <div class="rf"><b>Risk:</b> credit spread (dominant), rate (small)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">E13 CDS Index (CDX/iTraxx)</div>
+      <div class="formula">Same as §15. Each defaulting name pays (1/n)·(1−R)·N.
+Remaining notional continues to accrue premium.</div>
+      <div class="use">CDX IG = 125 US IG names @ 100bp; HY @ 500bp. NOT a first-to-default basket.</div>
+      <div class="rf"><b>Risk:</b> spread (CS01), correlation (tranches)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">E14 MBS — agency pass-through</div>
+      <div class="formula">V = Σ E[CF_t | prepay_model] · DF(t, OAS)
+(MC over rate paths + CPR/PSA prepayments)</div>
+      <div class="use">Negative convexity from prepayment option.</div>
+      <div class="rf"><b>Risk:</b> rate (effective DV01), prepay, OAS, vol</div>
+    </div>
+  </div>
+
+  <!-- ════════════ VI — OPTIONS ════════════ -->
+  <div class="sec opt">
+    <h2>● VI — Options</h2>
+
+    <div class="p">
+      <div class="name">FX Option <span class="tag">(§16)</span></div>
+      <div class="formula">F = S·fx_factor / DF(T)
+d1 = [ln(F/K) + ½v²T] / (v√T);  d2 = d1 − v√T
+V_call = N·DF(T)·[F·N(d1) − K·N(d2)]
+V_put  = N·DF(T)·[K·N(−d2) − F·N(−d1)]</div>
+      <div class="use">Right to exchange currencies at K on T.</div>
+      <div class="rf"><b>Risk:</b> FX (delta), vol (vega), rate</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Swaption <span class="tag">(§17)</span></div>
+      <div class="formula">A = Σ τ·DF(t_i)   (swap annuity)
+S = [DF(T_exp) − DF(T_end)] / A   (fwd swap rate)
+d1, d2 as Black on S
+V_payer = N·A·[S·N(d1) − K·N(d2)]
+V_recv  = N·A·[K·N(−d2) − S·N(−d1)]</div>
+      <div class="use">Option to enter IRS at K. Black model on forward swap rate.</div>
+      <div class="rf"><b>Risk:</b> rate, vol (vega dominates at ATM)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">E11 Cap / Floor / Caplet</div>
+      <div class="formula">Caplet at t_i: τ·N·max(L_i − K, 0) paid at t_{i+1}
+Cap = Σ caplets, each Black on fwd rate</div>
+      <div class="use">Hedge floating-rate exposure. Pure vol play.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">E12 Bermudan Swaption</div>
+      <div class="formula">Multiple exercise dates → LSMC / lattice
+V > European by "early exercise premium"</div>
+      <div class="use">Used for callable bond hedging.</div>
+      <div class="rf"><b>Risk:</b> rate, vol, mean reversion (model dep.)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">E15 Variance Swap</div>
+      <div class="formula">Payoff = N_var · (σ²_real − K²)
+N_vega = 2K · N_var  (approx near K)
+Replication: OTM calls + puts (1/K² weights)</div>
+      <div class="use">Pure realised-vol exposure; tail hedge.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">E16 Equity TRS / E17 Commodity Fwd</div>
+      <div class="formula">Equity TRS: V = PV(equity total return) − funding
+Commodity Fwd: V = N·(F_T − K)·DF(T)</div>
+      <div class="use">Synthetic equity / hedge raw materials.</div>
+    </div>
+  </div>
+
+  <!-- ════════════ VII — LIABILITIES ════════════ -->
+  <div class="sec liab">
+    <h2>■ VII — Liabilities</h2>
+
+    <div class="p">
+      <div class="name">Annuity Liability <span class="tag">(§18)</span></div>
+      <div class="formula">V = − payment · Σ (1+b)^t · DF(t),  t=1..years</div>
+      <div class="use">Pension-style: you OWE inflation-linked payments. NEGATIVE PV.</div>
+      <div class="rf"><b>Risk:</b> rate (rates ↓ → V more neg), breakeven (b ↑ → V more neg).<br>
+      Hedge: Linker matches IE01 partly; IRS matches DV01.</div>
+      <div class="danger"><b>Sign trap:</b> liability has opposite-sign DV01 to a long bond. Pick one DV01 convention across your stack. KRD-mismatched hedges (parallel-neutral, long-end-exposed) are the canonical pension hedge failure.</div>
+    </div>
+  </div>
+
+  <!-- ════════════ VIII — RISK METRICS ════════════ -->
+  <div class="sec risk">
+    <h2>◆ VIII — Risk Metrics</h2>
+
+    <div class="p">
+      <div class="name">Macaulay Duration (years)</div>
+      <div class="formula">D_mac = Σ t_i·PV_i / Σ PV_i</div>
+      <div class="use">PV-weighted average time to cashflows.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Modified Duration (%)</div>
+      <div class="formula">D_mod = D_mac / (1 + y/m)
+ΔP/P ≈ −D_mod · Δy</div>
+    </div>
+
+    <div class="p">
+      <div class="name">DV01 / PV01 ($)</div>
+      <div class="formula">DV01 = D_mod · P · 0.0001</div>
+      <div class="use">$ P&amp;L per 1 bp rate move.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Convexity</div>
+      <div class="formula">C = Σ t_i(t_i+1/m)·PV_i / [P·(1+y/m)²]
+ΔP/P ≈ −D_mod·Δy + ½·C·Δy²</div>
+      <div class="use">Positive for long vanilla bonds → cushions losses, boosts gains.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Greeks (Black on forward F)</div>
+      <table>
+        <tr><td>Δ delta</td><td><code>DF(T)·N(d1)</code></td></tr>
+        <tr><td>Γ gamma</td><td><code>DF(T)·φ(d1)/(F·σ·√T)</code></td></tr>
+        <tr><td>ν vega</td><td><code>DF(T)·F·φ(d1)·√T</code></td></tr>
+        <tr><td>Θ theta</td><td>− for long opt (time decay)</td></tr>
+        <tr><td>ρ rho</td><td>call-rho &gt; 0</td></tr>
+      </table>
+      <div class="callout">Gamma uses <b>F</b>, not S, in the denominator.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Numerical (FD) when no closed-form</div>
+      <div class="formula">DV01_fd = [V(+1bp) − V(−1bp)] / 2
+Conv_fd = [V(+h) − 2V + V(−h)] / (h²·V)</div>
+    </div>
+  </div>
+
+  <!-- ════════════ SIGN CHEATSHEET ════════════ -->
+  <div class="sec risk">
+    <h2>◆ Risk-factor sign cheatsheet</h2>
+    <table>
+      <tr><th>Long position in…</th><th>DV01</th><th>IE01</th><th>FX Δ</th></tr>
+      <tr><td>Bond / Loan / Linker</td><td>−</td><td>+ (Linker only)</td><td>0</td></tr>
+      <tr><td>IRS receive-fixed</td><td>−</td><td>0</td><td>0</td></tr>
+      <tr><td>IRS pay-fixed</td><td>+</td><td>0</td><td>0</td></tr>
+      <tr><td>ZCIS receive-infl</td><td>≈0 at par</td><td>+</td><td>0</td></tr>
+      <tr><td>FX Spot / Fwd (long foreign)</td><td>+</td><td>0</td><td>+</td></tr>
+      <tr><td>Annuity Liability (short)</td><td>+</td><td>−</td><td>0</td></tr>
+      <tr><td>FX/Swaption (long call)</td><td>small</td><td>0</td><td>+</td></tr>
+    </table>
+    <div class="rf">Convention: signs of <code>∂V/∂r</code> (V rises when factor rises = +). Trader DV01 = <code>−∂V/∂r</code> just flips signs uniformly. Receive-fix = long duration ⇒ same sign as long bond.</div>
+  </div>
+
+  <!-- ════════════ ALM CAVEATS ════════════ -->
+  <div class="sec meta">
+    <h2>◆ Top ALM caveats <span style="font-weight:normal;font-size:6.2pt">(full list in gold-ref PDF)</span></h2>
+    <ul class="tight">
+      <li><b>Multi-curve</b>: OIS discount + LIBOR/SOFR projection (drills: single-curve).</li>
+      <li><b>LDI regimes</b> (UK FRS102 / US IAS 19): liab discounted on AA-corp → swap-vs-AA basis is unhedged.</li>
+      <li><b>LPI caps</b>: UK pension inflation capped at 5% → liability non-linear; ZCIS doesn't hedge convexity.</li>
+      <li><b>Sept 2022 gilt crisis</b>: LDI hedge collateral calls cascaded — the hedge itself has liquidity risk.</li>
+      <li><b>Fisher</b>: nominal ≈ real + breakeven. Linker DV01 = REAL-rate sensitivity, not nominal.</li>
+    </ul>
+  </div>
+
+</div> <!-- /cols -->
+
+</body>
+</html>

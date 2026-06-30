@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Risk Methods — Quick Reference Card</title>
+<style>
+@page { size: A4 landscape; margin: 0.35cm 0.35cm 0.45cm 0.35cm;
+        @bottom-right { content: counter(page) " / " counter(pages); font: 6pt 'DejaVu Sans', sans-serif; color: #aaa; } }
+* { box-sizing: border-box; }
+body { font-family: 'DejaVu Sans', sans-serif; font-size: 7pt; line-height: 1.15; color: #1a1a1a; margin: 0; padding: 0; }
+code, .formula, pre { font-family: 'DejaVu Sans Mono', monospace; font-size: 6.6pt; }
+
+.banner { background: #1a3a5c; color: #fff; padding: 3px 7px; margin-bottom: 3px; border-radius: 2px; }
+.banner h1 { font-size: 11pt; margin: 0; }
+.banner .sub { font-size: 6.6pt; color: #cfd9e6; margin-top: 0; }
+
+.cols { column-count: 3; column-gap: 5px; column-rule: 1px solid #ccc; column-fill: auto; }
+
+.sec { break-inside: avoid; margin: 0 0 3px 0; padding: 2px 4px 3px 5px; border-radius: 2px; border-left: 3px solid; }
+.sec h2 { font-size: 7.8pt; font-weight: bold; margin: 0 0 1px 0; padding: 0px 4px; border-radius: 2px; color: #fff; display: inline-block; }
+.sec h3 { font-size: 6.7pt; font-weight: bold; margin: 2px 0 0 0; color: #1a3a5c; text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* Family colours — distinct hues for B&W disambiguation via glyph + hue spread */
+.master  { background: #fff8d9; border-left-color: #806c0e; }  .master  h2 { background: #806c0e; }
+.var     { background: #e7f2fa; border-left-color: #2e6b9c; }  .var     h2 { background: #2e6b9c; }
+.backtest{ background: #fae7e7; border-left-color: #b8341a; }  .backtest h2 { background: #b8341a; }
+.sens    { background: #e7fae9; border-left-color: #2e9c47; }  .sens    h2 { background: #2e9c47; }
+.attrib  { background: #f0e7fa; border-left-color: #6e3e9c; }  .attrib  h2 { background: #6e3e9c; }
+.estim   { background: #f7e6d5; border-left-color: #a05210; }  .estim   h2 { background: #a05210; }  /* darker hue vs master */
+.stress  { background: #fae0e0; border-left-color: #7a1a1a; }  .stress  h2 { background: #7a1a1a; }
+.capital { background: #ededed; border-left-color: #555;    }  .capital h2 { background: #555;    }
+.sign    { background: #e0e7fa; border-left-color: #1a3a5c; }  .sign    h2 { background: #1a3a5c; }  /* sign cheatsheet — own family */
+
+.p { margin: 0 0 2px 0; }
+.p .name { font-weight: bold; font-size: 7.2pt; }
+.p .name .tag { font-size: 6pt; color: #555; font-weight: normal; }
+.p .formula { display: block; background: rgba(255,255,255,0.55); padding: 0 4px;
+              border-left: 2px solid currentColor; margin: 1px 0; white-space: pre-wrap; }
+.p .use { font-style: italic; color: #2a2a2a; font-size: 6.5pt; }
+.p .py  { display: block; background: rgba(0,0,0,0.04); padding: 1px 4px; margin: 1px 0;
+          border-left: 2px solid #555; font-size: 6.3pt; white-space: pre-wrap; }
+.p .rf  { font-size: 6.1pt; color: #444; }
+
+.recipe ol { margin: 0; padding: 0 0 0 14px; }
+.recipe ol li { margin: 0; }
+.recipe .step { font-weight: bold; }
+table { border-collapse: collapse; width: 100%; font-size: 6.4pt; margin: 1px 0; }
+th, td { border: 1px solid #c0c0c0; padding: 0.5px 3px; text-align: left; vertical-align: top; }
+th { background: #e8e8e8; font-weight: bold; }
+ul.tight { margin: 0; padding: 0 0 0 13px; }
+ul.tight li { margin: 0; }
+
+.callout { background: #fff; border-left: 3px solid #d4a800; padding: 1px 4px; margin: 2px 0; font-size: 6.3pt; }
+.danger  { background: #fff; border-left: 3px solid #b8341a; padding: 1px 4px; margin: 2px 0; font-size: 6.3pt; }
+.danger b:first-child { color: #b8341a; }
+
+hr { border: none; border-top: 1px solid rgba(0,0,0,0.18); margin: 2px 0; }
+</style>
+</head>
+<body>
+
+<div class="banner">
+  <h1>Risk Methods — Quick Reference Card</h1>
+  <div class="sub">VaR · ES · Backtests · Sensitivities · P&amp;L attribution · Estimation · Stress · Capital. Deep companion: <code>risk_methods_cheatsheet.pdf</code></div>
+</div>
+
+<div class="cols">
+
+  <!-- ════════════ FOUNDATIONS / MASTER RECIPE ════════════ -->
+  <div class="sec master">
+    <h2>◆ Universal Symbols</h2>
+    <table>
+      <tr><td><code>α</code></td><td>confidence (0.99 = 99%); tail = 1−α</td></tr>
+      <tr><td><code>s</code></td><td>sensitivity vector (∂V/∂f_i)</td></tr>
+      <tr><td><code>Σ</code></td><td>factor cov matrix (units must match s)</td></tr>
+      <tr><td><code>F</code></td><td>history matrix (rows=days, cols=factors)</td></tr>
+      <tr><td><code>z(α)</code></td><td><code>norm.ppf(α)</code>; 99%=2.326, 99.5%=2.576</td></tr>
+      <tr><td><code>N(·), φ(·)</code></td><td>std-normal CDF, PDF</td></tr>
+    </table>
+    <div class="callout"><b>Sign:</b> loss is POSITIVE (VaR, ES). P&amp;L negative when you lose.</div>
+  </div>
+
+  <div class="sec master">
+    <h2>◆ Master Recipe (4 steps)</h2>
+    <ol class="recipe">
+      <li><span class="step">Identify factors</span> — rate, spread, vol, FX, equity (bucket KRD per tenor)</li>
+      <li><span class="step">Generate shocks</span> — history / parametric (z·σ) / MC (Cholesky)</li>
+      <li><span class="step">Revalue</span> — sensitivity (linear) OR full-reval (exact)</li>
+      <li><span class="step">Aggregate</span> — quantile (VaR) / mean-of-tail (ES) / gradient (MVaR)</li>
+    </ol>
+    <h3>Method picker</h3>
+    <table>
+      <tr><th>Method</th><th>Shocks</th><th>Reval</th></tr>
+      <tr><td>Historical VaR</td><td>F (replay)</td><td>FULL</td></tr>
+      <tr><td>Parametric</td><td>Σ implied</td><td>sens (lin)</td></tr>
+      <tr><td>Monte Carlo</td><td>chol(Σ)·z</td><td>FULL</td></tr>
+      <tr><td>Filtered Hist</td><td>F·σ_t/σ_then</td><td>FULL</td></tr>
+      <tr><td>Cornish-Fisher</td><td>Σ + S, K</td><td>sens (lin)</td></tr>
+    </table>
+  </div>
+
+  <div class="sec master">
+    <h2>◆ Three patterns</h2>
+    <h3>P1 — Sensitivity-based</h3>
+    <code>risk ≈ s·shock   or   √(sᵀΣs)</code><br>
+    <i>Fast O(#factors); falls down on non-linearity.</i>
+    <h3>P2 — Full revaluation</h3>
+    <code>risk = T( V(shocked) − V(base) over many shocks )</code><br>
+    <i>Exact; cost = n_paths × pricer cost.</i>
+    <h3>P3 — Empirical distribution</h3>
+    <code>risk = T( empirical P&amp;L vector )</code><br>
+    <i>No distribution assumption; bounded by window.</i>
+    <div class="callout">Historical = P2+P3; Parametric = P1; MC = P2+simulated; FHS = P2+P3+GARCH.</div>
+  </div>
+
+  <div class="sec master">
+    <h2>◆ Reference numbers (drill 13 portfolio)</h2>
+    <table>
+      <tr><th>Metric</th><th>Value</th></tr>
+      <tr><td>P&amp;L std σ = √(sᵀΣs)</td><td><b>2.5327</b></td></tr>
+      <tr><td>Historical VaR(99.5%)</td><td><b>4.6781</b></td></tr>
+      <tr><td>Parametric VaR(99.5% / 99%)</td><td><b>6.5238 / 5.8919</b></td></tr>
+      <tr><td>MC VaR(99.5% / 99%) seed=42</td><td><b>6.3411 / 5.8760</b></td></tr>
+      <tr><td>Gammas (rate, spread, vol, fx)</td><td>1.86e-4, 4.29e-5, −1.06, 412.92</td></tr>
+      <tr><td>5y bond hist VaR(99.5%) [drill 8]</td><td><b>0.7363</b></td></tr>
+    </table>
+    <div class="callout"><b>4.68 (hist) &lt; 6.34 (MC) &lt; 6.52 (param)</b>: hist's bounded tail is THINNER than Gaussian; MC's full-reval captures gamma that param's linear misses.</div>
+  </div>
+
+  <!-- ════════════ I — VaR & ES ════════════ -->
+  <div class="sec var">
+    <h2>● I — VaR &amp; Expected Shortfall</h2>
+
+    <div class="p">
+      <div class="name">Historical VaR <span class="tag">(§1)</span></div>
+      <div class="formula">VaR(α) = −sorted(P&amp;L)[⌊(1−α)·N⌋]</div>
+      <div class="use">P3 — empirical. No distribution assumption.</div>
+      <div class="py">np.percentile(pnl, (1-conf)*100) * -1</div>
+      <div class="rf"><b>Limits:</b> bounded by window; vol-blind; calm year → tiny VaR.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Parametric / delta-normal VaR <span class="tag">(§2)</span></div>
+      <div class="formula">σ² = sᵀ Σ s
+VaR(α) = z(α) · σ</div>
+      <div class="use">P1 — analytical Normal. Fast.</div>
+      <div class="py">norm.ppf(conf) * np.sqrt(s @ cov @ s)</div>
+      <div class="rf"><b>Assumes:</b> factors Normal + book LINEAR. Misses fat tails + gamma.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Monte Carlo VaR <span class="tag">(§3)</span></div>
+      <div class="formula">L = chol(Σ); shocks = z·Lᵀ ~ N(0,Σ)
+P&amp;L_k = V(base + shock_k) − V₀  (FULL reval)
+VaR(α) = −percentile(P&amp;L, (1−α)·100)</div>
+      <div class="use">P2 + simulated. Captures gamma + custom distributions.</div>
+      <div class="py">L = np.linalg.cholesky(cov)
+z = rng.standard_normal((n,4))
+shocks = z @ L.T</div>
+      <div class="rf"><b>Always</b> set seed for reproducible risk numbers.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Expected Shortfall (CVaR) <span class="tag">(§4)</span></div>
+      <div class="formula">Empirical: ES_α = −mean(sorted[:⌈(1−α)N⌉])
+Normal:    ES_α = σ · φ(z(α)) / (1−α)
+FRTB:      ES at α=0.975</div>
+      <div class="use">Coherent (subadditive). Mean of tail, not boundary.</div>
+      <div class="py">k = int(np.ceil((1-conf)*len(pnl)))
+-np.sort(pnl)[:k].mean()</div>
+      <div class="rf">ES/VaR (Normal): α=0.99 → 1.145×; α=0.975 → 1.193×.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Filtered Historical Sim (FHS) <span class="tag">(§5)</span></div>
+      <div class="formula">shock_today = (σ_today / σ_then) · F_i
+then proceed as historical VaR</div>
+      <div class="use">P2+P3+GARCH rescale. Solves "stale during crises".</div>
+      <div class="rf"><b>Pitfall:</b> GARCH mis-spec → wrong rescale. Plot σ̂_t.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Cornish-Fisher VaR <span class="tag">(§6)</span></div>
+      <div class="formula">z_CF = z + (z²−1)S/6 + (z³−3z)K/24
+            − (2z³−5z)S²/36
+VaR = −(μ + z_CF·σ)</div>
+      <div class="use">Quick fat-tail fix without MC. S=skew, K=excess kurt.</div>
+      <div class="rf"><b>Falls apart</b> for |S|&gt;2 or K&gt;10 — use EVT/t-copula.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Marginal / Component / Incremental VaR <span class="tag">(§7)</span></div>
+      <div class="formula">MVaR_i = z(α)·(Σw)_i / √(wᵀΣw)
+CVaR_i = w_i · MVaR_i      [Σ CVaR_i = VaR ✓ Euler]
+IVaR_i = VaR(w) − VaR(w_{−i})</div>
+      <div class="use">M = per-$ trade sizing; C = limit attribution; I = "if I close X".</div>
+      <div class="danger"><b>Σ here</b> = POSITION-return cov (N×N), NOT factor cov. Σ_pos = B·Σ_factor·Bᵀ.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Risk Budgeting / ERC <span class="tag">(§7b)</span></div>
+      <div class="formula">solve w :  w_i·(Σw)_i / (wᵀΣw) = b_i  ∀i
+ERC special case: b_i = 1/N
+Maillard iteration: w_i ← target/(w_i·(Σw)_i); renormalise</div>
+      <div class="use">Inverse of §7. SAA when expected returns uncertain. Risk-parity funds (Bridgewater).</div>
+      <div class="py">w_new = w * (target / (w * (cov @ w)))
+w_new /= w_new.sum()</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Stressed VaR (sVaR) <span class="tag">(§8)</span></div>
+      <div class="formula">Historical VaR on FIXED 12M stress window
+window chosen for MAX sVaR on CURRENT book
+Basel II.5: Capital = max(VaR_t, k·avg₆₀)
+          + max(sVaR_t, k·avg₆₀_sVaR)</div>
+      <div class="use">Example: calm 250d → VaR 2.3; 2008 window → sVaR 9.2 → capital ~5× higher.</div>
+    </div>
+  </div>
+
+  <!-- ════════════ II — BACKTESTING ════════════ -->
+  <div class="sec backtest">
+    <h2>▲ II — Backtesting</h2>
+
+    <div class="p">
+      <div class="name">Kupiec POF <span class="tag">(§9)</span></div>
+      <div class="formula">LR = 2[x·ln(p/π) + (T−x)·ln((1−p)/(1−π))]
+~ χ²(1);  reject if LR &gt; 3.841
+π = 1−α,  p = x/T,  x = #hits</div>
+      <div class="use">Unconditional hit-rate test. Ignores clustering.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Christoffersen independence <span class="tag">(§10)</span></div>
+      <div class="formula">LR_ind ~ χ²(1) on 2×2 transition table
+LR_CC = LR_POF + LR_ind ~ χ²(2)</div>
+      <div class="use">Catches vol-blind model: 6 hits OK count but all in 1 week.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Basel traffic light <span class="tag">(§11)</span></div>
+      <table>
+        <tr><th>Hits</th><th>Zone</th><th>Multiplier</th></tr>
+        <tr><td>0–4</td><td>GREEN</td><td>3.00</td></tr>
+        <tr><td>5</td><td>YELLOW</td><td>3.40</td></tr>
+        <tr><td>6</td><td>YELLOW</td><td>3.50</td></tr>
+        <tr><td>7</td><td>YELLOW</td><td>3.65</td></tr>
+        <tr><td>8</td><td>YELLOW</td><td>3.75</td></tr>
+        <tr><td>9</td><td>YELLOW</td><td>3.85</td></tr>
+        <tr><td>≥10</td><td>RED</td><td>4.00</td></tr>
+      </table>
+      <div class="use">99% 1-day VaR over 250d. Capital = avg_60d · k.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">ES backtest (Acerbi-Szekely T2) <span class="tag">(§12)</span></div>
+      <div class="formula">Z = (1/T)·Σ[X·I/(ES·(1−α))] − 1
+H₀: E[Z]=0;  Z &lt; 0 (negative) = under-est</div>
+      <div class="use">Mandated by FRTB IMA. Low power at α=0.975 (~6 hits / 250d).</div>
+    </div>
+  </div>
+
+  <!-- ════════════ III — SENSITIVITIES ════════════ -->
+  <div class="sec sens">
+    <h2>■ III — Risk Sensitivities</h2>
+
+    <div class="p">
+      <div class="name">First-order (DV01, CS01, vega, FX-Δ, IE01) <span class="tag">(§13)</span></div>
+      <div class="formula">s_f = [V(base + δ_f) − V(base)] / δ_f
+ΔV ≈ Σ_f s_f · shock_f</div>
+      <table>
+        <tr><th>Greek</th><th>Factor</th><th>Bump</th></tr>
+        <tr><td>DV01</td><td>parallel rate</td><td>+1 bp</td></tr>
+        <tr><td>CS01</td><td>credit spread</td><td>+1 bp</td></tr>
+        <tr><td>IE01</td><td>breakeven inflation</td><td>+1 bp</td></tr>
+        <tr><td>FX-Δ</td><td>FX shock</td><td>+1% (0.01)</td></tr>
+        <tr><td>Vega</td><td>implied vol</td><td>+1 vol pt (0.01)</td></tr>
+      </table>
+      <div class="danger"><b>Convention:</b> "DV01 = V_bumped − V_base" → long bond DV01 is NEGATIVE. The other convention (loss-given-up) flips sign. Pick one and LABEL it.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Second-order (gamma, convexity, cross-gamma) <span class="tag">(§14)</span></div>
+      <div class="formula">g_f = [V(+δ) − 2V₀ + V(−δ)] / δ²   own
+g_{ab} = [V(+a+b) − V(+a−b) − V(−a+b)
+         + V(−a−b)] / (4·δ_a·δ_b)   cross</div>
+      <div class="use">Drill 12 gammas: (1.86e-4, 4.29e-5, −1.06, 412.92). Adding 2nd-order shrank residual 4×.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Key Rate Duration (KRD) <span class="tag">(§15)</span></div>
+      <div class="formula">KRD_k = V(bump z(T_k) +1bp) − V(base)
+Σ KRD_k ≈ parallel DV01</div>
+      <div class="use">Curve-shape risk. Hedge vector, not scalar.</div>
+      <div class="danger"><b>Pension fail mode:</b> 5y IRS hedging 30y liab = parallel-neutral, drowns in steepener.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Computation methods <span class="tag">(§16)</span></div>
+      <table>
+        <tr><th>Method</th><th>Cost</th></tr>
+        <tr><td>Forward FD</td><td>1·n_factors</td></tr>
+        <tr><td>Central FD</td><td>2·n_factors (O(δ²))</td></tr>
+        <tr><td>AAD (adjoint)</td><td>~3-5× 1 fwd pass for ALL</td></tr>
+      </table>
+      <div class="use">FRTB SBM with 1000s of buckets → AAD pays off above ~50 factors.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Black-76 Greeks (forward F) <span class="tag">(§17)</span></div>
+      <table>
+        <tr><td>Δ</td><td><code>DF·N(d1)</code></td></tr>
+        <tr><td>Γ</td><td><code>DF·φ(d1)/(F·σ·√T)</code></td></tr>
+        <tr><td>ν</td><td><code>DF·F·φ(d1)·√T</code></td></tr>
+        <tr><td>Θ</td><td>− for long opt (time decay)</td></tr>
+      </table>
+      <div class="callout">Γ uses <b>F</b> not S in denominator. Free from price formula.</div>
+    </div>
+  </div>
+
+  <!-- ════════════ IV — P&L ATTRIBUTION ════════════ -->
+  <div class="sec attrib">
+    <h2>◆ IV — P&amp;L Attribution</h2>
+
+    <div class="p">
+      <div class="name">Greek-based Taylor explain <span class="tag">(§18)</span></div>
+      <div class="formula">first_f  = s_f · Δf
+second_f = ½ · g_f · Δf²
+unexp    = full − Σfirst − Σsecond</div>
+      <div class="use">Drill 12 result: full −3.024 / first −3.054 / 2nd +0.023 / unexp +0.008.</div>
+      <div class="rf"><b>Rule of thumb:</b> |unexp| &lt; 5% |full| for vanilla derivs.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Risk-factor explain (RFE) <span class="tag">(§19)</span></div>
+      <div class="formula">Sens RFE:  contrib_f = s_f · Δf  (order-indep, misses cross)
+Full RFE:  contrib_f = V(only Δf) − V(base) (+ residual)
+Sequential: apply IN ORDER; Σ = full, order-dep</div>
+      <div class="use">Vanilla → sens. Options → full + cross-gamma report. Regulator → sequential.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Actual / Hyp / RT P&amp;L <span class="tag">(§20)</span></div>
+      <div class="formula">Actual    = V_eod(pos_eod, mkt_eod) − V_sod(pos_sod, mkt_sod)
+Hyp       = V(pos_sod, mkt_eod) − V(pos_sod, mkt_sod)
+RT (FRTB) = V_VaR_pricer(pos_sod, …)
+Unexp_intraday = Actual − Hyp
+PLA-residual   = Hyp − RT</div>
+      <div class="use">Two residuals: desk behaviour (unexp_intraday) vs model quality (PLA-residual).</div>
+    </div>
+
+    <div class="p">
+      <div class="name">FRTB PLA test <span class="tag">(§21)</span></div>
+      <div class="formula">ρ_s ≥ 0.80 / 0.70 / &lt;0.70 = G/A/R
+KS   &lt; 0.09 / 0.12 / ≥0.12  = G/A/R
+Joint zone = WORST of the two</div>
+      <div class="use">RED → desk excluded from IMA → SA capital fallback.</div>
+      <div class="py">spearmanr(hyp, rt); ks_2samp(hyp, rt)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Carry / pull-to-par / theta <span class="tag">(§22)</span></div>
+      <div class="formula">Time_PnL = V(mkt_today, t+1) − V(mkt_today, t)
+         = carry + pull_to_par + theta + cross-roll</div>
+      <div class="use">"What would have happened with NO market move." Carry is EXPECTED daily P&amp;L.</div>
+    </div>
+  </div>
+
+  <!-- ════════════ V — ESTIMATION ════════════ -->
+  <div class="sec estim">
+    <h2>● V — Estimation Inputs</h2>
+
+    <div class="p">
+      <div class="name">Historical vol <span class="tag">(§23)</span></div>
+      <div class="formula">σ̂² = (1/(N−1)) Σ(r − r̄)²
+σ̂_annual = σ̂_daily · √252</div>
+      <div class="use">Equal weights. Stale during regime shifts.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">EWMA (RiskMetrics) <span class="tag">(§24)</span></div>
+      <div class="formula">σ̂²_t = λ·σ̂²_{t-1} + (1−λ)·r²_{t-1}
+λ = 0.94 daily, 0.97 monthly
+half-life = ln(0.5)/ln(λ) = 11.2d @ 0.94</div>
+      <div class="use">One parameter; vol updates immediately. No mean reversion.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">GARCH(1,1) <span class="tag">(§25)</span></div>
+      <div class="formula">σ̂²_t = ω + α·r²_{t-1} + β·σ̂²_{t-1}
+σ²_∞ = ω/(1−α−β),  α+β &lt; 1 stationary
+α+β = 1 ≡ EWMA (IGARCH)</div>
+      <div class="use">Adds mean reversion. Forecast σ̂_{t+h} → σ_∞.</div>
+      <div class="py">arch_model(r*100, vol="GARCH", p=1, q=1).fit()</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Implied vol <span class="tag">(§26)</span></div>
+      <div class="formula">Solve σ:  BS(σ) = market_price
+Brent on f(σ)=BS(σ)−mkt;  σ ∈ [1e-6, 5]</div>
+      <div class="use">Forward-looking; surface = vol by strike × expiry. Use Brent over Newton at boundaries.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Sample covariance <span class="tag">(§27)</span></div>
+      <div class="formula">Σ̂ = cov(R, rowvar=False, ddof=1)</div>
+      <div class="use">Gold standard ONLY when T &gt;&gt; N. T &lt; N → singular.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Ledoit-Wolf shrinkage <span class="tag">(§28)</span></div>
+      <div class="formula">Σ̂_shrink = δ·F + (1−δ)·S
+δ* = max(0, min(1, π/γ²))</div>
+      <div class="use">Regularises Σ when N≈T. δ ≈ 0.1–0.4 for daily equity.</div>
+      <div class="py">LedoitWolf().fit(R).covariance_</div>
+    </div>
+
+    <div class="p">
+      <div class="name">PSD repair <span class="tag">(§29)</span></div>
+      <div class="formula">Σ = QΛQᵀ;  clip λ_i to ε
+Σ_psd = Q·diag(max(λ,ε))·Qᵀ
+rescale diagonal to preserve variances</div>
+      <div class="use">Standard fix when cov is "almost-PSD" (numerical noise, missing data, bumps).</div>
+    </div>
+  </div>
+
+  <!-- ════════════ VI — STRESS ════════════ -->
+  <div class="sec stress">
+    <h2>▲ VI — Stress &amp; Scenarios</h2>
+
+    <div class="p">
+      <div class="name">Historical scenario library <span class="tag">(§30)</span></div>
+      <table>
+        <tr><th>Event</th><th>Headline shocks</th></tr>
+        <tr><td>Black Monday '87</td><td>S&amp;P −22%, vol ×3</td></tr>
+        <tr><td>LTCM '98</td><td>EMBI +800bp, USTs flight</td></tr>
+        <tr><td>Lehman week '08</td><td>Libor-OIS +200, S&amp;P −12, USTs −80</td></tr>
+        <tr><td>COVID Mar '20</td><td>S&amp;P −34, VIX 80, IG +250, HY +600</td></tr>
+        <tr><td>Gilt LDI '22</td><td>30y +120bp/3d, GBP −5</td></tr>
+      </table>
+    </div>
+
+    <div class="p">
+      <div class="name">Hypothetical templates <span class="tag">(§31)</span></div>
+      <div class="formula">Parallel ±100bp · 2s10s steepener/flattener
+IG +200bp / HY +500bp blowout
+vol +50% relative · FX ±10% (3σ)
+risk-off combo: rate −50, spread +100, vol +30%</div>
+      <div class="use">Solvency II SCR uses prescribed 1-in-200y deterministic shocks.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Reverse stress test <span class="tag">(§32)</span></div>
+      <div class="formula">find s* minimising sᵀΣ⁻¹s subject to PnL(s) = −L*
+Linear closed-form: s* = (−L*/sᵀΣs)·Σ·sens
+Mahalanobis = L* / σ_pnl</div>
+      <div class="use">"Find cheapest way to lose $X". Hedged book = high Mahalanobis. ICAAP requirement.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Aggregating scenarios <span class="tag">(§33)</span></div>
+      <div class="formula">Report:  worst case ; full table
+DON'T:   average / sum</div>
+      <div class="use">Why no sum: Lehman + COVID both contain equity shock → adding implies it happens TWICE. Overstates loss 50-200%.</div>
+    </div>
+  </div>
+
+  <!-- ════════════ VII — CAPITAL ════════════ -->
+  <div class="sec capital">
+    <h2>◆ VII — Capital Frameworks</h2>
+
+    <div class="p">
+      <div class="name">Basel SA-CCR <span class="tag">(§34)</span></div>
+      <div class="formula">EAD = 1.4 · (RC + PFE)
+RC = max(V−C, 0)
+PFE = mult · Σ AddOn_AC
+mult = min(1, 0.05 + 0.95·exp((V−C)/(2·Σ AddOn)))</div>
+      <div class="use">Replaces CEM. Counterparty exposure for OTC + SFTs.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Basel IMA legacy <span class="tag">(§35)</span></div>
+      <div class="formula">MRC = max(VaR_t, k·avg₆₀VaR)
+    + max(sVaR_t, k·avg₆₀sVaR)
+k ∈ [3.0, 4.0] (traffic light)</div>
+      <div class="use">Phased out by FRTB Jan 2025. Still used in some emerging-market regulators.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">FRTB SA (SBM) <span class="tag">(§36)</span></div>
+      <div class="formula">Delta:  √( Σ WS_b² + Σ_{b≠c} ρ_bc·WS_b·WS_c )
+Vega:   same on vega sens
+Curvature: max(CVR_up, CVR_down)² aggregated
++ DRC + RRAO</div>
+      <div class="use">Sensitivity-tree: 5 risk classes × dozens of buckets × per-bucket aggregation.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">FRTB IMA <span class="tag">(§37)</span></div>
+      <div class="formula">IMCC = 0.5·ES_full_stressed + 0.5·ES_reduced
+ES at α=0.975 with LH scaling
+IMA = IMCC + SES (NMRF) + DRC</div>
+      <div class="use">ES(97.5) ≈ VaR(99) under Normal. Desk-level PLA + backtest required.</div>
+      <div class="danger"><b>Operational cost:</b> most banks dropped IMA for many desks; SA fallback.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">IRC / DRC (default risk) <span class="tag">(§38)</span></div>
+      <div class="formula">IRC: MC on Vasicek ASRF, 99.9%/1y
+DRC: JTD_i = LGD·notional − MtM
+DRC = Σ_buckets max(Σlongs, |Σshorts|)</div>
+      <div class="use">Default = jump, missed by VaR. Concentrated single-names get hammered.</div>
+    </div>
+  </div>
+
+  <!-- ════════════ APPENDIX — COHERENCE ════════════ -->
+  <div class="sec master">
+    <h2>◆ Coherence axioms (Artzner)</h2>
+    <table>
+      <tr><th>#</th><th>Axiom</th><th>VaR</th><th>ES</th></tr>
+      <tr><td>1</td><td>Monotonicity</td><td>✓</td><td>✓</td></tr>
+      <tr><td>2</td><td>Translation invariance</td><td>✓</td><td>✓</td></tr>
+      <tr><td>3</td><td>Positive homogeneity</td><td>✓</td><td>✓</td></tr>
+      <tr><td>4</td><td>Subadditivity</td><td><b>✗</b></td><td>✓</td></tr>
+    </table>
+    <div class="danger"><b>VaR can punish diversification.</b> Two indep low-prob big-loss assets: indiv VaR(0.95)=0, joint VaR(0.95)&gt;0. ES never. <b>FRTB chose ES for this reason.</b></div>
+    <div class="callout"><b>Use:</b> ES for capital, VaR for limits.</div>
+  </div>
+
+  <!-- ════════════ SIGN CHEATSHEET ════════════ -->
+  <div class="sec sign">
+    <h2>◇ Risk-factor sign cheatsheet</h2>
+    <table>
+      <tr><th>Long position</th><th>DV01</th><th>CS01</th><th>IE01</th><th>FX-Δ</th><th>Vega</th></tr>
+      <tr><td>Vanilla bond</td><td>−</td><td>−</td><td>0</td><td>0</td><td>0</td></tr>
+      <tr><td>Linker</td><td>−</td><td>0</td><td>+</td><td>0</td><td>0</td></tr>
+      <tr><td>Foreign bond</td><td>−</td><td>−</td><td>0</td><td>+</td><td>0</td></tr>
+      <tr><td>FRN (between resets)</td><td>≈0</td><td>−</td><td>0</td><td>0</td><td>0</td></tr>
+      <tr><td>IRS receive-fixed</td><td>−</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+      <tr><td>IRS pay-fixed</td><td>+</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+      <tr><td>ZCIS receive-infl</td><td>≈0 par</td><td>0</td><td>+</td><td>0</td><td>0</td></tr>
+      <tr><td>FX Spot/Fwd (long for)</td><td>+ small</td><td>0</td><td>0</td><td>+</td><td>0</td></tr>
+      <tr><td>CDS protection BUYER</td><td>− small</td><td>+</td><td>0</td><td>0</td><td>0</td></tr>
+      <tr><td>CDS protection SELLER</td><td>+ small</td><td>−</td><td>0</td><td>0</td><td>0</td></tr>
+      <tr><td>Long call (FX/swaption)</td><td>small</td><td>0</td><td>0</td><td>+Δ</td><td>+</td></tr>
+      <tr><td>Long put</td><td>small</td><td>0</td><td>0</td><td>−Δ</td><td>+</td></tr>
+      <tr><td>Pension annuity liab (short)</td><td>+</td><td>0</td><td>−</td><td>0</td><td>0</td></tr>
+    </table>
+    <div class="danger"><b>Vendor convention:</b> Bloomberg / risk-systems DV01 is LOSS-given-up (long bond = +). FLIP every sign in DV01 column above before plugging into <code>s·Δr</code>.</div>
+  </div>
+
+  <!-- ════════════ TOP TRAPS ════════════ -->
+  <div class="sec master">
+    <h2>◆ Top 6 traps (6-month memory)</h2>
+    <ul class="tight">
+      <li><b>Units must match</b> between s and Σ (bp vs decimal vs %). Always check σ_pnl in book units.</li>
+      <li><b>DV01 sign convention</b> — pick ∂V/∂r or loss-given-up; label EVERY report.</li>
+      <li><b>250-day window</b> at α=0.995 → VaR = 2nd worst day → enormous sampling error.</li>
+      <li><b>Gamma uses F (forward), not S (spot)</b> in Black-76 denominator.</li>
+      <li><b>Always set MC seed</b> — risk numbers must be reproducible day-to-day.</li>
+      <li><b>VaR not subadditive</b> → can punish diversification on heavy-tail / discrete-loss books. Use ES for capital.</li>
+    </ul>
+  </div>
+
+</div> <!-- /cols -->
+
+</body>
+</html>

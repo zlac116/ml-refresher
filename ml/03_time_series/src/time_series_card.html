@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Time Series — Project Recipe Card</title>
+<style>
+@page { size: A4 landscape; margin: 0.35cm 0.35cm 0.45cm 0.35cm;
+        @bottom-right { content: counter(page) " / " counter(pages); font: 6pt 'DejaVu Sans', sans-serif; color: #aaa; } }
+* { box-sizing: border-box; }
+body { font-family: 'DejaVu Sans', sans-serif; font-size: 7pt; line-height: 1.15; color: #1a1a1a; margin: 0; padding: 0; }
+code, .formula, .py, pre { font-family: 'DejaVu Sans Mono', monospace; font-size: 6.6pt; }
+
+.banner { background: #b06c0e; color: #fff; padding: 3px 7px; margin-bottom: 3px; border-radius: 2px; }
+.banner h1 { font-size: 11pt; margin: 0; }
+.banner .sub { font-size: 6.6pt; color: #f2e2cc; margin-top: 0; }
+
+.cols { column-count: 3; column-gap: 5px; column-rule: 1px solid #ccc; column-fill: auto; }
+
+.sec { break-inside: avoid; margin: 0 0 3px 0; padding: 2px 4px 3px 5px; border-radius: 2px; border-left: 3px solid; }
+.sec h2 { font-size: 7.8pt; font-weight: bold; margin: 0 0 1px 0; padding: 0px 4px; border-radius: 2px; color: #fff; display: inline-block; }
+.sec h3 { font-size: 6.7pt; font-weight: bold; margin: 2px 0 0 0; color: #b06c0e; text-transform: uppercase; letter-spacing: 0.04em; }
+
+.master  { background: #fff8d9; border-left-color: #806c0e; }  .master  h2 { background: #806c0e; }
+.frame   { background: #e7f2fa; border-left-color: #2e6b9c; }  .frame   h2 { background: #2e6b9c; }
+.model   { background: #e7fae9; border-left-color: #2e9c47; }  .model   h2 { background: #2e9c47; }
+.metric  { background: #f0e7fa; border-left-color: #6e3e9c; }  .metric  h2 { background: #6e3e9c; }
+.cv      { background: #e7faf9; border-left-color: #1a8a8a; }  .cv      h2 { background: #1a8a8a; }
+.tune    { background: #fbf2e6; border-left-color: #b06c0e; }  .tune    h2 { background: #b06c0e; }
+.diag    { background: #f7e6d5; border-left-color: #a05210; }  .diag    h2 { background: #a05210; }
+.deploy  { background: #ededed; border-left-color: #555;    }  .deploy  h2 { background: #555;    }
+.trap    { background: #fae0e0; border-left-color: #7a1a1a; }  .trap    h2 { background: #7a1a1a; }
+
+.p { margin: 0 0 2px 0; }
+.p .name { font-weight: bold; font-size: 7.2pt; }
+.p .name .tag { font-size: 6pt; color: #555; font-weight: normal; }
+.p .formula { display: block; background: rgba(255,255,255,0.55); padding: 0 4px;
+              border-left: 2px solid currentColor; margin: 1px 0; white-space: pre-wrap; }
+.p .py { display: block; background: rgba(0,0,0,0.04); padding: 1px 4px; margin: 1px 0;
+         border-left: 2px solid #555; white-space: pre-wrap; }
+.p .use { font-style: italic; color: #2a2a2a; font-size: 6.5pt; }
+.p .rf  { font-size: 6.1pt; color: #444; }
+
+.recipe ol { margin: 0; padding: 0 0 0 14px; }
+.recipe ol li { margin: 0; }
+.recipe .step { font-weight: bold; }
+table { border-collapse: collapse; width: 100%; font-size: 6.4pt; margin: 1px 0; }
+th, td { border: 1px solid #c0c0c0; padding: 0.5px 3px; text-align: left; vertical-align: top; }
+th { background: #e8e8e8; font-weight: bold; }
+ul.tight { margin: 0; padding: 0 0 0 13px; }
+ul.tight li { margin: 0; }
+
+.callout { background: #fff; border-left: 3px solid #d4a800; padding: 1px 4px; margin: 2px 0; font-size: 6.3pt; }
+.danger  { background: #fff; border-left: 3px solid #b8341a; padding: 1px 4px; margin: 2px 0; font-size: 6.3pt; }
+.danger b:first-child { color: #b8341a; }
+
+/* Top-level — standalone .py / .formula blocks need their own rule (not just inside .p) */
+.py { display: block; background: rgba(0,0,0,0.04); padding: 1px 4px; margin: 1px 0;
+      border-left: 2px solid #555; white-space: pre-wrap;
+      font-family: 'DejaVu Sans Mono', monospace; font-size: 6.6pt; }
+.formula { display: block; background: rgba(255,255,255,0.55); padding: 0 4px;
+           border-left: 2px solid currentColor; margin: 1px 0; white-space: pre-wrap;
+           font-family: 'DejaVu Sans Mono', monospace; font-size: 6.6pt; }
+</style>
+</head>
+<body>
+
+<div class="banner">
+  <h1>Time Series — Project Recipe Card</h1>
+  <div class="sub">Stationarity · decomposition · ARIMA/ETS/Prophet/SARIMAX · walk-forward CV · multi-step · backtest. Deep companion: <code>time_series_cheatsheet.md</code> + <code>time_series.ipynb</code></div>
+</div>
+
+<div class="cols">
+
+  <!-- ════════════ MASTER RECIPE ════════════ -->
+  <div class="sec master">
+    <h2>◆ Project recipe (11 steps)</h2>
+    <ol class="recipe">
+      <li><span class="step">Frame</span> — horizon h, frequency, gap-to-features, exogenous vars, point vs probabilistic</li>
+      <li><span class="step">Chronological split FIRST</span> — train / val / test by TIME, never random</li>
+      <li><span class="step">Explore</span> — line plot, STL decomp, ACF/PACF, multiple seasonalities</li>
+      <li><span class="step">Stationarity tests</span> — ADF + KPSS together (regimes!)</li>
+      <li><span class="step">Feature engineering</span> — lags, rolling stats, calendar, exogenous (with proper <code>shift(1)</code>)</li>
+      <li><span class="step">Baseline trio</span> — Naive + Seasonal-Naive + Auto-ARIMA</li>
+      <li><span class="step">Model toolbox</span> — classical (ARIMA/ETS) → boosters on lags → DL last</li>
+      <li><span class="step">Multi-step strategy</span> — recursive / direct / multi-output (pick ONE)</li>
+      <li><span class="step">Walk-forward backtest</span> — expanding or rolling window, per-horizon metrics</li>
+      <li><span class="step">Diagnose</span> — Ljung-Box on residuals; per-horizon error decay</li>
+      <li><span class="step">Deploy</span> — refit on full data; roll forecasts; monitor drift</li>
+    </ol>
+    <div class="callout"><b>Time series breaks most ML assumptions.</b> Random splits leak future into past; IID doesn't hold; residuals are autocorrelated. Treat as a separate discipline.</div>
+  </div>
+
+  <!-- ════════════ PROJECT SKELETON ════════════ -->
+  <div class="sec master">
+    <h2>◆ Starter notebook skeleton</h2>
+    <div class="py">import numpy as np, pandas as pd
+import matplotlib.pyplot as plt
+from statsmodels.tsa.seasonal import STL
+from statsmodels.tsa.stattools import adfuller, kpss
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+from sklearn.model_selection import TimeSeriesSplit
+np.random.seed(42)
+
+df = df.sort_values("date").set_index("date").asfreq("D")  # explicit freq!
+df["y"] = df["y"].interpolate(method="time")               # gaps
+
+# 1. CHRONOLOGICAL split (NO shuffle)
+n = len(df); cut1, cut2 = int(0.7*n), int(0.85*n)
+train, val, test = df.iloc[:cut1], df.iloc[cut1:cut2], df.iloc[cut2:]
+print(train.index.min(), "→", train.index.max(), "→", val.index.max(), "→", test.index.max())
+
+# 2. Visual + decomposition
+df["y"].plot(figsize=(12, 4))
+stl = STL(train["y"], period=7).fit()    # daily data with weekly cycle
+stl.plot()
+
+# 3. Stationarity
+print("ADF p =", adfuller(train["y"].dropna())[1])    # &lt;0.05 → reject unit root
+print("KPSS p =", kpss(train["y"].dropna())[1])       # &gt;0.05 → don't reject stationary
+
+# 4. ACF / PACF for ARIMA order hints
+plot_acf(train["y"].diff().dropna(), lags=40)
+plot_pacf(train["y"].diff().dropna(), lags=40)</div>
+  </div>
+
+  <!-- ════════════ FRAME ════════════ -->
+  <div class="sec frame">
+    <h2>● Frame + setup</h2>
+
+    <div class="p">
+      <div class="name">Frame checklist</div>
+      <ul class="tight">
+        <li><b>Horizon h</b>: how far ahead (1 day? 4 weeks? 12 months?)</li>
+        <li><b>Frequency</b>: hourly / daily / weekly / monthly / irregular</li>
+        <li><b>Origin</b>: rolling (forecast issued daily) vs fixed</li>
+        <li><b>Features available at t+h</b>: known-future (calendar) vs unknown</li>
+        <li><b>Probabilistic vs point</b>: do you need P10/P50/P90?</li>
+        <li><b>Cold start</b>: new series with no history?</li>
+      </ul>
+    </div>
+
+    <div class="p">
+      <div class="name">Frequency + index</div>
+      <div class="py">df = df.sort_values("ts").set_index("ts")
+df = df.asfreq("D")                  # B / D / H / W / MS / QS
+# Or aggregate to regular grid:
+df = df.resample("D").agg({"y": "sum", "x1": "mean"})
+df["y"] = df["y"].interpolate("time")
+assert df.index.is_monotonic_increasing</div>
+      <div class="danger"><b>asfreq</b> is essential — missing pandas freq breaks ACF/PACF/ARIMA.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Decomposition (STL)</div>
+      <div class="py">from statsmodels.tsa.seasonal import STL, MSTL
+stl = STL(y, period=7, robust=True).fit()    # weekly cycle in daily data
+stl.plot()
+# Multiple seasonalities (e.g. daily + yearly):
+mstl = MSTL(y, periods=(7, 365)).fit()</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Stationarity (ADF + KPSS together)</div>
+      <table>
+        <tr><th>ADF p</th><th>KPSS p</th><th>Verdict</th></tr>
+        <tr><td>&lt;0.05</td><td>&gt;0.05</td><td>STATIONARY ✓</td></tr>
+        <tr><td>&gt;0.05</td><td>&lt;0.05</td><td>NON-STATIONARY (unit root) → diff</td></tr>
+        <tr><td>&lt;0.05</td><td>&lt;0.05</td><td>trend-stationary → detrend</td></tr>
+        <tr><td>&gt;0.05</td><td>&gt;0.05</td><td>inconclusive → more data / transform</td></tr>
+      </table>
+      <div class="py">from statsmodels.tsa.stattools import adfuller, kpss
+print("ADF  p =", adfuller(y.dropna())[1])
+print("KPSS p =", kpss(y.dropna(), regression="c")[1])</div>
+    </div>
+  </div>
+
+  <!-- ════════════ FEATURE ENGINEERING ════════════ -->
+  <div class="sec frame">
+    <h2>● Feature engineering (lag-safe)</h2>
+
+    <div class="p">
+      <div class="name">Lag features (golden rule: shift first!)</div>
+      <div class="py"># For predicting y_t, you can use y_{t-1}, y_{t-7}, etc. — NEVER y_t.
+df["lag_1"]  = df["y"].shift(1)
+df["lag_7"]  = df["y"].shift(7)
+df["lag_28"] = df["y"].shift(28)
+
+# Rolling features MUST shift first to avoid leakage:
+df["roll_mean_7"]  = df["y"].shift(1).rolling(7).mean()
+df["roll_std_28"]  = df["y"].shift(1).rolling(28).std()
+# Expanding mean = "history up to t-1":
+df["exp_mean"] = df["y"].shift(1).expanding().mean()</div>
+      <div class="danger"><b>Most common bug:</b> <code>df["y"].rolling(7).mean()</code> uses CURRENT value → leakage. Always <code>.shift(1).rolling()</code>.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Calendar features (always available)</div>
+      <div class="py">df["dow"]   = df.index.dayofweek
+df["month"] = df.index.month
+df["doy"]   = df.index.dayofyear
+df["is_weekend"] = df["dow"] &gt;= 5
+# Fourier features for smooth seasonality:
+import numpy as np
+for k in (1, 2, 3):
+    df[f"sin_{k}"] = np.sin(2*np.pi*k*df["doy"]/365.25)
+    df[f"cos_{k}"] = np.cos(2*np.pi*k*df["doy"]/365.25)
+# Holidays:
+import holidays
+us = holidays.UnitedStates()
+df["is_holiday"] = df.index.to_series().apply(lambda d: d in us).astype(int)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Exogenous variables</div>
+      <ul class="tight">
+        <li><b>Known-future</b> (calendar, scheduled promos, weather forecast): use the actual future value</li>
+        <li><b>Past-only</b> (lag of x): <code>x.shift(1)</code> only</li>
+        <li><b>Realtime stream</b> (weather/sensor): use the most recent available value at t</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ════════════ MODEL TOOLBOX ════════════ -->
+  <div class="sec model">
+    <h2>▲ Model toolbox</h2>
+
+    <div class="p">
+      <div class="name">1 · Baselines (ALWAYS run these)</div>
+      <div class="py"># Naive (last value):
+y_hat_naive = train["y"].iloc[-1]
+# Seasonal naive (last cycle):
+y_hat_snaive = train["y"].iloc[-7:].values
+# Drift (linear from first to last):
+slope = (train["y"].iloc[-1] - train["y"].iloc[0]) / len(train)
+y_hat_drift = train["y"].iloc[-1] + slope * np.arange(1, h+1)</div>
+      <div class="use">If your model can't beat seasonal naive, it doesn't deserve to ship.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">2 · ETS (exponential smoothing)</div>
+      <div class="py">from statsmodels.tsa.holtwinters import ExponentialSmoothing
+es = ExponentialSmoothing(
+    train["y"], trend="add", seasonal="add", seasonal_periods=7,
+    initialization_method="estimated").fit()
+fc = es.forecast(h)</div>
+      <div class="rf">Holt-Winters. Cheap, robust, surprisingly hard to beat.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">3 · ARIMA / SARIMA / SARIMAX</div>
+      <div class="py">from statsmodels.tsa.statespace.sarimax import SARIMAX
+mod = SARIMAX(train["y"],
+               exog=train[["x1","x2"]],
+               order=(1, 1, 1),                  # (p, d, q)
+               seasonal_order=(1, 1, 1, 7))      # (P, D, Q, m)
+res = mod.fit(disp=False)
+fc  = res.get_forecast(steps=h, exog=test[["x1","x2"]])
+mean, ci = fc.predicted_mean, fc.conf_int(alpha=0.20)
+
+# Auto-select orders:
+from pmdarima import auto_arima
+auto = auto_arima(train["y"], seasonal=True, m=7,
+                   start_p=0, max_p=3, start_q=0, max_q=3,
+                   d=None, D=None,                    # let it choose
+                   stepwise=True, suppress_warnings=True)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">4 · Prophet (Facebook) — fast, robust</div>
+      <div class="py">from prophet import Prophet
+m = Prophet(yearly_seasonality=True, weekly_seasonality=True,
+             changepoint_prior_scale=0.05)
+m.add_regressor("x1")
+df_prophet = train.reset_index().rename(columns={"date":"ds", "y":"y"})
+m.fit(df_prophet)
+future = m.make_future_dataframe(periods=h, freq="D")
+future["x1"] = ...                         # exogenous values
+fc = m.predict(future)
+# fc["yhat"], fc["yhat_lower"], fc["yhat_upper"]</div>
+      <div class="rf">Use for: many seasonalities + known events + holidays. Don't tune for accuracy.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">5 · LightGBM on lag features (THE workhorse)</div>
+      <div class="py">import lightgbm as lgb
+features = [c for c in df.columns if c != "y"]
+X_tr, y_tr = train[features], train["y"]
+X_va, y_va = val[features],   val["y"]
+m = lgb.LGBMRegressor(
+    n_estimators=2000, learning_rate=0.05,
+    num_leaves=63, min_child_samples=20,
+    subsample=0.8, colsample_bytree=0.8,
+    n_jobs=-1, random_state=42)
+m.fit(X_tr, y_tr,
+      eval_set=[(X_va, y_va)],
+      callbacks=[lgb.early_stopping(50)])</div>
+      <div class="rf">Add interaction/Fourier features. Often beats classical models with enough engineered lags.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">6 · statsforecast (modern multi-series workhorse)</div>
+      <div class="py">from statsforecast import StatsForecast
+from statsforecast.models import AutoARIMA, AutoETS, SeasonalNaive, Naive
+# panel_df: columns [unique_id, ds, y]
+sf = StatsForecast(
+    models=[AutoARIMA(season_length=7), AutoETS(season_length=7),
+             SeasonalNaive(season_length=7), Naive()],
+    freq="D", n_jobs=-1)
+sf.fit(panel_df)
+fc = sf.forecast(h=28, level=[80])    # 80% prediction intervals
+# ~50× faster than pmdarima for the same auto-ARIMA, scales to 1M+ series.</div>
+      <div class="rf">For many related series. Companions: <code>neuralforecast</code> (DL), <code>hierarchicalforecast</code> (reconciliation).</div>
+    </div>
+
+    <div class="p">
+      <div class="name">7 · Deep learning (N-BEATS / TFT / DeepAR)</div>
+      <ul class="tight">
+        <li><b>N-BEATS / N-HiTS</b>: pure backcast/forecast residual blocks; no seasonality assumption</li>
+        <li><b>TFT</b>: attention + interpretable; mixed-feature support</li>
+        <li><b>DeepAR</b>: probabilistic; many related series</li>
+        <li><b>Use only</b> when N_series &gt; 100 AND classical/GBM plateau</li>
+      </ul>
+      <div class="py">from pytorch_forecasting import TemporalFusionTransformer
+# Heavy machinery — refer to docs; not a tutorial-friendly path</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Model picker</div>
+      <table>
+        <tr><th>Situation</th><th>Start with</th></tr>
+        <tr><td>Single series, smooth</td><td>ETS (Holt-Winters)</td></tr>
+        <tr><td>Single series, seasonal</td><td>SARIMA(X) / Prophet</td></tr>
+        <tr><td>Many features, irregular</td><td>LightGBM on lags</td></tr>
+        <tr><td>Many related series</td><td>DeepAR / N-BEATS / global LGBM</td></tr>
+        <tr><td>Probabilistic intervals</td><td>SARIMAX (gaussian) / quantile LGBM</td></tr>
+        <tr><td>Multivariate VAR</td><td>statsmodels VAR / VECM</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ════════════ MULTI-STEP ════════════ -->
+  <div class="sec model">
+    <h2>▲ Multi-step forecasting</h2>
+
+    <div class="p">
+      <div class="name">3 strategies — pick ONE</div>
+      <table>
+        <tr><th>Strategy</th><th>How</th><th>Trade-off</th></tr>
+        <tr><td>Recursive</td><td>predict t+1, feed in, predict t+2, …</td><td>error accumulates</td></tr>
+        <tr><td>Direct</td><td>one model per horizon (h models)</td><td>expensive; horizons inconsistent</td></tr>
+        <tr><td>Multi-output</td><td>single model outputs all h values</td><td>NN / multi-output GBM</td></tr>
+      </table>
+      <div class="py"># Recursive (sklearn style):
+hist = train["y"].tolist()
+preds = []
+for _ in range(h):
+    feats = build_features(hist)
+    yh = m.predict(feats)[0]
+    preds.append(yh)
+    hist.append(yh)         # feed prediction back
+
+# Direct (h independent models — align rows BEFORE fit):
+models = {}
+for k in range(1, h+1):
+    y_k = y.shift(-k)
+    mask = y_k.notna()
+    models[k] = clone(base).fit(X[mask], y_k[mask])</div>
+    </div>
+  </div>
+
+  <!-- ════════════ METRICS ════════════ -->
+  <div class="sec metric">
+    <h2>◆ Metrics</h2>
+
+    <div class="p">
+      <div class="name">Standard metrics</div>
+      <table>
+        <tr><th>Metric</th><th>Formula</th><th>When</th></tr>
+        <tr><td>RMSE</td><td>√mean(e²)</td><td>default; penalises big errors</td></tr>
+        <tr><td>MAE</td><td>mean|e|</td><td>robust to outliers</td></tr>
+        <tr><td>MAPE</td><td>mean|e|/|y|</td><td>scale-free %; FAILS at y≈0</td></tr>
+        <tr><td>sMAPE</td><td>2|e|/(|y|+|ŷ|)</td><td>bounded; symmetric</td></tr>
+        <tr><td><b>MASE</b></td><td>MAE / MAE_naive</td><td><b>RECOMMENDED</b> — scale-free, no /0</td></tr>
+        <tr><td>Pinball</td><td>quantile loss</td><td>probabilistic forecasts</td></tr>
+        <tr><td>CRPS</td><td>cont. ranked prob score</td><td>full distribution evaluation</td></tr>
+      </table>
+    </div>
+
+    <div class="p">
+      <div class="name">Per-horizon reporting</div>
+      <div class="py"># Report error PER HORIZON h=1, h=2, ..., h=H
+errors = pd.DataFrame({"h": range(1, H+1),
+                        "rmse": [rmse(y_true[:, h-1], y_pred[:, h-1]) for h in range(1, H+1)]})
+errors.plot(x="h", y="rmse", marker="o")</div>
+      <div class="use">Average h=1..28 RMSE hides huge h=28 errors. Per-horizon shows decay.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">MASE (the right default)</div>
+      <div class="py">def mase(y_true, y_pred, y_train, m=1):
+    """m=1 for non-seasonal, m=7 for weekly, m=12 for monthly."""
+    d = np.mean(np.abs(np.diff(y_train, n=m)))
+    return np.mean(np.abs(y_true - y_pred)) / d
+# MASE &lt; 1 → beats naive; &gt; 1 → worse than naive.</div>
+    </div>
+  </div>
+
+  <!-- ════════════ CV ════════════ -->
+  <div class="sec cv">
+    <h2>● Walk-forward validation (NEVER shuffle)</h2>
+
+    <div class="p">
+      <div class="name">TimeSeriesSplit (sklearn)</div>
+      <div class="py">from sklearn.model_selection import TimeSeriesSplit
+tscv = TimeSeriesSplit(n_splits=5, test_size=30, gap=0)
+for fold, (tr, te) in enumerate(tscv.split(X)):
+    X_tr, y_tr = X.iloc[tr], y.iloc[tr]
+    X_te, y_te = X.iloc[te], y.iloc[te]
+    # Expanding window by default; rolling = pass max_train_size=N</div>
+      <div class="rf">Train always precedes test in time. gap=h to prevent leakage of t+h features.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Walk-forward backtest loop</div>
+      <div class="py">errors = []
+origin = cut2                         # start at val/test boundary
+while origin + h &lt;= len(df):
+    train_slice = df.iloc[:origin]
+    test_slice  = df.iloc[origin:origin+h]
+    model = fit_model(train_slice)
+    fc = model.forecast(h)
+    errors.append(rmse(test_slice["y"], fc))
+    origin += step                    # step=1 daily, step=h non-overlapping
+print(np.mean(errors), np.std(errors))</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Expanding vs rolling</div>
+      <ul class="tight">
+        <li><b>Expanding</b>: train grows; uses all history; vol-blind</li>
+        <li><b>Rolling</b>: fixed window; adapts to regime changes; loses early history</li>
+        <li><b>Default</b>: expanding when N_train small; rolling when N_train &gt;&gt; horizon</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ════════════ TUNING ════════════ -->
+  <div class="sec tune">
+    <h2>▲ Tuning</h2>
+
+    <div class="p">
+      <div class="name">Grid / Optuna with TimeSeriesSplit</div>
+      <div class="py">from sklearn.model_selection import GridSearchCV
+gs = GridSearchCV(
+    lgb_model, grid,
+    cv=TimeSeriesSplit(n_splits=5, test_size=30),
+    scoring="neg_root_mean_squared_error",
+    n_jobs=-1, refit=True)
+gs.fit(X_tr, y_tr)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">SARIMAX order via auto_arima</div>
+      <div class="py">from pmdarima import auto_arima
+auto = auto_arima(train["y"], seasonal=True, m=7,
+                   information_criterion="aicc",   # corrected AIC
+                   stepwise=True, n_jobs=-1)
+print(auto.order, auto.seasonal_order)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">ETS via AIC search</div>
+      <div class="py">from statsmodels.tsa.holtwinters import ExponentialSmoothing
+best, best_aic = None, np.inf
+for trend in [None, "add"]:
+    for seasonal in [None, "add", "mul"]:
+        try:
+            res = ExponentialSmoothing(y, trend=trend, seasonal=seasonal,
+                                        seasonal_periods=7).fit()
+            if res.aic &lt; best_aic: best, best_aic = (trend, seasonal), res.aic
+        except: pass</div>
+    </div>
+  </div>
+
+  <!-- ════════════ DIAGNOSTICS ════════════ -->
+  <div class="sec diag">
+    <h2>◆ Residual diagnostics</h2>
+
+    <div class="p">
+      <div class="name">Ljung-Box (autocorrelation in residuals)</div>
+      <div class="py">from statsmodels.stats.diagnostic import acorr_ljungbox
+lb = acorr_ljungbox(res.resid, lags=[10, 20, 30], return_df=True)
+print(lb)
+# H0: residuals are white noise. Reject if p &lt; 0.05 → model leaves structure unexplained.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Standard diagnostics</div>
+      <ul class="tight">
+        <li><b>Residual plot</b>: should look like white noise</li>
+        <li><b>Residual ACF</b>: no significant spikes (within 95% CI bands)</li>
+        <li><b>Q-Q</b>: residuals roughly Gaussian (intervals depend on it)</li>
+        <li><b>Heteroskedasticity</b>: residual^2 vs time; ARCH effects → use GARCH</li>
+      </ul>
+      <div class="py">from statsmodels.graphics.tsaplots import plot_acf
+plot_acf(res.resid, lags=40)
+res.plot_diagnostics(figsize=(12, 8))    # SARIMAX has it built-in</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Uncertainty intervals</div>
+      <div class="py"># Parametric (SARIMAX, ETS):
+ci = res.get_forecast(h).conf_int(alpha=0.20)   # 80% PI
+# Quantile (GBM):
+lgb.LGBMRegressor(objective="quantile", alpha=0.1).fit(...)
+# Conformal (distribution-free):
+from mapie.regression import MapieTimeSeriesRegressor
+mapie = MapieTimeSeriesRegressor(estimator=m, method="enbpi", cv=tscv)
+mapie.fit(X_tr, y_tr); y_p, y_int = mapie.predict(X_te, alpha=0.10)</div>
+    </div>
+  </div>
+
+  <!-- ════════════ DEPLOY ════════════ -->
+  <div class="sec deploy">
+    <h2>◆ Deploy</h2>
+
+    <div class="p">
+      <div class="name">Roll forecasts in production</div>
+      <div class="py">def daily_forecast(today: pd.Timestamp):
+    history = load_history(end=today - pd.Timedelta("1D"))
+    model = joblib.load("model.joblib")
+    feats = build_features(history)
+    fc = model.predict(feats)
+    save_forecast(today, fc)
+    return fc
+
+# Schedule: cron daily, or Airflow / Prefect.
+# Refit model: weekly or monthly (NOT every forecast).</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Persistence</div>
+      <div class="py">import joblib
+# For statsmodels:
+res.save("model.pkl")
+# Load:
+from statsmodels.tsa.statespace.sarimax import SARIMAXResults
+res = SARIMAXResults.load("model.pkl")
+# For sklearn/lgbm: joblib.dump(model, "model.joblib")</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Monitoring</div>
+      <ul class="tight">
+        <li><b>Actual-vs-forecast</b> dashboard, refresh daily</li>
+        <li><b>Rolling MASE</b> over last 28 days</li>
+        <li><b>Coverage check</b>: % of actuals inside 80% PI (should be 80%)</li>
+        <li><b>Re-train trigger</b>: rolling MASE &gt; 1.0 OR coverage outside [70, 90]</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ════════════ TRAPS ════════════ -->
+  <div class="sec trap">
+    <h2>▲ Top traps (6-month memory)</h2>
+    <ul class="tight">
+      <li><b>Random split</b> on temporal data → future leaks into past. Always chronological / <code>TimeSeriesSplit</code>.</li>
+      <li><b>Rolling without shift(1)</b> — <code>y.rolling(7).mean()</code> uses today. Use <code>y.shift(1).rolling(7).mean()</code>.</li>
+      <li><b>Centered rolling window</b> — peeks future. Always <code>center=False</code> (default).</li>
+      <li><b>Missing pandas freq</b> — <code>asfreq("D")</code> first; without it ACF/PACF/ARIMA misbehave.</li>
+      <li><b>Reporting only h=1 RMSE</b> — average hides multi-step error decay. Per-horizon table.</li>
+      <li><b>Timezone joins</b> — daylight saving silently drops/duplicates rows. Pin tz before merge.</li>
+      <li><b>ADF without KPSS</b> — single test misleads on trend-stationary series. Run both.</li>
+      <li><b>Skipping baselines</b> — if you can't beat seasonal naive, your model is noise.</li>
+      <li><b>Binary view of stationarity</b> — most real series are partly stationary. Diff if needed and re-test.</li>
+    </ul>
+  </div>
+
+  <!-- ════════════ QUICK REF ════════════ -->
+  <div class="sec master">
+    <h2>◆ Quick-reference (recall in 5 seconds)</h2>
+    <table>
+      <tr><th>Task</th><th>Canonical pattern</th></tr>
+      <tr><td>Index setup</td><td><code>df.sort_values("ts").set_index("ts").asfreq("D")</code></td></tr>
+      <tr><td>Split</td><td>chronological 70/15/15 by row count</td></tr>
+      <tr><td>Decompose</td><td><code>STL(y, period=7, robust=True).fit().plot()</code></td></tr>
+      <tr><td>Stationarity</td><td><code>adfuller(y)[1]</code> AND <code>kpss(y)[1]</code></td></tr>
+      <tr><td>Lag feature</td><td><code>y.shift(1).rolling(7).mean()</code> (NEVER without shift)</td></tr>
+      <tr><td>Baseline</td><td>Naive + Seasonal-Naive + Auto-ARIMA</td></tr>
+      <tr><td>CV</td><td><code>TimeSeriesSplit(n_splits=5, test_size=h, gap=0)</code></td></tr>
+      <tr><td>Auto-order ARIMA</td><td><code>pmdarima.auto_arima(y, seasonal=True, m=7)</code></td></tr>
+      <tr><td>Best ML model</td><td>LightGBM on lag+calendar features</td></tr>
+      <tr><td>Metric default</td><td>MASE (then RMSE per-horizon)</td></tr>
+      <tr><td>Residual check</td><td><code>acorr_ljungbox(resid, lags=[10,20,30])</code></td></tr>
+      <tr><td>Intervals</td><td>SARIMAX <code>get_forecast(h).conf_int()</code> / quantile LGBM / MAPIE conformal</td></tr>
+    </table>
+  </div>
+
+</div> <!-- /cols -->
+
+</body>
+</html>
