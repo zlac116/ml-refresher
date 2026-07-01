@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PostgreSQL — Reference Card</title>
+<style>
+@page { size: A4 landscape; margin: 0.35cm 0.35cm 0.45cm 0.35cm;
+        @bottom-right { content: counter(page) " / " counter(pages); font: 6pt 'DejaVu Sans', sans-serif; color: #aaa; } }
+* { box-sizing: border-box; }
+body { font-family: 'DejaVu Sans', sans-serif; font-size: 7pt; line-height: 1.15; color: #1a1a1a; margin: 0; padding: 0; }
+code, .py, pre { font-family: 'DejaVu Sans Mono', monospace; font-size: 6.6pt; }
+
+.banner { background: #336791; color: #fff; padding: 3px 7px; margin-bottom: 3px; border-radius: 2px; }
+.banner h1 { font-size: 11pt; margin: 0; }
+.banner .sub { font-size: 6.6pt; color: #d5e2ed; margin-top: 0; }
+.banner .sub code { color: #fff; background: rgba(0,0,0,0.18); padding: 0 2px; border-radius: 1px; }
+
+.cols { column-count: 3; column-gap: 5px; column-rule: 1px solid #ccc; column-fill: balance; }
+
+.sec { break-inside: auto; margin: 0 0 1px 0; padding: 1px 4px 2px 5px; border-radius: 2px; border-left: 3px solid; }
+.sec h2 { font-size: 7.8pt; font-weight: bold; margin: 0; padding: 0 3px; border-radius: 2px; color: #fff; display: inline-block; }
+.sec h3 { font-size: 6.7pt; font-weight: bold; margin: 1px 0 0 0; color: #336791; text-transform: uppercase; letter-spacing: 0.04em; }
+.sec > *:last-child { margin-bottom: 0; }
+
+.master  { background: #fff8d9; border-left-color: #806c0e; }  .master  h2 { background: #806c0e; }
+.frame   { background: #e7f2fa; border-left-color: #2e6b9c; }  .frame   h2 { background: #2e6b9c; }
+.model   { background: #e7fae9; border-left-color: #2e9c47; }  .model   h2 { background: #2e9c47; }
+.metric  { background: #f0e7fa; border-left-color: #6e3e9c; }  .metric  h2 { background: #6e3e9c; }
+.cv      { background: #e7faf9; border-left-color: #1a8a8a; }  .cv      h2 { background: #1a8a8a; }
+.tune    { background: #fbf2e6; border-left-color: #b06c0e; }  .tune    h2 { background: #b06c0e; }
+.diag    { background: #f7e6d5; border-left-color: #a05210; }  .diag    h2 { background: #a05210; }
+.deploy  { background: #ededed; border-left-color: #555;    }  .deploy  h2 { background: #555;    }
+.trap    { background: #fae0e0; border-left-color: #7a1a1a; }  .trap    h2 { background: #7a1a1a; }
+
+.p { margin: 0; }
+.p .name { font-weight: bold; font-size: 7.2pt; }
+.py { display: block; background: rgba(0,0,0,0.04); border-left: 2px solid #555;
+      margin: 0; padding: 0 4px; overflow-wrap: anywhere;
+      white-space: pre-wrap; font-family: 'DejaVu Sans Mono', monospace; font-size: 6.6pt; }
+.p .use { font-style: italic; color: #2a2a2a; font-size: 6.5pt; }
+.p .rf  { font-size: 6.1pt; color: #444; }
+
+.recipe ol { margin: 0; padding: 0 0 0 14px; }
+.recipe ol li { margin: 0; }
+.recipe .step { font-weight: bold; }
+table { border-collapse: collapse; width: 100%; font-size: 6.4pt; margin: 1px 0; break-inside: auto; }
+th, td { border: 1px solid #c0c0c0; padding: 0.5px 3px; text-align: left; vertical-align: top; }
+th { background: #e8e8e8; font-weight: bold; }
+td code { word-break: break-all; overflow-wrap: anywhere; }
+ul.tight { margin: 0; padding: 0 0 0 13px; break-inside: auto; }
+ul.tight li { margin: 0; }
+
+.callout { background: #fff; border-left: 3px solid #d4a800; padding: 0 4px; margin: 1px 0; font-size: 6.3pt; }
+.danger  { background: #fff; border-left: 3px solid #b8341a; padding: 0 4px; margin: 1px 0; font-size: 6.3pt; }
+.danger b:first-child { color: #b8341a; }
+
+.sec.trap { break-inside: auto; }
+.sec h2 + *, .sec h3 + * { break-before: avoid; }
+</style>
+</head>
+<body>
+
+<div class="banner">
+  <h1>PostgreSQL — Reference Card</h1>
+  <div class="sub">psql · DDL · DML · SELECT · JOINs · CTE · window · JSON · UPSERT · indexes · transactions · plans. Stack: <code>PostgreSQL ≥15 (MERGE, IDENTITY, generated cols) · SQL:2023</code> · Modern: `RETURNING`, `ON CONFLICT`, `LATERAL`, `FILTER`, materialised CTEs</div>
+</div>
+
+<div class="cols">
+
+  <!-- ════════════ MASTER PATTERN ════════════ -->
+  <div class="sec master">
+    <h2>◆ Query anatomy (order OF EXECUTION, not writing)</h2>
+    <div class="py">-- WRITE order            -- EXECUTION order (know both)
+SELECT ...                --  5. SELECT projections
+FROM t                     --  1. FROM (+ JOINs)
+JOIN u ON ...              --  2. ON / JOIN filters
+WHERE ...                  --  3. WHERE
+GROUP BY ...               --  4. GROUP BY + aggregates
+HAVING ...                 --  6. HAVING
+ORDER BY ...               --  7. ORDER BY
+LIMIT n OFFSET m;          --  8. LIMIT / OFFSET</div>
+    <div class="callout"><b>Alias order:</b> aliases from SELECT are NOT visible in WHERE/GROUP BY (they run before SELECT). But they ARE visible in ORDER BY (runs after). Use a CTE or subquery to sidestep.</div>
+  </div>
+
+  <div class="sec master">
+    <h2>◆ Starter · minimal CRUD skeleton</h2>
+    <div class="py">-- DDL (modern PG: IDENTITY, GENERATED, CHECK)
+CREATE TABLE trades (
+    id           bigint       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    symbol       text         NOT NULL CHECK (symbol ~ '^[A-Z]+$'),
+    qty          numeric(18,4) NOT NULL,
+    price        numeric(18,4) NOT NULL,
+    gross        numeric(18,4) GENERATED ALWAYS AS (qty * price) STORED,
+    ts           timestamptz  NOT NULL DEFAULT now(),
+    tags         jsonb        NOT NULL DEFAULT '{}'::jsonb
+);
+CREATE INDEX ON trades (symbol, ts DESC);         -- covering + sort
+CREATE INDEX ON trades USING gin (tags);           -- JSONB search
+
+-- DML (always use RETURNING; batch when possible)
+INSERT INTO trades (symbol, qty, price)
+VALUES ('AAPL', 100, 180.5), ('MSFT', 50, 310.0)
+RETURNING id, gross;
+
+-- SELECT
+SELECT symbol, sum(gross) FILTER (WHERE qty &gt; 0) AS long_gross
+FROM trades WHERE ts &gt;= now() - interval '7 days'
+GROUP BY symbol HAVING sum(gross) &gt; 1000
+ORDER BY long_gross DESC LIMIT 10;
+
+-- UPDATE + DELETE with RETURNING (audit)
+UPDATE trades SET price = 181.0 WHERE id = 42 RETURNING *;
+DELETE FROM trades WHERE ts &lt; now() - interval '1 year' RETURNING id;</div>
+  </div>
+
+  <!-- ════════════ DDL ════════════ -->
+  <div class="sec frame">
+    <h2>● DDL — define schema (modern)</h2>
+    <div class="py">CREATE TABLE users (
+    id       bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,   -- (not SERIAL — legacy)
+    email    citext NOT NULL UNIQUE,                             -- case-insensitive text
+    created  timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT email_looks_ok CHECK (email ~ '@'));
+
+-- Generated columns (STORED = computed on write, indexable)
+ALTER TABLE trades ADD COLUMN gross numeric GENERATED ALWAYS AS (qty*price) STORED;
+
+-- Foreign keys with cascade
+CREATE TABLE orders (
+    id       bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id  bigint NOT NULL REFERENCES users(id) ON DELETE CASCADE);
+
+-- Enum types
+CREATE TYPE status AS ENUM ('open', 'filled', 'cancelled');
+
+-- Partitioning (large tables)
+CREATE TABLE events (id bigint, dt timestamptz, ...) PARTITION BY RANGE (dt);
+CREATE TABLE events_2026 PARTITION OF events
+    FOR VALUES FROM ('2026-01-01') TO ('2027-01-01');
+
+-- Drop / alter
+ALTER TABLE trades RENAME COLUMN qty TO quantity;
+ALTER TABLE trades ADD COLUMN venue text;
+DROP TABLE IF EXISTS temp_data CASCADE;</div>
+    <div class="rf"><b>Use <code>IDENTITY</code> not <code>SERIAL</code></b> (SQL standard, safer around insert-explicit-id). <code>timestamptz</code> not <code>timestamp</code> (stores UTC internally).</div>
+  </div>
+
+  <!-- ════════════ SELECT ════════════ -->
+  <div class="sec frame">
+    <h2>● SELECT essentials</h2>
+    <div class="py">SELECT DISTINCT ON (symbol) symbol, price, ts       -- latest row per symbol
+FROM trades ORDER BY symbol, ts DESC;
+
+SELECT * FROM trades
+WHERE ts BETWEEN '2026-01-01' AND '2026-12-31'
+  AND symbol IN ('AAPL','MSFT','GOOG')
+  AND tags -&gt;&gt; 'strategy' = 'momentum'
+  AND qty IS NOT NULL;
+
+-- Boolean / conditional
+SELECT symbol,
+       CASE WHEN qty &gt; 0 THEN 'long'
+             WHEN qty &lt; 0 THEN 'short'
+             ELSE 'flat' END AS side,
+       COALESCE(tags-&gt;&gt;'venue', 'unknown') AS venue,
+       NULLIF(gross, 0) AS gross_nz     -- returns NULL if gross=0
+FROM trades;
+
+-- Existence / negation (prefer over IN for large sets)
+SELECT * FROM trades t WHERE EXISTS (SELECT 1 FROM users u WHERE u.id=t.user_id);
+SELECT * FROM trades t WHERE NOT EXISTS (SELECT 1 FROM refunds r WHERE r.tid=t.id);</div>
+  </div>
+
+  <!-- ════════════ JOINs ════════════ -->
+  <div class="sec model">
+    <h2>▲ JOINs</h2>
+    <table>
+      <tr><th>Join</th><th>Behaviour</th></tr>
+      <tr><td>INNER (default)</td><td>only matches</td></tr>
+      <tr><td>LEFT</td><td>all left + matches (NULL for missing right)</td></tr>
+      <tr><td>RIGHT</td><td>all right + matches</td></tr>
+      <tr><td>FULL OUTER</td><td>all rows both sides</td></tr>
+      <tr><td>CROSS</td><td>Cartesian product</td></tr>
+      <tr><td>LATERAL</td><td>correlated: right side sees left row</td></tr>
+      <tr><td>USING (col)</td><td>shortcut for ON a.col=b.col + collapses col</td></tr>
+    </table>
+    <div class="py">SELECT o.id, u.email, u.name
+FROM orders o
+JOIN users u ON u.id = o.user_id                     -- users.id + orders.user_id (see DDL above)
+LEFT JOIN discounts d ON d.user_id = u.id AND d.active
+WHERE o.status = 'open';
+-- USING (col) only works when BOTH tables have SAME-NAMED column
+
+-- LATERAL — top-N per group (elegant)
+SELECT u.id, top3.*
+FROM users u
+CROSS JOIN LATERAL (
+    SELECT o.id, o.amount
+    FROM orders o WHERE o.user_id = u.id
+    ORDER BY o.amount DESC LIMIT 3
+) top3;</div>
+    <div class="danger"><b>Cartesian trap:</b> missing ON clause → CROSS JOIN silently. Turn on <code>set client_min_messages='warning';</code> to catch stealth cross-products.</div>
+  </div>
+
+  <!-- ════════════ AGGREGATES ════════════ -->
+  <div class="sec model">
+    <h2>▲ Aggregates + GROUP BY + FILTER</h2>
+    <div class="py">SELECT symbol,
+       count(*)                       AS n,
+       count(*) FILTER (WHERE qty &gt; 0) AS long_n,
+       sum(gross)                     AS total,
+       sum(gross) FILTER (WHERE qty &gt; 0) AS long_gross,
+       avg(price),
+       percentile_cont(0.5) WITHIN GROUP (ORDER BY price) AS median,
+       string_agg(DISTINCT venue, ', ' ORDER BY venue) AS venues,
+       array_agg(id ORDER BY ts) AS ids
+FROM trades
+WHERE ts &gt;= now() - interval '30 days'
+GROUP BY symbol
+HAVING count(*) &gt; 5
+ORDER BY total DESC;
+
+-- Subtotals: GROUPING SETS / ROLLUP / CUBE
+SELECT region, product, sum(gross)
+FROM sales
+GROUP BY ROLLUP (region, product);    -- (region,product) + (region) + total</div>
+    <div class="callout"><b><code>FILTER (WHERE ...)</code></b> replaces <code>sum(CASE WHEN ...)</code> — cleaner + slightly faster.</div>
+  </div>
+
+  <!-- ════════════ WINDOW ════════════ -->
+  <div class="sec metric">
+    <h2>◆ Window functions (aggregate without collapsing)</h2>
+    <div class="py">SELECT
+    symbol, ts, price,
+    -- Ranking
+    row_number()  OVER w                      AS rn,     -- 1,2,3 (no ties)
+    rank()        OVER w                      AS rk,     -- 1,2,2,4 (gaps)
+    dense_rank()  OVER w                      AS drk,    -- 1,2,2,3 (no gaps)
+    percent_rank() OVER w                     AS pct_rk,
+    ntile(4)      OVER w                      AS quartile,
+
+    -- Aggregate (over frame)
+    sum(price)   OVER w  AS running_sum,
+    avg(price)   OVER (PARTITION BY symbol ORDER BY ts
+                        ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS ma7,
+
+    -- Neighbours
+    lag(price,1)  OVER w AS prev_price,
+    lead(price,1) OVER w AS next_price,
+    first_value(price) OVER w AS first_px,
+    last_value(price)  OVER (PARTITION BY symbol ORDER BY ts
+        ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS last_px
+FROM trades
+WINDOW w AS (PARTITION BY symbol ORDER BY ts);
+-- WINDOW named clause — DRY when reusing the same partition/order many times</div>
+    <table>
+      <tr><th>Frame clause</th><th>Meaning</th></tr>
+      <tr><td>ROWS N PRECEDING</td><td>fixed count of rows</td></tr>
+      <tr><td>RANGE N PRECEDING</td><td>values within N of current (needs numeric/date ORDER)</td></tr>
+      <tr><td>GROUPS N PRECEDING</td><td>PG 11+; per ORDER BY tie group</td></tr>
+      <tr><td>UNBOUNDED PRECEDING</td><td>from start of partition</td></tr>
+      <tr><td>UNBOUNDED FOLLOWING</td><td>to end of partition</td></tr>
+    </table>
+    <div class="danger"><b>Default frame</b> when using ORDER BY without explicit frame = <code>RANGE UNBOUNDED PRECEDING</code> (running total by value-of-ORDER-BY). Silently wrong for <code>last_value()</code> — specify frame explicitly.</div>
+  </div>
+
+  <!-- ════════════ CTE ════════════ -->
+  <div class="sec metric">
+    <h2>◆ CTE (WITH) + materialization hints</h2>
+    <div class="py">-- Simple CTE (inlined by optimizer in PG 12+ — single-reference, non-recursive, no side-effects)
+WITH recent AS (
+    SELECT * FROM trades WHERE ts &gt;= now() - interval '7 days'
+)
+SELECT symbol, sum(gross) FROM recent GROUP BY symbol;
+
+-- Force materialization (optimizer barrier — used when CTE is expensive OR affects semantics)
+WITH heavy AS MATERIALIZED (               -- PG 12+
+    SELECT * FROM slow_view
+)
+SELECT * FROM heavy WHERE ...;
+
+WITH cheap AS NOT MATERIALIZED (           -- allow inlining even if referenced multiple times
+    SELECT symbol FROM trades WHERE ts &gt; now() - interval '1h'
+) SELECT count(*) FROM cheap;
+
+-- Recursive CTE (hierarchies, path enumeration)
+WITH RECURSIVE ancestors AS (
+    SELECT id, parent_id, 1 AS depth FROM tree WHERE id = 42       -- base case
+    UNION ALL
+    SELECT t.id, t.parent_id, a.depth + 1                          -- step case
+    FROM tree t JOIN ancestors a ON t.id = a.parent_id
+) SELECT * FROM ancestors;
+
+-- Data-modifying CTEs (multi-statement in one round-trip)
+WITH deleted AS (DELETE FROM staging RETURNING *)
+INSERT INTO archive SELECT * FROM deleted;</div>
+  </div>
+
+  <!-- ════════════ UPSERT ════════════ -->
+  <div class="sec tune">
+    <h2>▲ UPSERT — ON CONFLICT vs MERGE</h2>
+    <div class="py">-- ON CONFLICT (idiomatic PG since 9.5 — simple, fast)
+INSERT INTO trades (id, symbol, qty)
+VALUES (1, 'AAPL', 100)
+ON CONFLICT (id) DO UPDATE
+    SET qty = EXCLUDED.qty,               -- EXCLUDED = the row we tried to insert
+        updated_at = now()
+WHERE trades.qty IS DISTINCT FROM EXCLUDED.qty  -- skip no-op updates
+RETURNING id;
+
+-- MERGE (PG 15+ — SQL standard, better for complex cases)
+MERGE INTO trades t
+USING (VALUES (1, 'AAPL', 100), (2, 'MSFT', 50)) AS s(id, symbol, qty)
+ON t.id = s.id
+WHEN MATCHED AND s.qty IS NULL THEN DELETE           -- ← ORDER matters: first matching branch wins
+WHEN MATCHED AND t.qty IS DISTINCT FROM s.qty THEN
+    UPDATE SET qty = s.qty, updated_at = now()
+WHEN NOT MATCHED THEN
+    INSERT (id, symbol, qty) VALUES (s.id, s.symbol, s.qty);
+-- PG 17+: MERGE ... RETURNING supported.
+-- Also common: INSERT ... ON CONFLICT (pk) DO NOTHING (idempotent-insert)</div>
+    <table>
+      <tr><th>ON CONFLICT</th><th>MERGE</th></tr>
+      <tr><td>simple upsert (1 outcome per conflict)</td><td>complex: match/insert/delete in one</td></tr>
+      <tr><td>requires a UNIQUE/PK constraint</td><td>any join condition</td></tr>
+      <tr><td>fast + concurrent-safe</td><td>NOT concurrent-safe (needs SERIALIZABLE)</td></tr>
+    </table>
+  </div>
+
+  <!-- ════════════ JSON ════════════ -->
+  <div class="sec tune">
+    <h2>▲ JSON / JSONB</h2>
+    <div class="py">-- Extract
+SELECT payload -&gt;  'user'                 -- returns jsonb
+     , payload -&gt;&gt; 'email'                -- returns text
+     , payload #&gt; '{user,addr,city}'      -- deep path (jsonb)
+     , payload #&gt;&gt; '{user,addr,city}'     -- deep path (text)
+FROM events;
+
+-- Filter (indexed via GIN)
+SELECT * FROM events WHERE payload @&gt; '{"user":{"country":"US"}}';    -- contains
+SELECT * FROM events WHERE payload ? 'session_id';                     -- has key
+SELECT * FROM events WHERE payload ?| ARRAY['a', 'b'];                 -- has any key
+
+-- SQL/JSON path (PG 12+ standard)
+SELECT jsonb_path_query(payload, '$.items[*] ? (@.price &gt; 100)')
+FROM events;
+
+-- Build + modify
+INSERT INTO events (payload)
+VALUES ('{"user": {"id": 42, "roles": ["admin"]}}'::jsonb);
+UPDATE events SET payload = payload || '{"processed": true}'::jsonb;
+UPDATE events SET payload = jsonb_set(payload, '{user,name}', '"Alice"');
+
+-- Aggregate rows into JSON
+SELECT jsonb_agg(row_to_json(t)) FROM trades t WHERE symbol='AAPL';</div>
+  </div>
+
+  <!-- ════════════ ARRAYS ════════════ -->
+  <div class="sec tune">
+    <h2>▲ Arrays + Ranges</h2>
+    <div class="py">-- Arrays
+SELECT ARRAY[1, 2, 3];
+SELECT id FROM trades WHERE tags-&gt;'venues' @&gt; '["NYSE"]'::jsonb;
+SELECT unnest(ARRAY[1,2,3]);                          -- rows
+SELECT array_agg(id ORDER BY ts) FROM trades;
+SELECT tags[1], tags[2:3] FROM t;                     -- 1-indexed slice
+
+-- Ranges (typed intervals with EXCLUDE-based constraints)
+CREATE TABLE bookings (
+    room text, span tstzrange,
+    EXCLUDE USING gist (room WITH =, span WITH &amp;&amp;)   -- no overlaps per room
+);
+INSERT INTO bookings VALUES ('A', tstzrange('2026-07-01','2026-07-05','[)'));
+-- overlap query
+SELECT * FROM bookings WHERE span &amp;&amp; tstzrange('2026-07-03','2026-07-04','[)');</div>
+  </div>
+
+  <!-- ════════════ INDEXES ════════════ -->
+  <div class="sec cv">
+    <h2>● Indexes — types + production-safe DDL</h2>
+    <table>
+      <tr><th>Type</th><th>When</th></tr>
+      <tr><td>btree (default)</td><td>=, &lt;, &gt;, BETWEEN, ORDER BY</td></tr>
+      <tr><td>hash</td><td>equality-only; rarely worth it over btree (since PG 10 WAL-logged, no size advantage)</td></tr>
+      <tr><td>gin</td><td>JSONB, arrays, full-text</td></tr>
+      <tr><td>gist</td><td>range, geo, exclusion constraints</td></tr>
+      <tr><td>brin</td><td>huge sorted tables (time-series); tiny footprint</td></tr>
+    </table>
+    <div class="py">-- Production-safe (never blocks writes; slower)
+CREATE INDEX CONCURRENTLY idx_trades_symbol_ts
+    ON trades (symbol, ts DESC)
+    INCLUDE (gross)               -- covering — avoid heap fetch
+    WHERE ts &gt;= '2026-01-01';    -- partial — smaller + faster
+
+CREATE UNIQUE INDEX ON users (lower(email));    -- functional (case-insens login)
+
+-- Rebuild without lock (PG 12+)
+REINDEX INDEX CONCURRENTLY idx_trades_symbol_ts;
+
+-- Check unused / bloat
+SELECT indexname, idx_scan FROM pg_stat_user_indexes ORDER BY idx_scan;   -- 0 = unused</div>
+    <div class="danger"><b>Never <code>CREATE INDEX</code> without <code>CONCURRENTLY</code></b> on a live table — blocks writes for the entire build.</div>
+  </div>
+
+  <!-- ════════════ TRANSACTIONS ════════════ -->
+  <div class="sec cv">
+    <h2>● Transactions + isolation</h2>
+    <table>
+      <tr><th>Level</th><th>Reads see</th></tr>
+      <tr><td>READ COMMITTED (default)</td><td>latest committed at each statement</td></tr>
+      <tr><td>REPEATABLE READ</td><td>snapshot at txn start (no ghosts within-txn)</td></tr>
+      <tr><td>SERIALIZABLE</td><td>as if serial; retry on conflict</td></tr>
+    </table>
+    <div class="py">BEGIN ISOLATION LEVEL SERIALIZABLE;
+  UPDATE accounts SET balance = balance - 100 WHERE id = 1;
+  UPDATE accounts SET balance = balance + 100 WHERE id = 2;
+COMMIT;                          -- may raise SerializationFailure → retry loop in app
+
+-- Queue pattern (SKIP LOCKED — never blocks; PG 9.5+)
+BEGIN;
+  SELECT id, payload FROM jobs
+  WHERE status = 'queued'
+  ORDER BY created_at
+  LIMIT 1 FOR UPDATE SKIP LOCKED;   -- claim one job, don't wait for locked rows
+  UPDATE jobs SET status='running' WHERE id = :id;
+COMMIT;
+
+-- Savepoints (partial rollback)
+BEGIN;
+  INSERT ...;  SAVEPOINT sp1;
+  UPDATE ...;  ROLLBACK TO sp1;    -- undo the UPDATE only
+COMMIT;</div>
+  </div>
+
+  <!-- ════════════ EXPLAIN ════════════ -->
+  <div class="sec diag">
+    <h2>◆ EXPLAIN — read a plan</h2>
+    <div class="py">EXPLAIN (ANALYZE, BUFFERS, VERBOSE, SETTINGS, WAL, FORMAT TEXT)
+SELECT symbol, sum(gross) FROM trades
+WHERE ts &gt;= '2026-01-01'
+GROUP BY symbol ORDER BY 2 DESC LIMIT 10;
+-- SETTINGS (PG 12+): non-default GUCs that affected the plan
+-- WAL (PG 13+): WAL bytes generated by the query (writes only)</div>
+    <table>
+      <tr><th>Symptom in plan</th><th>Likely fix</th></tr>
+      <tr><td>Seq Scan on large table</td><td>add index on filter col; or accept if &gt;10% rows</td></tr>
+      <tr><td>Nested Loop, high rows</td><td>rewrite as Hash Join (bigger work_mem)</td></tr>
+      <tr><td>rows= WAY off actual</td><td>stats stale → <code>ANALYZE table</code></td></tr>
+      <tr><td>Sort spilled to disk</td><td>increase <code>work_mem</code> or index the sort key</td></tr>
+      <tr><td>Bitmap Heap Scan (many pages)</td><td>consider covering INCLUDE index</td></tr>
+      <tr><td>Filter after index</td><td>index-only-scan blocked; add col to INCLUDE</td></tr>
+    </table>
+  </div>
+
+  <!-- ════════════ DATES/TIME ════════════ -->
+  <div class="sec diag">
+    <h2>◆ Dates / timestamps / intervals</h2>
+    <div class="py">SELECT now(), current_date, current_time, statement_timestamp();
+
+-- Arithmetic
+SELECT ts + interval '1 day', ts - interval '2 hours';
+SELECT date_trunc('day',   ts) AS day;
+SELECT date_trunc('week',  ts) AS week;             -- Mon start
+SELECT date_trunc('month', ts) AS month;
+
+-- Extract parts
+SELECT extract(year FROM ts), extract(dow FROM ts);  -- 0=Sun
+
+-- Time-zone handling
+SELECT ts AT TIME ZONE 'UTC';                        -- convert timestamptz → naive
+SELECT ts AT TIME ZONE 'America/New_York';
+
+-- Ranges (business-day style checks)
+SELECT ts BETWEEN '2026-01-01' AND '2026-12-31';
+SELECT extract(dow FROM ts) NOT IN (0, 6);           -- weekday
+
+-- Overlap
+SELECT tstzrange(start, end) &amp;&amp; tstzrange(now(), now()+interval '1 day');</div>
+  </div>
+
+  <!-- ════════════ STRINGS ════════════ -->
+  <div class="sec diag">
+    <h2>◆ Strings</h2>
+    <div class="py">SELECT length(s), lower(s), upper(s), trim(s), initcap(s);
+SELECT substring(s, 1, 5), position('a' IN s), split_part(s, ',', 2);
+SELECT concat_ws('-', 'a','b',NULL,'c');    -- 'a-b-c' (NULL-safe join)
+SELECT regexp_replace(s, '\s+', ' ', 'g'); -- collapse whitespace
+SELECT s ~* '^[a-z]+$';                     -- ~* case-insensitive regex
+SELECT s LIKE 'foo%';                        -- SQL wildcards % _
+SELECT similarity(a, b) FROM t;              -- pg_trgm — fuzzy match
+
+-- Full-text search
+SELECT to_tsvector('english', 'Postgres is fast') @@ to_tsquery('fast');
+-- Index for FTS:
+CREATE INDEX ON docs USING gin (to_tsvector('english', body));</div>
+  </div>
+
+  <!-- ════════════ MAINTENANCE ════════════ -->
+  <div class="sec deploy">
+    <h2>◆ Maintenance (the things that bite in prod)</h2>
+    <ul class="tight">
+      <li><b>VACUUM / autovacuum</b> — reclaims dead tuples. Watch bloat: <code>SELECT * FROM pg_stat_user_tables ORDER BY n_dead_tup DESC;</code></li>
+      <li><b>ANALYZE</b> — refreshes stats for the planner. Runs with VACUUM (autovacuum default).</li>
+      <li><b>REINDEX CONCURRENTLY</b> — rebuilds bloated index without blocking.</li>
+      <li><b><code>pg_stat_activity</code></b> — see live queries: <code>SELECT pid, state, query FROM pg_stat_activity;</code></li>
+      <li><b><code>pg_stat_statements</code></b> — top queries by total time (enable in postgresql.conf).</li>
+      <li><b>Long-running txn:</b> <code>SELECT pid, xact_start FROM pg_stat_activity WHERE xact_start &lt; now()-interval '5 min';</code></li>
+      <li><b>Kill query:</b> <code>SELECT pg_cancel_backend(pid);</code> (soft) or <code>pg_terminate_backend(pid)</code> (kill).</li>
+      <li><b>Backups:</b> <code>pg_dump -Fc db &gt; db.dump</code> then <code>pg_restore -d newdb db.dump</code>.</li>
+      <li><b>Migrations:</b> Alembic / Flyway / sqitch. Never migrate schema without a tested rollback.</li>
+    </ul>
+  </div>
+
+  <!-- ════════════ PSQL META ════════════ -->
+  <div class="sec deploy">
+    <h2>◆ psql meta-commands</h2>
+    <table>
+      <tr><th>Cmd</th><th>Purpose</th></tr>
+      <tr><td><code>\l</code></td><td>list databases</td></tr>
+      <tr><td><code>\c dbname</code></td><td>connect</td></tr>
+      <tr><td><code>\dt</code></td><td>list tables</td></tr>
+      <tr><td><code>\d table</code></td><td>describe (cols, indexes, FKs)</td></tr>
+      <tr><td><code>\d+ table</code></td><td>above + storage, comments</td></tr>
+      <tr><td><code>\du</code></td><td>list roles</td></tr>
+      <tr><td><code>\df fn</code></td><td>describe function</td></tr>
+      <tr><td><code>\ef fn</code></td><td>open function definition in editor</td></tr>
+      <tr><td><code>\timing on</code></td><td>show query time</td></tr>
+      <tr><td><code>\x</code></td><td>expanded (vertical) output — for wide rows</td></tr>
+      <tr><td><code>\copy t FROM 'f.csv' CSV</code></td><td>client-side CSV load (unlike SQL COPY which is server-side)</td></tr>
+      <tr><td><code>\watch 2</code></td><td>rerun last query every 2s</td></tr>
+      <tr><td><code>\i file.sql</code></td><td>execute file</td></tr>
+    </table>
+  </div>
+
+  <!-- ════════════ TRAPS ════════════ -->
+  <div class="sec trap">
+    <h2>▲ Top traps (6-month memory)</h2>
+    <ul class="tight">
+      <li><b><code>NULL ≠ NULL</code></b> — <code>WHERE x = NULL</code> matches nothing; use <code>x IS NULL</code>.</li>
+      <li><b><code>NULL + anything = NULL</code></b> — arithmetic silently returns NULL. Use <code>COALESCE(x, 0)</code>.</li>
+      <li><b><code>count(*) vs count(col)</code></b> — <code>count(col)</code> skips NULLs; <code>count(*)</code> counts rows.</li>
+      <li><b>Chained aggregate not allowed</b> — <code>sum(avg(x))</code> raises. Wrap inner in a CTE.</li>
+      <li><b>DISTINCT ON</b> needs a matching leading ORDER BY. Missing = non-determinism.</li>
+      <li><b><code>SERIAL</code></b> is legacy — use <code>GENERATED ALWAYS AS IDENTITY</code>.</li>
+      <li><b><code>timestamp</code> without tz</b> — silently drops tz info. Use <code>timestamptz</code>.</li>
+      <li><b><code>CREATE INDEX</code> without <code>CONCURRENTLY</code></b> blocks writes.</li>
+      <li><b>Function calls in WHERE</b> (<code>WHERE lower(email)=...</code>) skip indexes unless there's a functional index.</li>
+      <li><b><code>LIKE 'foo%'</code></b> uses btree; <code>LIKE '%foo'</code> or <code>'%foo%'</code> does NOT — use pg_trgm GIN.</li>
+      <li><b><code>OR</code> in WHERE</b> often defeats indexes. Rewrite as <code>UNION ALL</code>.</li>
+      <li><b>Window frame default</b> is RANGE UNBOUNDED PRECEDING — silently wrong for <code>last_value</code>.</li>
+      <li><b><code>UPDATE</code> without WHERE</b> — hits every row. Always test in a transaction first.</li>
+      <li><b>Long-running IDLE IN TRANSACTION</b> — blocks vacuum. Set <code>idle_in_transaction_session_timeout</code>.</li>
+      <li><b>MERGE not concurrent-safe</b> — needs SERIALIZABLE + retry. <code>ON CONFLICT</code> is.</li>
+    </ul>
+  </div>
+
+  <!-- ════════════ QUICK REFERENCE ════════════ -->
+  <div class="sec master">
+    <h2>◆ Quick-reference (recall in 5 seconds)</h2>
+    <table>
+      <tr><th>Task</th><th>Canonical pattern</th></tr>
+      <tr><td>Auto-increment PK</td><td><code>id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY</code></td></tr>
+      <tr><td>Timestamp</td><td><code>ts timestamptz NOT NULL DEFAULT now()</code></td></tr>
+      <tr><td>Case-insensitive text</td><td><code>citext</code> extension</td></tr>
+      <tr><td>Latest per group</td><td><code>DISTINCT ON (grp) ... ORDER BY grp, ts DESC</code></td></tr>
+      <tr><td>Top-N per group</td><td>LATERAL join with LIMIT</td></tr>
+      <tr><td>Conditional aggregate</td><td><code>sum(x) FILTER (WHERE cond)</code></td></tr>
+      <tr><td>Rolling 7 mean</td><td>window <code>OVER (ORDER BY ts ROWS 6 PRECEDING)</code></td></tr>
+      <tr><td>Rank in group</td><td><code>dense_rank() OVER (PARTITION BY g ORDER BY x)</code></td></tr>
+      <tr><td>Upsert</td><td><code>INSERT ... ON CONFLICT (pk) DO UPDATE SET ... = EXCLUDED.x</code></td></tr>
+      <tr><td>Queue claim</td><td><code>SELECT ... FOR UPDATE SKIP LOCKED LIMIT 1</code></td></tr>
+      <tr><td>JSON extract text</td><td><code>payload -&gt;&gt; 'key'</code></td></tr>
+      <tr><td>JSON contains</td><td><code>payload @&gt; '{"k":"v"}'</code> + GIN index</td></tr>
+      <tr><td>Case-insensitive index</td><td><code>CREATE UNIQUE INDEX ON t (lower(email));</code></td></tr>
+      <tr><td>Prod-safe index</td><td><code>CREATE INDEX CONCURRENTLY ...</code></td></tr>
+      <tr><td>Partial index</td><td><code>... WHERE ts &gt;= '2026-01-01'</code></td></tr>
+      <tr><td>Covering index</td><td><code>... INCLUDE (col1, col2)</code></td></tr>
+      <tr><td>Recursive tree</td><td><code>WITH RECURSIVE t AS (base UNION ALL step)</code></td></tr>
+      <tr><td>Batch insert</td><td><code>INSERT ... VALUES (r1),(r2),... RETURNING</code></td></tr>
+      <tr><td>Serializable retry</td><td>catch SerializationFailure → sleep + retry</td></tr>
+      <tr><td>Read a plan</td><td><code>EXPLAIN (ANALYZE, BUFFERS) &lt;query&gt;</code></td></tr>
+      <tr><td>Kill query</td><td><code>SELECT pg_cancel_backend(pid);</code></td></tr>
+      <tr><td>Load CSV (client)</td><td><code>\copy t FROM 'f.csv' CSV HEADER</code></td></tr>
+    </table>
+  </div>
+
+</div> <!-- /cols -->
+
+</body>
+</html>

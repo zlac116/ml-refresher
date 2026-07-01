@@ -1,6 +1,6 @@
 # toolkit/data_science — Task-indexed drills
 
-Drill scripts in the same exercise format as `toolkit/exercises/data_analysis_drills/`:
+Drill scripts in the same exercise format as `toolkit/data_analysis/mini_drills/`:
 docstring with OBJECTIVE/TIME/TOPICS/EXPECTED OUTPUT/GRADING → setup → TODO stubs → `__main__` grader.
 
 Each drill replaces the previous notebook (`gradient_boosting.ipynb`, `optuna.ipynb`, etc.) with the **same content** in a runnable Python script. Implement each function, then `uv run <file>` to grade yourself.

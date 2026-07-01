@@ -1,0 +1,10 @@
+[project]
+name = "quant-finance-drills"
+version = "0.1.0"
+description = "Quant finance drill exercises (options, futures, portfolio, PnL, risk, volatility, xva)"
+requires-python = ">=3.12, <3.14"
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "scipy>=1.12",
+]

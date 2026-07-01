@@ -32,8 +32,8 @@ between the teaching pipelines and the library cheatsheets:
 Run the playbook on any new dataset before touching modelling. Use the
 decision table to translate verdicts into actions.
 
-## Practice projects (`exercises/`)
+## Practice projects (`drills/`)
 
-Each cheatsheet has a matching practice project in `toolkit/exercises/` — a
+Each cheatsheet has a matching practice project in reference-topic dirs (`toolkit/data_analysis/`, `toolkit/data_science/`) — a
 real quant question that forces 70-80% of the cheatsheet's patterns naturally.
-See `toolkit/exercises/README.md` for the full list and suggested sequence.
+See `toolkit/data_analysis/PROJECTS_README.md` for the full list and suggested sequence.

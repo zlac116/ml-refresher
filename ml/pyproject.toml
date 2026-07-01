@@ -1,0 +1,26 @@
+[project]
+name = "ml-workspace"
+version = "0"
+description = "ML subject workspace — regression / classification / time-series / neural networks + capstones"
+requires-python = ">=3.10, <3.14"
+
+# Workspace root is virtual (not installed itself)
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = [
+    "04_neural_networks",
+    "04_neural_networks/capstones/01_tabular_classifier_wine",
+    "04_neural_networks/capstones/02_regression_california_housing",
+]
+
+# Hoisted to workspace root — every member's torch resolves to CPU-only wheels
+# without repeating this block per pyproject.
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

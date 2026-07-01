@@ -94,7 +94,7 @@ recent hardcoded values if the API is unavailable.
 3. Run the validation cell to check your work matches the closed-form / QuantLib.
 4. Do all exercises with solutions hidden. Reveal one at a time.
 5. Read **Interview Q&A** out loud, in your own words. If you can't, you don't know it.
-6. Drop into `quant_finance/exercises/` for the cross-topic problems.
+6. Drop into `quant_finance/drills/` for the cross-topic problems.
 
 ## Suggested order
 

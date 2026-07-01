@@ -1,0 +1,27 @@
+[project]
+name = "quant-finance-workspace"
+version = "0"
+description = "Quant finance subject workspace — options/risk/FI/portfolio/vol/stoch-calc + capstones + drills"
+requires-python = ">=3.12, <3.14"
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = [
+    "capstones/01_rates_portfolio",
+    "capstones/02_lmm_nn_surrogate",
+    "capstones/02_lmm_nn_surrogate/agents_extension",
+    "capstones/02_lmm_nn_surrogate/api_extension",
+    "07_market_risk_engine/drills",
+    "drills",
+]
+
+# Hoisted — for the NN surrogate api_extension which pulls torch
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

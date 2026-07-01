@@ -2,7 +2,7 @@
 name = "agents-extension"
 version = "0.1.0"
 description = "Multi-agent LangGraph workflow that drives the LMM surrogate API"
-requires-python = ">=3.12"
+requires-python = ">=3.12, <3.14"
 dependencies = [
     # LangChain + LangGraph 1.x — released late 2025 with stability guarantees
     # (no breaking changes promised until 2.0). The 1.x line introduced
@@ -14,14 +14,13 @@ dependencies = [
     # HTTP client for calling the surrogate API
     "httpx>=0.28",
     # Config (mirrors api_extension's pydantic-settings pattern)
-    "pydantic-settings>=2.14",
+    "pydantic-settings>=2.6",
     # CLI niceness
-    "rich>=15.0",
-    "langchain-openai>=1.2.2",
-    "numpy>=2.4.6",
-    "pytest>=9.0.3",
-    "mlflow>=3.13.0",
-    "torch>=2.12.0",
+    "rich>=13.0",
+    "langchain-openai>=1.1",
+    "numpy>=1.26",
+    "mlflow>=2.12",
+    "torch>=2.2",
 ]
 
 [dependency-groups]

@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Options + Fixed Income — Whiteboard Card</title>
+<style>
+@page { size: A4 landscape; margin: 0.35cm 0.35cm 0.45cm 0.35cm;
+        @bottom-right { content: counter(page) " / " counter(pages); font: 6pt 'DejaVu Sans', sans-serif; color: #aaa; } }
+* { box-sizing: border-box; }
+body { font-family: 'DejaVu Sans', sans-serif; font-size: 7pt; line-height: 1.15; color: #1a1a1a; margin: 0; padding: 0; }
+code, .formula, .py, pre { font-family: 'DejaVu Sans Mono', monospace; font-size: 6.6pt; }
+
+.banner { background: #7c5c00; color: #fff; padding: 3px 7px; margin-bottom: 3px; border-radius: 2px; }
+.banner h1 { font-size: 11pt; margin: 0; }
+.banner .sub { font-size: 6.6pt; color: #f0e2b8; margin-top: 0; }
+.banner .sub code { color: #fff; background: rgba(0,0,0,0.18); padding: 0 2px; border-radius: 1px; }
+
+.cols { column-count: 3; column-gap: 5px; column-rule: 1px solid #ccc; column-fill: balance; }
+
+.sec { break-inside: auto; margin: 0 0 1px 0; padding: 1px 4px 2px 5px; border-radius: 2px; border-left: 3px solid; }
+.sec h2 { font-size: 7.8pt; font-weight: bold; margin: 0; padding: 0 3px; border-radius: 2px; color: #fff; display: inline-block; }
+.sec h3 { font-size: 6.7pt; font-weight: bold; margin: 1px 0 0 0; color: #7c5c00; text-transform: uppercase; letter-spacing: 0.04em; }
+.sec > *:last-child { margin-bottom: 0; }
+
+.master  { background: #fff8d9; border-left-color: #806c0e; }  .master  h2 { background: #806c0e; }
+.frame   { background: #e7f2fa; border-left-color: #2e6b9c; }  .frame   h2 { background: #2e6b9c; }
+.model   { background: #e7fae9; border-left-color: #2e9c47; }  .model   h2 { background: #2e9c47; }
+.metric  { background: #f0e7fa; border-left-color: #6e3e9c; }  .metric  h2 { background: #6e3e9c; }
+.cv      { background: #e7faf9; border-left-color: #1a8a8a; }  .cv      h2 { background: #1a8a8a; }
+.tune    { background: #fbf2e6; border-left-color: #b06c0e; }  .tune    h2 { background: #b06c0e; }
+.diag    { background: #f7e6d5; border-left-color: #a05210; }  .diag    h2 { background: #a05210; }
+.deploy  { background: #ededed; border-left-color: #555;    }  .deploy  h2 { background: #555;    }
+.trap    { background: #fae0e0; border-left-color: #7a1a1a; }  .trap    h2 { background: #7a1a1a; }
+
+.p { margin: 0; }
+.p .name { font-weight: bold; font-size: 7.2pt; }
+.p .name .tag { font-size: 6pt; color: #555; font-weight: normal; }
+.formula { display: block; background: rgba(255,255,255,0.55); border-left: 2px solid currentColor;
+           margin: 0; padding: 0 4px; white-space: pre-wrap; overflow-wrap: anywhere;
+           font-family: 'DejaVu Sans Mono', monospace; font-size: 6.6pt; }
+.py { display: block; background: rgba(0,0,0,0.04); border-left: 2px solid #555;
+      margin: 0; padding: 0 4px; overflow-wrap: anywhere; white-space: pre-wrap;
+      font-family: 'DejaVu Sans Mono', monospace; font-size: 6.6pt; }
+.p .use { font-style: italic; color: #2a2a2a; font-size: 6.5pt; }
+.p .rf  { font-size: 6.1pt; color: #444; }
+
+.recipe ol { margin: 0; padding: 0 0 0 14px; }
+.recipe ol li { margin: 0; }
+.recipe .step { font-weight: bold; }
+table { border-collapse: collapse; width: 100%; font-size: 6.4pt; margin: 1px 0; break-inside: auto; }
+th, td { border: 1px solid #c0c0c0; padding: 0.5px 3px; text-align: left; vertical-align: top; }
+th { background: #e8e8e8; font-weight: bold; }
+td code { word-break: break-all; overflow-wrap: anywhere; }
+ul.tight { margin: 0; padding: 0 0 0 13px; break-inside: auto; }
+ul.tight li { margin: 0; }
+
+.callout { background: #fff; border-left: 3px solid #d4a800; padding: 0 4px; margin: 1px 0; font-size: 6.3pt; }
+.danger  { background: #fff; border-left: 3px solid #b8341a; padding: 0 4px; margin: 1px 0; font-size: 6.3pt; }
+.danger b:first-child { color: #b8341a; }
+
+.sec.trap { break-inside: auto; }
+.sec h2 + *, .sec h3 + * { break-before: avoid; }
+</style>
+</head>
+<body>
+
+<div class="banner">
+  <h1>Options + Fixed Income — Whiteboard Card</h1>
+  <div class="sub">The must-memorise formulas: BS-Merton · Greeks · Black-76 · put-call parity · duration/convexity · DV01 · curve · forwards · swaps · LMM. Source: <code>quant_finance/CORE_FORMULAS.md</code> · <b>drill: cover the formula, write from memory, check</b></div>
+</div>
+
+<div class="cols">
+
+  <!-- ════════════ MASTER RECIPE ════════════ -->
+  <div class="sec master">
+    <h2>◆ Universal identity (every derivative price)</h2>
+    <div class="formula">V₀  =  e^(−rT) · E^Q[ Φ(S_T) ]</div>
+    <div class="use">Price of any European-style derivative = discounted expectation of payoff under risk-neutral measure Q. BS is one solution (closed-form for GBM + European payoff); binomial trees, MC, PDE are others.</div>
+    <div class="callout"><b>Golden rules:</b> pricing lives in the RISK-NEUTRAL measure (drift = r, not μ). Hedging lives in the PHYSICAL measure. Girsanov + Δθ = (μ−r)/σ bridges them. Everything else (Heston char fn, LMM drift, LSMC bases) is reach-for.</div>
+  </div>
+
+  <!-- ════════════ BLACK-SCHOLES ════════════ -->
+  <div class="sec frame">
+    <h2>● Black-Scholes-Merton (spot form)</h2>
+
+    <div class="p">
+      <div class="name">d₁ / d₂</div>
+      <div class="formula">d₁ = [ln(S/K) + (r − q + ½σ²)T] / (σ√T)
+d₂ = d₁ − σ√T</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Call / Put</div>
+      <div class="formula">C = S·e^(−qT)·N(d₁) − K·e^(−rT)·N(d₂)
+P = K·e^(−rT)·N(−d₂) − S·e^(−qT)·N(−d₁)</div>
+      <div class="use"><b>Inputs</b>: S=spot, K=strike, T=maturity (yrs), r=risk-free, q=div yield (continuous; drop for non-div stock), σ=vol. <b>N</b>=std-normal CDF. <b>Output</b>: option value at t=0 (same units as S).</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Toy example (ATM call, no divs)</div>
+      <div class="py">S=100, K=100, r=0.05, q=0, σ=0.20, T=1
+d₁ = [ln(1) + (0.05 + 0.02)·1] / 0.20  = 0.35
+d₂ = 0.35 − 0.20 = 0.15
+N(0.35) = 0.6368,  N(0.15) = 0.5596
+C = 100·0.6368 − 100·e^(−0.05)·0.5596
+  = 63.68 − 53.23 = 10.45</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Python (canonical)</div>
+      <div class="py">from math import log, sqrt, exp
+from scipy.stats import norm
+
+def bs_call(S, K, T, r, sigma, q=0.0):
+    d1 = (log(S/K) + (r - q + 0.5*sigma**2)*T) / (sigma*sqrt(T))
+    d2 = d1 - sigma*sqrt(T)
+    return S*exp(-q*T)*norm.cdf(d1) - K*exp(-r*T)*norm.cdf(d2)
+
+def bs_put(S, K, T, r, sigma, q=0.0):
+    d1 = (log(S/K) + (r - q + 0.5*sigma**2)*T) / (sigma*sqrt(T))
+    d2 = d1 - sigma*sqrt(T)
+    return K*exp(-r*T)*norm.cdf(-d2) - S*exp(-q*T)*norm.cdf(-d1)</div>
+    </div>
+  </div>
+
+  <!-- ════════════ PUT-CALL PARITY ════════════ -->
+  <div class="sec frame">
+    <h2>● Put-call parity (model-free)</h2>
+    <div class="formula">C − P = S·e^(−qT) − K·e^(−rT)</div>
+    <div class="use"><b>Holds independent of any model</b> — pure static replication (buy call + sell put + short forward = zero). Failure = arbitrage OR stale quote OR missed dividend / hard-to-borrow.</div>
+    <div class="callout">Use to (a) derive one side from the other, (b) sanity-check pricer outputs, (c) spot data errors on live quote screens.</div>
+  </div>
+
+  <!-- ════════════ BLACK-76 ════════════ -->
+  <div class="sec frame">
+    <h2>● Black-76 (forward form)</h2>
+    <div class="formula">d₁ = [ln(F/K) + ½σ²T] / (σ√T),   d₂ = d₁ − σ√T
+C = e^(−rT)·[F·N(d₁) − K·N(d₂)]
+P = e^(−rT)·[K·N(−d₂) − F·N(−d₁)]</div>
+    <div class="use"><b>Use for anything quoted on a FORWARD</b>: swaptions (F = fwd swap rate), caplets (F = fwd LIBOR), FX (F = fwd FX), commodity futures. No q needed — the forward already prices carry.</div>
+    <div class="rf"><b>Bridge to BS-Merton:</b> substitute F = S·e^((r−q)T) into Black-76 → recover BS-Merton for spot options.</div>
+  </div>
+
+  <!-- ════════════ GREEKS ════════════ -->
+  <div class="sec model">
+    <h2>▲ Greeks (BS-Merton call)</h2>
+    <table>
+      <tr><th>Greek</th><th>Call formula</th><th>Meaning</th></tr>
+      <tr><td>Δ delta</td><td><code>e^(−qT)·N(d₁)</code></td><td>∂C/∂S · hedge ratio</td></tr>
+      <tr><td>Γ gamma</td><td><code>e^(−qT)·φ(d₁) / (S·σ·√T)</code></td><td>∂²C/∂S² · convexity (same call/put)</td></tr>
+      <tr><td>ν vega</td><td><code>S·e^(−qT)·φ(d₁)·√T</code></td><td>∂C/∂σ · vol sensitivity (same call/put)</td></tr>
+      <tr><td>Θ theta</td><td><code>−[S·e^(−qT)·φ(d₁)·σ]/(2√T)
+− r·K·e^(−rT)·N(d₂)
++ q·S·e^(−qT)·N(d₁)</code></td><td>∂C/∂t · time decay (usually neg for long option)</td></tr>
+      <tr><td>ρ rho</td><td><code>K·T·e^(−rT)·N(d₂)</code></td><td>∂C/∂r · rate sensitivity</td></tr>
+    </table>
+    <div class="rf"><b>φ</b> = std-normal PDF. <b>Put signs</b>: Δ_put = Δ_call − e^(−qT); ρ_put = −K·T·e^(−rT)·N(−d₂). Γ, ν identical for call/put.</div>
+    <div class="p">
+      <div class="name">Toy Greeks (ATM call, S=K=100, r=0.05, σ=0.20, T=1)</div>
+      <div class="formula">Δ ≈ N(0.35)      = 0.637
+Γ ≈ φ(0.35)/(100·0.20·1) = 0.0188
+ν ≈ 100·φ(0.35)·1 = 37.52  (per unit σ; per 1 vol pt ≈ 0.375)
+Θ ≈ −6.4/year (calendar; −6.4/252 ≈ −0.025/trading day)
+ρ ≈ 100·1·e^(−0.05)·N(0.15) = 53.2 (per 100% rate; per 1bp ≈ 0.0053)</div>
+    </div>
+  </div>
+
+  <!-- ════════════ RISK-NEUTRAL PRICING ════════════ -->
+  <div class="sec master">
+    <h2>◆ Risk-neutral pricing (why BS works)</h2>
+    <div class="formula">V₀ = e^(−rT) · E^Q[Φ(S_T)]           ← universal identity
+Under Q:  dS = r·S·dt + σ·S·dW_Q     ← drift = r (not μ)
+Girsanov: θ = (μ − r)/σ  bridges P↔Q</div>
+    <div class="use">Under measure Q, the discounted price of any tradable asset is a martingale. BS falls out for GBM + European payoff. Binomial trees replicate this identity in discrete time; MC estimates the E^Q directly.</div>
+  </div>
+
+  <!-- ════════════ BOND PRICING ════════════ -->
+  <div class="sec metric">
+    <h2>◆ Bond pricing</h2>
+
+    <div class="p">
+      <div class="name">Discrete-compound price</div>
+      <div class="formula">P = Σ_t  CF_t / (1+y)^t</div>
+      <div class="use"><b>CF_t</b> = cashflow at time t (coupons + principal). <b>y</b> = YTM (single discount rate). <b>Output</b>: dirty price.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Continuous compound</div>
+      <div class="formula">P = Σ_t  CF_t · exp(−y·t)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Toy example (5y 4% annual coupon, y=5%)</div>
+      <div class="formula">CFs: 4, 4, 4, 4, 104
+P = 4/1.05 + 4/1.05² + 4/1.05³ + 4/1.05⁴ + 104/1.05⁵
+  = 3.810 + 3.628 + 3.455 + 3.291 + 81.487
+  = 95.67   (trades at discount — y &gt; coupon)</div>
+    </div>
+  </div>
+
+  <!-- ════════════ DURATION / CONVEXITY ════════════ -->
+  <div class="sec metric">
+    <h2>◆ Duration + convexity + DV01</h2>
+
+    <div class="p">
+      <div class="name">Macaulay + Modified duration</div>
+      <div class="formula">D_Mac = (1/P) · Σ_t  t · CF_t/(1+y)^t
+D_Mod = D_Mac / (1+y)</div>
+      <div class="use">D_Mac = weighted average time to CF (years). D_Mod = price elasticity to yield. Interpretation: <code>∂P/∂y ≈ −D_Mod · P</code>.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Convexity</div>
+      <div class="formula">Conv = (1/P) · Σ_t  t(t+1)·CF_t / (1+y)^(t+2)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Price change (2nd-order Taylor)</div>
+      <div class="formula">ΔP/P  ≈  −D_Mod·Δy  +  ½·Conv·(Δy)²</div>
+      <div class="use">First term is duration hedge; second is the convexity "kick" that saves you when yields move a lot (both directions).</div>
+    </div>
+
+    <div class="p">
+      <div class="name">DV01 (dollar value of 1bp)</div>
+      <div class="formula">DV01 = D_Mod · P · 0.0001</div>
+      <div class="use">$ P&amp;L from a +1bp parallel curve move. For the toy 5y bond above at y=5%: D_Mac = 4.62y, D_Mod = D_Mac/1.05 = 4.40y, DV01 = 4.40·95.67·0.0001 ≈ $0.042 per $100 face.</div>
+    </div>
+  </div>
+
+  <!-- ════════════ CURVE + FORWARDS ════════════ -->
+  <div class="sec cv">
+    <h2>● Forward rate + LIBOR product</h2>
+
+    <div class="p">
+      <div class="name">Forward rate (continuous)</div>
+      <div class="formula">f(t₁, t₂)  =  (1/(t₂−t₁)) · ln[ P(0,t₁) / P(0,t₂) ]</div>
+      <div class="use"><b>P(0,T)</b> = today's price of a zero-coupon bond paying $1 at T. <b>f(t₁,t₂)</b> = the fair rate agreed today for a loan running from t₁ to t₂. Directly bootstrappable from a discount curve.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Bond from forward LIBORs (telescoping product)</div>
+      <div class="formula">P(t, T_n) = P(t, T₀) · Π_{i=0..n−1}  1 / (1 + δ_i · L_i(t))
+L_i(t) = (1/δ_i) · [ P(t,T_i)/P(t,T_{i+1}) − 1 ]</div>
+      <div class="use">Discrete analogue of <code>P(t,T) = exp(−∫r du)</code>. <b>δ_i</b> = accrual (yr fraction). Used everywhere: swap pricing, caplet payoffs, LMM simulator, curve construction.</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Toy: 6M forward from 6M+12M ZCB</div>
+      <div class="formula">P(0, 0.5) = 0.9754  (6M ZCB)
+P(0, 1.0) = 0.9512  (12M ZCB)
+f(0.5, 1.0) = (1/0.5)·ln(0.9754/0.9512) = 5.02%
+(annual simple L = (P(0.5)/P(1.0) − 1)/0.5 = 5.09%)</div>
+    </div>
+  </div>
+
+  <!-- ════════════ PAR SWAP ════════════ -->
+  <div class="sec cv">
+    <h2>● Par swap rate</h2>
+    <div class="formula">S = [ P(0,T₀) − P(0,T_n) ] / [ Σ_{i=1..n} τ_i · P(0,T_i) ]</div>
+    <div class="use"><b>Numerator</b> = PV of floating leg (telescopes to first ZCB − last ZCB via LIBOR product identity). <b>Denominator</b> = fixed leg PV01 (annuity). <b>S</b> is the fixed rate that sets PV(swap) = 0 at inception.</div>
+    <div class="p">
+      <div class="name">Toy: 2y annual swap</div>
+      <div class="formula">P(0,1) = 0.9524, P(0,2) = 0.9070
+S = (1 − 0.9070) / (1·0.9524 + 1·0.9070)
+  = 0.0930 / 1.8594 = 5.00%</div>
+    </div>
+  </div>
+
+  <!-- ════════════ LMM ════════════ -->
+  <div class="sec tune">
+    <h2>▲ LIBOR Market Model (LMM/BGM)</h2>
+    <div class="formula">dL_i(t) = σ_i(t) · L_i(t) · dW_i^(T_{i+1})(t),   i = 0..N−1</div>
+    <div class="use">Each forward LIBOR L_i is <b>lognormal under its own T_{i+1}-forward measure</b>. So caplets price by Black-76 with vol σ_i for free — the model is calibrated to the cap-vol surface by construction.</div>
+    <div class="danger"><b>Drift correction</b> when switching to a common measure (terminal Q^{T_N} or spot Q^B) is derived on the whiteboard from Girsanov + numeraire change. Don't memorise index ranges + signs — derive them.</div>
+    <div class="rf"><b>Calibration workflow:</b> (1) bootstrap discount curve from LIBOR + swap quotes. (2) strip caplet vols from cap prices via Black-76. (3) fit σ_i(t) to caplet vols. (4) simulate under chosen measure with drift correction. (5) reprice + verify.</div>
+  </div>
+
+  <!-- ════════════ IMPLIED VOL ════════════ -->
+  <div class="sec model">
+    <h2>▲ Implied vol — inversion + ATM approx</h2>
+    <div class="formula">Solve σ s.t.  BS(σ) = market_price
+Numerical: Brent's method on f(σ)=BS(σ)−mkt, σ ∈ [1e-6, 5]
+Brenner-Subrahmanyam ATM approx:
+   σ_ATM  ≈  (C · √(2π/T)) / S       (call, r=q=0)
+   (accurate to ~1% for near-ATM; use as starting guess)</div>
+    <div class="use"><b>Inputs</b>: market call price C, spot S, maturity T. <b>Output</b>: implied vol. Use for a warm-start on Newton/Brent, or a quick sanity check ("does this quoted price imply a sensible vol?").</div>
+  </div>
+
+  <!-- ════════════ CANONICAL WORKFLOW ════════════ -->
+  <div class="sec deploy">
+    <h2>◆ Rates-desk canonical workflow</h2>
+    <ol class="recipe">
+      <li><span class="step">Discount curve</span> — bootstrap from deposits (short) + FRA (middle) + IRS (long) → P(0, T_i) at each pillar</li>
+      <li><span class="step">Forwards</span> — L_i = (P(0,T_i)/P(0,T_{i+1}) − 1) / δ_i (simple) or continuous form</li>
+      <li><span class="step">Par swap</span> — S = (P₀−P_n) / Σ τ_i·P(0,T_i)</li>
+      <li><span class="step">Swap PV</span> — PV = N·[c·A − (1 − P_n)] where c = fixed rate, A = annuity factor</li>
+      <li><span class="step">DV01</span> — bump curve +1bp, reprice, ΔPV</li>
+      <li><span class="step">Vega/Caplet</span> — Black-76 on each fwd L_i with caplet vol → sum for cap</li>
+    </ol>
+  </div>
+
+  <!-- ════════════ REACH-FOR ════════════ -->
+  <div class="sec diag">
+    <h2>◆ Reach-for (know NAME, look up formula)</h2>
+    <table>
+      <tr><th>Topic</th><th>When it matters</th></tr>
+      <tr><td>SVI parameterisation (Gatheral 2004)</td><td>fit vol surface for exotic pricing</td></tr>
+      <tr><td>Heston characteristic function (Lewis 2001)</td><td>stoch-vol pricing via FFT</td></tr>
+      <tr><td>Carr-Madan FFT</td><td>fast options pricing when char fn known</td></tr>
+      <tr><td>SABR Hagan approx</td><td>swaption/cap smile fit</td></tr>
+      <tr><td>Bachelier (normal model)</td><td>near-zero / negative forwards (rates '20-22, oil crash)</td></tr>
+      <tr><td>Brenner-Subrahmanyam IV approx</td><td>near-ATM IV closed form</td></tr>
+      <tr><td>Longstaff-Schwartz (LSMC)</td><td>American options via MC + regression</td></tr>
+      <tr><td>Black-Litterman</td><td>portfolio views + prior blend</td></tr>
+      <tr><td>Nelson-Siegel curve fit</td><td>smooth yield curve param</td></tr>
+      <tr><td>LMM drift under Q^B / Q^{T_N}</td><td>path simulation — derive from Girsanov</td></tr>
+      <tr><td>Rebonato correlation param</td><td>LMM inter-forward corr</td></tr>
+    </table>
+  </div>
+
+  <!-- ════════════ TRAPS ════════════ -->
+  <div class="sec trap">
+    <h2>▲ Top traps (6-month memory)</h2>
+    <ul class="tight">
+      <li><b>Drift = r, not μ</b> in the pricing formulas — you're always under Q. μ is only for hedging / simulation P&amp;L.</li>
+      <li><b>q = 0 for non-div stocks</b> — but not zero for FX (q = foreign rate), futures (q = r), or continuous-div ETFs.</li>
+      <li><b>Black-76 vs BS-Merton</b> — use B76 when you have a FORWARD (swaption, caplet, futures, FX). Use BS-M when you have SPOT + div-yield.</li>
+      <li><b>d₁ vs d₂ mix-up</b> — call price uses N(d₁) for the S term and N(d₂) for the K term. Remember: d₂ &lt; d₁; both flip sign for put.</li>
+      <li><b>YTM ≠ real interest rate</b> — YTM is the single rate that prices the given CF stream. Different bonds with same maturity CAN have different YTMs.</li>
+      <li><b>Dirty vs clean price</b> — clean = dirty − accrued; quoted is clean, settled is dirty.</li>
+      <li><b>Duration signs</b> — D_Mod is positive; the effect on P is <code>−D_Mod·Δy</code> (rate up → price down).</li>
+      <li><b>Convexity gift</b> — always positive for vanilla bonds; it means D_Mod overstates loss when yields RISE and understates gain when yields FALL.</li>
+      <li><b>DV01 units</b> — dollars per +1bp move. "PV01" is the same thing for a swap notionalised at $1.</li>
+      <li><b>Forward rate is FORWARD-LOOKING</b> — f(t₁,t₂) is agreed today for a loan starting at t₁. Not the actual rate that will be observed.</li>
+      <li><b>LMM index-range signs</b> — never memorise; derive from Girsanov every time. Wrong drift = biased simulation.</li>
+      <li><b>Cap-vol vs swaption-vol</b> — different products, different smiles. Same underlying rates but different measures.</li>
+      <li><b>Greeks blow up near expiry</b> — Γ → ∞ ATM as T → 0; Θ → −∞. Rebalance hedge more frequently as T shrinks.</li>
+      <li><b>Vega convention</b> — usually per 1 vol pt (0.01 abs) but sometimes per 1% (0.01 relative). Check your pricer's convention.</li>
+      <li><b>Put-call parity broken</b> = missed div OR hard-to-borrow OR stale quote OR discrete divs vs continuous q assumption.</li>
+    </ul>
+  </div>
+
+  <!-- ════════════ QUICK REFERENCE ════════════ -->
+  <div class="sec master">
+    <h2>◆ Quick-reference (recall in 5 seconds)</h2>
+    <table>
+      <tr><th>What</th><th>Formula</th></tr>
+      <tr><td>BS d₁</td><td><code>[ln(S/K) + (r−q+½σ²)T] / (σ√T)</code></td></tr>
+      <tr><td>BS d₂</td><td><code>d₁ − σ√T</code></td></tr>
+      <tr><td>BS Call</td><td><code>S·e^(−qT)·N(d₁) − K·e^(−rT)·N(d₂)</code></td></tr>
+      <tr><td>BS Put</td><td><code>K·e^(−rT)·N(−d₂) − S·e^(−qT)·N(−d₁)</code></td></tr>
+      <tr><td>Put-call parity</td><td><code>C − P = S·e^(−qT) − K·e^(−rT)</code></td></tr>
+      <tr><td>Black-76 call</td><td><code>e^(−rT)·[F·N(d₁) − K·N(d₂)]</code>, d₁ = [ln(F/K)+½σ²T]/(σ√T)</td></tr>
+      <tr><td>Delta (call)</td><td><code>e^(−qT)·N(d₁)</code></td></tr>
+      <tr><td>Gamma</td><td><code>e^(−qT)·φ(d₁) / (S·σ·√T)</code></td></tr>
+      <tr><td>Vega</td><td><code>S·e^(−qT)·φ(d₁)·√T</code></td></tr>
+      <tr><td>Risk-neutral pricing</td><td><code>V₀ = e^(−rT)·E^Q[payoff]</code></td></tr>
+      <tr><td>Bond price</td><td><code>P = Σ CF_t/(1+y)^t</code></td></tr>
+      <tr><td>Macaulay duration</td><td><code>D_Mac = (1/P)·Σ t·CF_t/(1+y)^t</code></td></tr>
+      <tr><td>Modified duration</td><td><code>D_Mod = D_Mac / (1+y)</code></td></tr>
+      <tr><td>Convexity</td><td><code>Conv = (1/P)·Σ t(t+1)·CF_t/(1+y)^(t+2)</code></td></tr>
+      <tr><td>Price change</td><td><code>ΔP/P ≈ −D_Mod·Δy + ½·Conv·(Δy)²</code></td></tr>
+      <tr><td>DV01</td><td><code>D_Mod · P · 0.0001</code></td></tr>
+      <tr><td>Forward rate</td><td><code>f(t₁,t₂) = ln(P(t₁)/P(t₂)) / (t₂−t₁)</code></td></tr>
+      <tr><td>LIBOR product</td><td><code>P(0,T_n) = P(0,T₀) · Π (1+δ_i·L_i)^(−1)</code></td></tr>
+      <tr><td>Par swap</td><td><code>S = (P₀−P_n) / Σ τ_i·P(0,T_i)</code></td></tr>
+      <tr><td>LMM spec</td><td><code>dL_i = σ_i·L_i·dW_i^(T_{i+1})</code>  (each fwd lognormal in own T-fwd measure)</td></tr>
+    </table>
+  </div>
+
+  <!-- ════════════ DRILL PROTOCOL ════════════ -->
+  <div class="sec master">
+    <h2>◆ Daily drill protocol (10-15 min)</h2>
+    <ol class="recipe">
+      <li>Open a blank cell.</li>
+      <li>Pick one section (rotate: Options / Curve / Bond / Swap / LMM).</li>
+      <li>Write each formula from memory.</li>
+      <li>Check against this card.</li>
+      <li>For ones you missed, also implement in code (write <code>bs_call(S,K,T,r,σ)</code> from scratch — no peeking).</li>
+      <li>Whole card drilled in a week; whole set retained if drilled daily.</li>
+    </ol>
+    <div class="callout"><b>Retrieval is the only thing that cements; re-reading is theatre.</b> If you can derive it, the formula is just bookkeeping. If you can't, work through the notebook that owns it.</div>
+  </div>
+
+</div> <!-- /cols -->
+
+</body>
+</html>

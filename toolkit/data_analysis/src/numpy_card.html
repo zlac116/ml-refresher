@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>NumPy + SciPy — Reference Card</title>
+<style>
+@page { size: A4 landscape; margin: 0.35cm 0.35cm 0.45cm 0.35cm;
+        @bottom-right { content: counter(page) " / " counter(pages); font: 6pt 'DejaVu Sans', sans-serif; color: #aaa; } }
+* { box-sizing: border-box; }
+body { font-family: 'DejaVu Sans', sans-serif; font-size: 7pt; line-height: 1.15; color: #1a1a1a; margin: 0; padding: 0; }
+code, .formula, .py, pre { font-family: 'DejaVu Sans Mono', monospace; font-size: 6.6pt; }
+
+.banner { background: #4c9df8; color: #fff; padding: 3px 7px; margin-bottom: 3px; border-radius: 2px; }
+.banner h1 { font-size: 11pt; margin: 0; }
+.banner .sub { font-size: 6.6pt; color: #e0edfb; margin-top: 0; }
+.banner .sub code { color: #fff; background: rgba(0,0,0,0.18); padding: 0 2px; border-radius: 1px; }
+
+.cols { column-count: 3; column-gap: 5px; column-rule: 1px solid #ccc; column-fill: auto; }
+
+.sec { break-inside: auto; margin: 0 0 1px 0; padding: 1px 4px 2px 5px; border-radius: 2px; border-left: 3px solid; }
+.sec h2 { font-size: 7.8pt; font-weight: bold; margin: 0; padding: 0 3px; border-radius: 2px; color: #fff; display: inline-block; }
+.sec h3 { font-size: 6.7pt; font-weight: bold; margin: 1px 0 0 0; color: #013243; text-transform: uppercase; letter-spacing: 0.04em; }
+.sec > *:last-child { margin-bottom: 0; }
+
+.master  { background: #fff8d9; border-left-color: #806c0e; }  .master  h2 { background: #806c0e; }
+.frame   { background: #e7f2fa; border-left-color: #2e6b9c; }  .frame   h2 { background: #2e6b9c; }
+.model   { background: #e7fae9; border-left-color: #2e9c47; }  .model   h2 { background: #2e9c47; }
+.metric  { background: #f0e7fa; border-left-color: #6e3e9c; }  .metric  h2 { background: #6e3e9c; }
+.cv      { background: #e7faf9; border-left-color: #1a8a8a; }  .cv      h2 { background: #1a8a8a; }
+.tune    { background: #fbf2e6; border-left-color: #b06c0e; }  .tune    h2 { background: #b06c0e; }
+.diag    { background: #f7e6d5; border-left-color: #a05210; }  .diag    h2 { background: #a05210; }
+.deploy  { background: #ededed; border-left-color: #555;    }  .deploy  h2 { background: #555;    }
+.trap    { background: #fae0e0; border-left-color: #7a1a1a; }  .trap    h2 { background: #7a1a1a; }
+
+.p { margin: 0; }
+.p .name { font-weight: bold; font-size: 7.2pt; }
+.p .name .tag { font-size: 6pt; color: #555; font-weight: normal; }
+.p .formula, .p .py { margin: 0; padding: 0 4px; }
+.py, .formula { display: block; margin: 0; padding: 0 4px; overflow-wrap: anywhere;
+                white-space: pre-wrap; font-family: 'DejaVu Sans Mono', monospace; font-size: 6.6pt; }
+.py { background: rgba(0,0,0,0.04); border-left: 2px solid #555; }
+.formula { background: rgba(255,255,255,0.55); border-left: 2px solid currentColor; }
+.p .use { font-style: italic; color: #2a2a2a; font-size: 6.5pt; }
+.p .rf  { font-size: 6.1pt; color: #444; }
+
+.recipe ol { margin: 0; padding: 0 0 0 14px; }
+.recipe ol li { margin: 0; }
+.recipe .step { font-weight: bold; }
+table { border-collapse: collapse; width: 100%; font-size: 6.4pt; margin: 1px 0; break-inside: auto; }
+th, td { border: 1px solid #c0c0c0; padding: 0.5px 3px; text-align: left; vertical-align: top; }
+th { background: #e8e8e8; font-weight: bold; }
+td code { word-break: break-all; overflow-wrap: anywhere; }
+ul.tight { margin: 0; padding: 0 0 0 13px; break-inside: auto; }
+ul.tight li { margin: 0; }
+
+.callout { background: #fff; border-left: 3px solid #d4a800; padding: 0 4px; margin: 1px 0; font-size: 6.3pt; }
+.danger  { background: #fff; border-left: 3px solid #b8341a; padding: 0 4px; margin: 1px 0; font-size: 6.3pt; }
+.danger b:first-child { color: #b8341a; }
+
+.sec.trap { break-inside: auto; }
+.sec h2 + *, .sec h3 + * { break-before: avoid; }
+</style>
+</head>
+<body>
+
+<div class="banner">
+  <h1>NumPy + SciPy — Reference Card</h1>
+  <div class="sub">arrays · indexing · broadcasting · axis · linalg · RNG · ufuncs + scipy stats/optimize/sparse. Stack: <code>numpy ≥2.0 · scipy ≥1.14 · Python ≥3.10</code> · Modern: <code>np.random.default_rng()</code>, explicit axis</div>
+</div>
+
+<div class="cols">
+
+  <!-- ════════════ MASTER PATTERN ════════════ -->
+  <div class="sec master">
+    <h2>◆ Master pattern (every numpy script)</h2>
+    <ol class="recipe">
+      <li><span class="step">RNG</span> — <code>rng = np.random.default_rng(seed)</code> (not <code>np.random.seed</code>)</li>
+      <li><span class="step">Create</span> — <code>np.zeros / arange / linspace / from list</code>. Declare dtype.</li>
+      <li><span class="step">Reshape</span> — <code>.reshape(-1, n)</code> for -1 auto-dim</li>
+      <li><span class="step">Index / mask</span> — basic slice, boolean, fancy; know view-vs-copy</li>
+      <li><span class="step">Vectorise</span> — ufuncs; specify <code>axis=</code> on reductions</li>
+      <li><span class="step">Linalg</span> — <code>solve</code> not <code>inv @</code>; specific factorisations</li>
+    </ol>
+    <div class="callout"><b>Mental model:</b> think in ARRAYS + AXES, not loops. <code>axis=0</code> collapses rows (result has cols); <code>axis=1</code> collapses cols (result has rows).</div>
+  </div>
+
+  <div class="sec master">
+    <h2>◆ Starter · reproducible skeleton</h2>
+    <div class="py">import numpy as np
+from numpy.typing import NDArray
+
+SEED = 42
+rng = np.random.default_rng(SEED)              # canonical RNG (not np.random.seed)
+
+# Explicit dtypes — avoid float64/int64 default surprises
+X = rng.standard_normal((1000, 5)).astype(np.float32)
+y = rng.integers(0, 2, size=1000, dtype=np.int32)
+
+# Or with schema:
+def sample(n: int) -> tuple[NDArray[np.float32], NDArray[np.int32]]:
+    X = rng.standard_normal((n, 5), dtype=np.float32)
+    y = rng.integers(0, 2, size=n, dtype=np.int32)
+    return X, y
+
+# Debug utilities
+np.set_printoptions(precision=4, suppress=True, linewidth=140)
+np.testing.assert_allclose(a, b, rtol=1e-5)      # test near-equal</div>
+  </div>
+
+  <!-- ════════════ CREATION ════════════ -->
+  <div class="sec frame">
+    <h2>● Array creation</h2>
+    <table>
+      <tr><th>Task</th><th>Idiom</th></tr>
+      <tr><td>From list</td><td><code>np.array([1,2,3], dtype=np.int32)</code></td></tr>
+      <tr><td>Zeros / ones / full</td><td><code>np.zeros((3,4)) · np.ones · np.full((3,4), 7.0)</code></td></tr>
+      <tr><td>Like another</td><td><code>np.zeros_like(x)</code></td></tr>
+      <tr><td>Identity</td><td><code>np.eye(n)</code></td></tr>
+      <tr><td>Range</td><td><code>np.arange(0, 10, 0.5)</code></td></tr>
+      <tr><td>Linspace</td><td><code>np.linspace(0, 1, 51)</code> — INCLUSIVE endpoint</td></tr>
+      <tr><td>Log space</td><td><code>np.logspace(-4, 0, 20)</code></td></tr>
+      <tr><td>Empty (fast, uninit)</td><td><code>np.empty((n, m))</code> — YOU must fill it</td></tr>
+      <tr><td>Meshgrid (2D eval)</td><td><code>X, Y = np.meshgrid(x, y, indexing="ij")</code></td></tr>
+    </table>
+    <div class="danger"><b>Trap:</b> <code>np.empty</code> returns UNINITIALISED memory. Reading before writing = garbage bytes.</div>
+  </div>
+
+  <!-- ════════════ INDEXING ════════════ -->
+  <div class="sec frame">
+    <h2>● Indexing / slicing</h2>
+    <div class="py">a = np.arange(24).reshape(4, 6)
+a[1, 2]                # single element (int)
+a[1]                   # row 1 (1D)
+a[:, 2]                # col 2 (1D)
+a[1:3, 2:5]            # sub-block (view!)
+a[::2]                 # every other row
+a[::-1]                # reversed
+a[[0, 2], :]           # fancy: rows 0 and 2 (copy!)
+a[a &gt; 10]              # boolean mask (copy, 1D)
+a[np.ix_([0,2], [1,3])] # cross-product indexing</div>
+    <table>
+      <tr><th>Type</th><th>Returns</th></tr>
+      <tr><td>Basic slice (<code>:</code>)</td><td>VIEW — mutations propagate</td></tr>
+      <tr><td>Fancy (list/int-array)</td><td>COPY — safe to modify</td></tr>
+      <tr><td>Boolean mask</td><td>COPY — safe to modify</td></tr>
+    </table>
+    <div class="danger"><b>View trap:</b> <code>a[1:3] = 0</code> mutates <code>a</code> too. Check via <code>b.base is a</code>. To force copy: <code>a[1:3].copy()</code>.</div>
+  </div>
+
+  <!-- ════════════ BROADCASTING ════════════ -->
+  <div class="sec model">
+    <h2>▲ Broadcasting (the key insight)</h2>
+    <div class="py"># Rule: align shapes from the RIGHT. Pad missing left dims with 1.
+# Compatible if each dim is EQUAL or ONE of them is 1.
+
+a = np.zeros((3, 5))       # (3, 5)
+b = np.arange(5)           # (5,)     → (1, 5) → broadcasts to (3, 5)
+a + b                      # OK
+
+col = np.arange(3).reshape(3, 1)   # (3, 1)
+row = np.arange(5)                  # (5,)   → (1, 5)
+col + row                           # (3, 5) — outer sum
+
+# Add a trailing dim via None / np.newaxis for explicit intent
+X = np.zeros((100, 5))
+mean = X.mean(axis=0, keepdims=True)   # (1, 5) — safer than mean.shape (5,)
+X - mean                                # broadcasts (100, 5) − (1, 5) = (100, 5)</div>
+    <div class="callout"><b>Keep <code>keepdims=True</code></b> on reductions when you plan to broadcast back — avoids a lot of <code>.reshape</code>.</div>
+  </div>
+
+  <!-- ════════════ AXIS REDUCTIONS ════════════ -->
+  <div class="sec model">
+    <h2>▲ Axis reductions (always specify axis=)</h2>
+    <table>
+      <tr><th>Operation</th><th>Idiom</th></tr>
+      <tr><td>sum / mean / std / var</td><td><code>x.sum(axis=0)</code></td></tr>
+      <tr><td>min / max / argmin / argmax</td><td><code>x.argmax(axis=1)</code></td></tr>
+      <tr><td>any / all</td><td><code>mask.any(axis=1)</code></td></tr>
+      <tr><td>cumsum / cumprod</td><td><code>x.cumsum(axis=0)</code></td></tr>
+      <tr><td>Percentile / quantile</td><td><code>np.quantile(x, q=[0.05, 0.5, 0.95], axis=0)</code></td></tr>
+      <tr><td>Median / count_nonzero</td><td><code>np.median(x, axis=0)</code></td></tr>
+      <tr><td>Weighted average</td><td><code>np.average(x, weights=w, axis=0)</code></td></tr>
+    </table>
+    <div class="py"># Sensitive to NaN → use nan-aware variants
+np.nansum(x, axis=0); np.nanmean; np.nanstd; np.nanquantile
+# ddof= for sample std/var (default ddof=0 = population)
+x.std(axis=0, ddof=1)                    # sample std</div>
+  </div>
+
+  <!-- ════════════ UFUNCS ════════════ -->
+  <div class="sec model">
+    <h2>▲ ufuncs + where / select</h2>
+    <div class="py">np.add, subtract, multiply, divide, power, sqrt, log, log1p, exp, expm1
+np.sin, cos, tan, arctan2, sinh, tanh
+np.abs, sign, round, floor, ceil, trunc, clip(x, lo, hi)
+np.maximum(a, b), np.minimum(a, b)         # element-wise pairs
+np.logical_and(m1, m2), logical_or, logical_not
+np.isnan, isinf, isfinite
+
+# Conditional selection
+np.where(x &gt; 0, x, 0)                      # like ternary: cond, if_true, if_false
+np.where(x &gt; 0)                             # returns indices (tuple)
+
+# Multi-way
+np.select([m1, m2, m3], [v1, v2, v3], default=0)
+
+# In-place ufunc output → avoid allocations in tight loops
+np.add(a, b, out=a)
+np.exp(a, out=a)                            # in-place exp</div>
+    <div class="rf">ufuncs are <b>always vectorised</b>, always release the GIL. Prefer them over Python loops.</div>
+  </div>
+
+  <!-- ════════════ RNG ════════════ -->
+  <div class="sec metric">
+    <h2>◆ RNG (default_rng, not seed)</h2>
+    <div class="py">rng = np.random.default_rng(42)          # ← canonical entry point
+# Reproducible child streams (for parallel workers):
+child = rng.spawn(4)                      # 4 independent RNGs
+
+# Top methods (all return arrays; size= for shape)
+rng.random(size=(3, 4))                   # uniform [0, 1)
+rng.standard_normal(size=1000)            # N(0, 1)
+rng.normal(loc=0, scale=1, size=100)      # N(loc, scale)
+rng.uniform(low=-1, high=1, size=100)     # U[low, high)
+rng.integers(low=0, high=10, size=5)      # ints [low, high) — EXCLUSIVE high
+rng.integers(low=0, high=10, size=5, endpoint=True)   # inclusive high
+rng.choice([1,2,3], size=5, p=[.5,.3,.2], replace=False)
+rng.permutation(np.arange(10))            # shuffle out-of-place
+rng.multinomial(n=100, pvals=[.3,.3,.4])
+rng.multivariate_normal(mean=mu, cov=Sigma, size=1000)</div>
+    <div class="danger"><b>Legacy:</b> <code>np.random.seed(42); np.random.rand(...)</code> — deprecated. Global RNG state = non-reproducible in parallel code.</div>
+  </div>
+
+  <!-- ════════════ RESHAPE / TRANSPOSE ════════════ -->
+  <div class="sec cv">
+    <h2>● Reshape / transpose / concat</h2>
+    <div class="py">a.reshape(3, -1)                  # -1 = infer from total
+a.reshape(-1); a.ravel()          # flatten (ravel may copy)
+a.T                               # transpose axes (view)
+np.transpose(a, axes=(2, 0, 1))    # arbitrary axis reorder
+a[np.newaxis, :]; a[:, None]      # add axis (None ≡ np.newaxis)
+a.squeeze()                        # drop size-1 dims
+
+np.concatenate([a, b], axis=0)     # existing axis
+np.stack([a, b], axis=0)            # NEW axis
+np.split(a, 3, axis=0)              # exact split; array_split allows uneven
+np.tile(a, (3, 1)); np.repeat(a, 3, axis=0)</div>
+  </div>
+
+  <!-- ════════════ LINALG ════════════ -->
+  <div class="sec tune">
+    <h2>▲ Linear algebra</h2>
+    <div class="py">A @ B                          # matmul (prefer @ over np.dot for 2D)
+np.dot(a, b)                   # 1D dot; 2D matmul (equiv to @)
+np.linalg.norm(x, ord=2, axis=0)   # L2 by column
+
+# Solve Ax = b  — NEVER compute inv(A) @ b explicitly
+x = np.linalg.solve(A, b)      # canonical
+x = np.linalg.lstsq(A, b, rcond=None)[0]     # least-squares (over/underdetermined)
+
+# Decompositions
+U, s, Vt = np.linalg.svd(A, full_matrices=False)   # SVD (economy form)
+L = np.linalg.cholesky(A)                            # A = L Lᵀ (PSD only)
+Q, R = np.linalg.qr(A)                                # QR
+w, V = np.linalg.eig(A)                               # eigenvalues + right eigenvectors
+w, V = np.linalg.eigh(A)                              # SYMMETRIC A — faster + stable
+
+# Matrix inverse — rarely needed; use solve instead
+np.linalg.inv(A)               # explicit inverse
+np.linalg.pinv(A)              # Moore-Penrose pseudo-inverse
+
+# Determinant / trace
+np.linalg.det(A); np.trace(A)
+
+# Batched linalg (broadcasting on last two dims)
+np.linalg.solve(A_stack, b_stack)   # A_stack.shape = (B, n, n) → x.shape (B, n)
+
+# einsum — the daily-driver for batched / non-obvious linalg
+np.einsum("ij,jk->ik", A, B)          # ≡ A @ B
+np.einsum("ii->i", A)                  # diagonal
+np.einsum("ii->",  A)                  # trace
+np.einsum("i,j->ij", a, b)             # outer product
+np.einsum("bij,bjk->bik", A_stack, B_stack)   # BATCHED matmul (B pairs)
+np.einsum("bi,bi->b", x, y)            # per-row inner product (dot batch)</div>
+    <div class="danger"><b>Never <code>inv(A) @ b</code></b> — numerically unstable + slower than <code>solve(A, b)</code>. Use <code>solve</code>; for many RHS with same A use <code>scipy.linalg.lu_factor + lu_solve</code>.</div>
+  </div>
+
+  <!-- ════════════ MEMORY / VIEWS ════════════ -->
+  <div class="sec diag">
+    <h2>◆ Views vs copies · dtype · memory</h2>
+    <div class="py">a.dtype, a.shape, a.ndim, a.size, a.itemsize, a.nbytes
+a.flags.owndata          # True → owns memory; False → view
+b = a[1:3]; b.base is a  # True → b is a view of a
+a.astype(np.float32, copy=False)   # in-place if dtype matches
+
+# Memory layout
+a.flags["C_CONTIGUOUS"]   # row-major (numpy default)
+np.ascontiguousarray(a)   # force C-contig (may copy)
+
+# Downcast for size / speed
+a.astype(np.float32)      # halves float memory vs float64
+a.astype(np.int16)        # if values fit
+
+# Common dtypes
+np.float32, np.float64, np.float16
+np.int8, int16, int32, int64
+np.uint8 (images), np.uint32
+np.bool_ (1 byte, not 1 bit)
+np.complex64, complex128</div>
+    <div class="danger"><b>NumPy 2.0 change:</b> Python <code>float</code>/<code>int</code> in <code>np.array([...])</code> now infers <code>np.float64</code>/<code>np.intp</code> (platform-dependent int). Cast explicitly for cross-platform stability.</div>
+  </div>
+
+  <!-- ════════════ SCIPY.STATS ════════════ -->
+  <div class="sec metric">
+    <h2>◆ scipy.stats — distributions + tests</h2>
+
+    <div class="p">
+      <div class="name">Distributions — frozen &gt; kwargs</div>
+      <div class="py">from scipy import stats
+
+# Frozen distribution (recommended): reusable
+d = stats.norm(loc=0, scale=1)
+d.pdf(0); d.cdf(1.96); d.ppf(0.975); d.rvs(size=100, random_state=rng)
+
+# Common distributions
+stats.norm; stats.t; stats.chi2; stats.f; stats.gamma
+stats.lognorm; stats.beta; stats.expon; stats.uniform
+stats.poisson; stats.binom; stats.geom
+stats.multivariate_normal(mean=mu, cov=S)      # multi-dim</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Descriptive stats</div>
+      <div class="py">stats.skew(x); stats.kurtosis(x, fisher=True)    # fisher=True → EXCESS kurtosis
+stats.describe(x)                                  # NamedTuple summary
+stats.iqr(x); stats.zscore(x, axis=0)
+stats.pearsonr(x, y); stats.spearmanr(x, y); stats.kendalltau(x, y)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Hypothesis tests</div>
+      <table>
+        <tr><th>Test</th><th>Purpose</th></tr>
+        <tr><td><code>ttest_1samp / ind / rel</code></td><td>mean comparison</td></tr>
+        <tr><td><code>mannwhitneyu</code></td><td>non-parametric 2-sample</td></tr>
+        <tr><td><code>wilcoxon</code></td><td>paired non-parametric</td></tr>
+        <tr><td><code>ks_1samp / ks_2samp</code></td><td>distribution match</td></tr>
+        <tr><td><code>shapiro / anderson</code></td><td>normality</td></tr>
+        <tr><td><code>chi2_contingency</code></td><td>categorical independence</td></tr>
+        <tr><td><code>anova (f_oneway)</code></td><td>k-group means</td></tr>
+      </table>
+      <div class="py">res = stats.ttest_ind(a, b, equal_var=False)
+print(res.statistic, res.pvalue, res.df, res.confidence_interval())</div>
+    </div>
+  </div>
+
+  <!-- ════════════ SCIPY.OPTIMIZE ════════════ -->
+  <div class="sec tune">
+    <h2>▲ scipy.optimize</h2>
+    <div class="py">from scipy import optimize
+
+# Root-finding (scalar) — Brent's method: robust when you have a bracket
+res = optimize.brentq(f=lambda x: np.exp(x) - 5, a=0, b=5)
+
+# Minimise (scalar-input)
+res = optimize.minimize_scalar(f=lambda x: (x - 3)**2, method="brent")
+
+# Minimise (vector-input)
+res = optimize.minimize(
+    fun=lambda w: -log_likelihood(w),
+    x0=np.zeros(5),
+    method="L-BFGS-B",             # default good for smooth + bounds
+    jac=grad_fn,                    # analytic gradient if available (else finite diff)
+    bounds=[(0, 1)] * 5,
+    options={"maxiter": 200})
+
+# Constrained: SLSQP handles ineq + eq constraints
+res = optimize.minimize(fun, x0, method="SLSQP",
+    constraints=[{"type": "eq",  "fun": lambda w: np.sum(w) - 1},
+                  {"type": "ineq","fun": lambda w: w}])
+
+# Curve fitting (non-linear least squares)
+popt, pcov = optimize.curve_fit(model, x, y, p0=[1.0, 0.0])
+# popt = params; pcov = covariance matrix → sd from np.sqrt(np.diag(pcov))
+
+# Batched LSQ
+res = optimize.least_squares(residual_fn, x0, jac="3-point", method="trf")</div>
+    <table>
+      <tr><th>method</th><th>Use when</th></tr>
+      <tr><td>L-BFGS-B</td><td>smooth + box bounds; default</td></tr>
+      <tr><td>trust-constr</td><td>smooth + general constraints</td></tr>
+      <tr><td>SLSQP</td><td>constraints, small/med dim</td></tr>
+      <tr><td>Nelder-Mead</td><td>derivative-free, noisy fn</td></tr>
+      <tr><td>trf (least_squares)</td><td>NLS with bounds</td></tr>
+    </table>
+  </div>
+
+  <!-- ════════════ SCIPY.SPARSE ════════════ -->
+  <div class="sec deploy">
+    <h2>◆ scipy.sparse (large mostly-zero matrices)</h2>
+    <div class="py">from scipy import sparse
+# scipy ≥1.14 recommends _array over _matrix (matrix classes deprecating).
+
+# Build (choose format by workload)
+csr = sparse.csr_array(dense)           # fast row slicing, arith; USE for ML
+csc = sparse.csc_array(dense)           # fast column slicing
+coo = sparse.coo_array((vals, (rows, cols)), shape=(m, n))   # build then convert
+lil = sparse.lil_array((m, n))          # incremental build (slow for arith)
+
+# Convert / info
+csr.toarray(); csr.shape, csr.nnz, csr.dtype
+
+# Arithmetic — SPARSE @ DENSE stays fast
+y = csr @ x                             # sparse mat-vec
+A = csr.T @ csr                         # ATA — Gram
+
+# Sparse linalg (never toarray → inv)
+from scipy.sparse.linalg import spsolve, eigsh, svds, cg
+x = spsolve(A_csr, b)                   # direct sparse solve
+vals, vecs = eigsh(A, k=6, which="LM")  # symmetric eigs (Lanczos)</div>
+    <table>
+      <tr><th>Format</th><th>Best for</th></tr>
+      <tr><td>CSR</td><td>row slicing, matmul, general ML</td></tr>
+      <tr><td>CSC</td><td>column slicing / column ops</td></tr>
+      <tr><td>COO</td><td>construction only; convert to CSR</td></tr>
+      <tr><td>LIL / DOK</td><td>incremental building</td></tr>
+    </table>
+  </div>
+
+  <!-- ════════════ SCIPY.INTEGRATE / SPECIAL ════════════ -->
+  <div class="sec deploy">
+    <h2>◆ scipy · integrate / interpolate / special</h2>
+    <div class="py">from scipy import integrate, interpolate, special
+
+# 1D numerical integration
+val, err = integrate.quad(lambda x: np.exp(-x**2), 0, np.inf)
+
+# ODE solve (initial value problem)
+sol = integrate.solve_ivp(fun=lambda t, y: -0.5 * y, t_span=(0, 10),
+                           y0=[1.0], t_eval=np.linspace(0, 10, 100),
+                           method="RK45")
+
+# Interpolation
+f = interpolate.interp1d(x, y, kind="cubic", fill_value="extrapolate")
+f_new = f(x_new)
+# Modern (scipy 1.10+): CubicSpline for smoother
+cs = interpolate.CubicSpline(x, y)
+
+# Special functions (used in stats + finance)
+special.erf(x); special.gamma(x); special.beta(a, b)
+special.digamma(x); special.expit(x)     # sigmoid; safer than 1/(1+exp(-x))</div>
+  </div>
+
+  <!-- ════════════ TRAPS ════════════ -->
+  <div class="sec trap">
+    <h2>▲ Top traps (6-month memory)</h2>
+    <ul class="tight">
+      <li><b><code>np.random.seed()</code></b> legacy global; use <code>rng = np.random.default_rng(seed)</code>.</li>
+      <li><b>Missing <code>axis=</code></b> — <code>x.sum()</code> collapses ALL axes; almost always want <code>axis=0/1</code>.</li>
+      <li><b>View vs copy</b> — basic slice = view; fancy/boolean = copy. Check <code>b.base is a</code>.</li>
+      <li><b><code>inv(A) @ b</code></b> numerically bad. Use <code>np.linalg.solve(A, b)</code>.</li>
+      <li><b>Float precision:</b> <code>a == b</code> unsafe. <code>np.isclose(a, b, rtol=1e-5)</code>.</li>
+      <li><b>NaN propagation:</b> <code>x.mean()</code> → NaN if any NaN. Use <code>np.nanmean</code>.</li>
+      <li><b><code>x.std(ddof=1)</code></b> for SAMPLE std (default ddof=0 = population).</li>
+      <li><b><code>np.empty</code></b> = uninitialised garbage; fill before read.</li>
+      <li><b>Broadcasting</b> aligns FROM THE RIGHT. Use <code>keepdims=True</code>.</li>
+      <li><b>Concat in a loop = O(N²)</b>. Build list, one final <code>np.concatenate</code>.</li>
+      <li><b>Sparse:</b> never <code>.toarray()</code> a huge matrix. Stay in sparse space.</li>
+      <li><b>NumPy 2.0 dtype:</b> Python floats → <code>float64</code>; ints → intp. Cast explicitly for cross-platform.</li>
+      <li><b><code>curve_fit</code> without p0</b>: silent bad local min. Always give a starting guess.</li>
+    </ul>
+  </div>
+
+  <!-- ════════════ QUICK REFERENCE ════════════ -->
+  <div class="sec master">
+    <h2>◆ Quick-reference (recall in 5 seconds)</h2>
+    <table>
+      <tr><th>Task</th><th>Canonical pattern</th></tr>
+      <tr><td>Seeded RNG</td><td><code>rng = np.random.default_rng(42)</code></td></tr>
+      <tr><td>Gaussian sample</td><td><code>rng.standard_normal(size=(n, k))</code></td></tr>
+      <tr><td>Int sample</td><td><code>rng.integers(low, high, size, endpoint=False)</code></td></tr>
+      <tr><td>Zeros</td><td><code>np.zeros((m, n), dtype=np.float32)</code></td></tr>
+      <tr><td>Range / linspace</td><td><code>np.arange(a, b, step)</code> / <code>np.linspace(a, b, n)</code></td></tr>
+      <tr><td>Reshape auto</td><td><code>a.reshape(-1, k)</code></td></tr>
+      <tr><td>Row-mean keeping dim</td><td><code>x.mean(axis=0, keepdims=True)</code></td></tr>
+      <tr><td>Standardise</td><td><code>(x - x.mean(0)) / x.std(0, ddof=1)</code></td></tr>
+      <tr><td>Where (ternary)</td><td><code>np.where(cond, a, b)</code></td></tr>
+      <tr><td>Multi-way select</td><td><code>np.select([m1, m2], [v1, v2], default=0)</code></td></tr>
+      <tr><td>Concat rows</td><td><code>np.concatenate([a, b], axis=0)</code></td></tr>
+      <tr><td>New axis</td><td><code>a[:, None]</code> or <code>a[np.newaxis, :]</code></td></tr>
+      <tr><td>Solve linear</td><td><code>np.linalg.solve(A, b)</code></td></tr>
+      <tr><td>SVD (economy)</td><td><code>U, s, Vt = np.linalg.svd(A, full_matrices=False)</code></td></tr>
+      <tr><td>Cholesky</td><td><code>L = np.linalg.cholesky(A)</code></td></tr>
+      <tr><td>Symmetric eig</td><td><code>w, V = np.linalg.eigh(A)</code></td></tr>
+      <tr><td>Near-equal</td><td><code>np.isclose(a, b, rtol=1e-5)</code></td></tr>
+      <tr><td>Copy</td><td><code>a.copy()</code></td></tr>
+      <tr><td>scipy dist</td><td><code>stats.norm(loc, scale).ppf(0.975)</code></td></tr>
+      <tr><td>2-sample t-test</td><td><code>stats.ttest_ind(a, b, equal_var=False)</code></td></tr>
+      <tr><td>Curve fit</td><td><code>optimize.curve_fit(fn, x, y, p0=[...])</code></td></tr>
+      <tr><td>Constrained min</td><td><code>optimize.minimize(fn, x0, method="SLSQP", constraints=[...])</code></td></tr>
+      <tr><td>Sparse solve</td><td><code>scipy.sparse.linalg.spsolve(A_csr, b)</code></td></tr>
+      <tr><td>Quadrature</td><td><code>scipy.integrate.quad(fn, a, b)</code></td></tr>
+    </table>
+  </div>
+
+</div> <!-- /cols -->
+
+</body>
+</html>

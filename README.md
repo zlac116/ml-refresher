@@ -8,13 +8,14 @@ notebooks + cheatsheets + capstones, organised as a learning path.
 | Top-level | What's in it | Start here |
 |---|---|---|
 | [`fundamentals/`](fundamentals/) | STEM refresher (maths / physics / chemistry) | when a concept's intuition is missing |
-| [`sql/`](sql/) | PostgreSQL cheatsheet + capstone | data querying foundation |
+| [`toolkit/sql/`](toolkit/sql/) | PostgreSQL cheatsheet + capstone | data querying foundation |
 | [`ml/`](ml/) | Core ML — regression → classification → time series → neural networks | the main ML track |
 | [`quant_finance/`](quant_finance/) | Options / risk / fixed income / portfolio / volatility / stoch calc + capstones | quant track (heaviest module) |
 | [`api_engineering/`](api_engineering/) | Production FastAPI cheatsheet + capstone | shipping models |
 | [`llm_pipeline/`](llm_pipeline/) | LangChain + LangGraph cheatsheet + 4 LLM capstones | LLM / agentic systems |
 | [`toolkit/`](toolkit/) | Cross-cutting playbooks (eda, ML methodology, MLflow) | reach for from any module |
 | [`data/`](data/) | Shared datasets (crypto OHLCV, fetchers) | used by multiple modules |
+| [`interview_prep/`](interview_prep/) | Role/company-specific interview material + 4-week study plan | interview season |
 
 ## Layout conventions
 
@@ -36,8 +37,8 @@ Numeric prefix (`01_`, `02_`, …) signals **recommended learning order**.
 
 ## Where to start
 
-- **New to the repo?** → Read this file, then [`STUDY_GUIDE.md`](STUDY_GUIDE.md) for the 4-week plan.
-- **Pure quant interview prep?** → Follow `STUDY_GUIDE.md` directly — `quant_finance/` first.
+- **New to the repo?** → Read this file, then [`interview_prep/STUDY_GUIDE.md`](interview_prep/STUDY_GUIDE.md) for the 4-week plan.
+- **Pure quant interview prep?** → Follow [`interview_prep/STUDY_GUIDE.md`](interview_prep/STUDY_GUIDE.md) directly — `quant_finance/` first.
 - **ML engineer prep?** → `ml/` → `api_engineering/` → `quant_finance/capstones/04_lmm_nn_surrogate/` (the cross-cutting capstone).
 - **LLM / agent dev?** → `llm_pipeline/llm_cheatsheet.md` then the four capstones in order.
 
@@ -83,9 +84,9 @@ Once installed, every `git commit` runs the checks in [`.pre-commit-config.yaml`
 
 ## Related references
 
-- [`toolkit/eda_decisions.md`](toolkit/eda_decisions.md) — model selection rules of thumb.
-- [`toolkit/ml_project_methodology.md`](toolkit/ml_project_methodology.md) — universal ML pipeline phases.
-- [`toolkit/mlflow_cheatsheet.md`](toolkit/mlflow_cheatsheet.md) — tracking + registry + serving.
+- [`toolkit/data_science/eda_decisions.md`](toolkit/data_science/eda_decisions.md) — model selection rules of thumb.
+- [`toolkit/data_science/ml_project_methodology.md`](toolkit/data_science/ml_project_methodology.md) — universal ML pipeline phases.
+- [`toolkit/mlops/mlflow_cheatsheet.md`](toolkit/mlops/mlflow_cheatsheet.md) — tracking + registry + serving.
 - Domain cheatsheets live alongside their module — see the table at the top.
 
 ## Conventions

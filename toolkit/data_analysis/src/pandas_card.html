@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>pandas + matplotlib — Reference Card</title>
+<style>
+@page { size: A4 landscape; margin: 0.35cm 0.35cm 0.45cm 0.35cm;
+        @bottom-right { content: counter(page) " / " counter(pages); font: 6pt 'DejaVu Sans', sans-serif; color: #aaa; } }
+* { box-sizing: border-box; }
+body { font-family: 'DejaVu Sans', sans-serif; font-size: 7pt; line-height: 1.15; color: #1a1a1a; margin: 0; padding: 0; }
+code, .formula, .py, pre { font-family: 'DejaVu Sans Mono', monospace; font-size: 6.6pt; }
+
+.banner { background: #150458; color: #fff; padding: 3px 7px; margin-bottom: 3px; border-radius: 2px; }
+.banner h1 { font-size: 11pt; margin: 0; }
+.banner .sub { font-size: 6.6pt; color: #d6d1e5; margin-top: 0; }
+.banner .sub code { color: #fff; background: rgba(255,255,255,0.18); padding: 0 2px; border-radius: 1px; }
+
+.cols { column-count: 3; column-gap: 5px; column-rule: 1px solid #ccc; column-fill: balance; }
+
+.sec { break-inside: auto; margin: 0 0 1px 0; padding: 1px 4px 2px 5px; border-radius: 2px; border-left: 3px solid; }
+.sec h2 { font-size: 7.8pt; font-weight: bold; margin: 0; padding: 0 3px; border-radius: 2px; color: #fff; display: inline-block; }
+.sec h3 { font-size: 6.7pt; font-weight: bold; margin: 1px 0 0 0; color: #150458; text-transform: uppercase; letter-spacing: 0.04em; }
+.sec > *:last-child { margin-bottom: 0; }
+
+.master  { background: #fff8d9; border-left-color: #806c0e; }  .master  h2 { background: #806c0e; }
+.frame   { background: #e7f2fa; border-left-color: #2e6b9c; }  .frame   h2 { background: #2e6b9c; }
+.model   { background: #e7fae9; border-left-color: #2e9c47; }  .model   h2 { background: #2e9c47; }
+.metric  { background: #f0e7fa; border-left-color: #6e3e9c; }  .metric  h2 { background: #6e3e9c; }
+.cv      { background: #e7faf9; border-left-color: #1a8a8a; }  .cv      h2 { background: #1a8a8a; }
+.tune    { background: #fbf2e6; border-left-color: #b06c0e; }  .tune    h2 { background: #b06c0e; }
+.diag    { background: #f7e6d5; border-left-color: #a05210; }  .diag    h2 { background: #a05210; }
+.deploy  { background: #ededed; border-left-color: #555;    }  .deploy  h2 { background: #555;    }
+.trap    { background: #fae0e0; border-left-color: #7a1a1a; }  .trap    h2 { background: #7a1a1a; }
+
+.p { margin: 0; }
+.p .name { font-weight: bold; font-size: 7.2pt; }
+.p .name .tag { font-size: 6pt; color: #555; font-weight: normal; }
+.p .formula, .p .py { margin: 0; padding: 0 4px; }
+.py, .formula { display: block; margin: 0; padding: 0 4px; overflow-wrap: anywhere;
+                white-space: pre-wrap; font-family: 'DejaVu Sans Mono', monospace; font-size: 6.6pt; }
+.py { background: rgba(0,0,0,0.04); border-left: 2px solid #555; }
+.formula { background: rgba(255,255,255,0.55); border-left: 2px solid currentColor; }
+.p .use { font-style: italic; color: #2a2a2a; font-size: 6.5pt; }
+.p .rf  { font-size: 6.1pt; color: #444; }
+
+.recipe ol { margin: 0; padding: 0 0 0 14px; }
+.recipe ol li { margin: 0; }
+.recipe .step { font-weight: bold; }
+table { border-collapse: collapse; width: 100%; font-size: 6.4pt; margin: 1px 0; break-inside: auto; }
+th, td { border: 1px solid #c0c0c0; padding: 0.5px 3px; text-align: left; vertical-align: top; }
+th { background: #e8e8e8; font-weight: bold; }
+td code { word-break: break-all; overflow-wrap: anywhere; }
+ul.tight { margin: 0; padding: 0 0 0 13px; break-inside: auto; }
+ul.tight li { margin: 0; }
+
+.callout { background: #fff; border-left: 3px solid #d4a800; padding: 0 4px; margin: 1px 0; font-size: 6.3pt; }
+.danger  { background: #fff; border-left: 3px solid #b8341a; padding: 0 4px; margin: 1px 0; font-size: 6.3pt; }
+.danger b:first-child { color: #b8341a; }
+
+.sec.trap { break-inside: auto; }
+.sec h2 + *, .sec h3 + * { break-before: avoid; }
+</style>
+</head>
+<body>
+
+<div class="banner">
+  <h1>pandas + matplotlib — Reference Card</h1>
+  <div class="sub">Series/DataFrame · selection · groupby · pivot/melt · merge · time-series · IO · dtypes · matplotlib. Stack: <code>pandas ≥2.2 · matplotlib ≥3.8 · Python ≥3.10</code> · Modern: Copy-on-Write, PyArrow backend, method chaining</div>
+</div>
+
+<div class="cols">
+
+  <!-- ════════════ MASTER RECIPE ════════════ -->
+  <div class="sec master">
+    <h2>◆ Master pattern (every pandas script)</h2>
+    <ol class="recipe">
+      <li><span class="step">Load</span> — <code>read_parquet/csv/sql</code>; declare dtypes explicitly</li>
+      <li><span class="step">Enable CoW</span> — <code>pd.options.mode.copy_on_write = True</code> (default in pd 3.x)</li>
+      <li><span class="step">Inspect</span> — <code>.info() .describe() .head() .isna().sum()</code></li>
+      <li><span class="step">Clean</span> — dtypes, index, missing, duplicates</li>
+      <li><span class="step">Transform</span> — method chain: <code>.assign().query().groupby().agg()</code></li>
+      <li><span class="step">Persist</span> — <code>to_parquet</code> (columnar, typed, fast) &gt; CSV</li>
+    </ol>
+    <div class="callout"><b>Golden rule (pd 3.x):</b> chained assignment (<code>df["a"][mask] = v</code>) FAILS silently. Always use <code>df.loc[mask, "a"] = v</code>.</div>
+  </div>
+
+  <div class="sec master">
+    <h2>◆ Starter · notebook opener</h2>
+    <div class="py">import numpy as np, pandas as pd
+import matplotlib.pyplot as plt
+pd.options.mode.copy_on_write = True      # default in pandas 3.x; opt-in 2.2+
+pd.set_option("display.max_columns", 40)
+pd.set_option("display.width", 180)
+
+# Read with dtypes (parquet preserves them; CSV needs help)
+df = pd.read_parquet("data.parquet")
+# CSV: cast at read time (avoid inference surprises)
+df = pd.read_csv("data.csv",
+    parse_dates=["dt"],
+    dtype={"id": "int32", "region": "category", "score": "float32"})
+
+# Modern: PyArrow-backed dtypes (nullable, faster on strings)
+df = pd.read_csv("data.csv", dtype_backend="pyarrow")
+
+df.info(memory_usage="deep"); df.head()</div>
+  </div>
+
+  <!-- ════════════ SERIES/DATAFRAME ════════════ -->
+  <div class="sec frame">
+    <h2>● Series + DataFrame</h2>
+
+    <div class="p">
+      <div class="name">Construction</div>
+      <div class="py">s = pd.Series([1, 2, 3], index=["a","b","c"], name="score")
+df = pd.DataFrame({"a": [1,2,3], "b": [4,5,6]}, index=["r1","r2","r3"])
+df = pd.DataFrame.from_records([{"a":1,"b":2}, {"a":3,"b":4}])
+df = pd.DataFrame(np.arange(12).reshape(3,4), columns=list("abcd"))</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Key attributes</div>
+      <div class="py">df.shape; df.index; df.columns; df.dtypes
+df.to_numpy()           # → numpy (df.values is LEGACY — type-unsafe)
+df.T                    # transpose
+df.rename(columns={"a":"x"})            # never rely on inplace=
+df.set_index("dt"); df.reset_index()</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Vectorised ops (fast, always prefer)</div>
+      <div class="py">df["gross"] = df["qty"] * df["price"]        # element-wise
+df["z"] = (df["x"] - df["x"].mean()) / df["x"].std()
+df["is_big"] = df["gross"] &gt; 100
+# NEVER iterate rows — use .assign / vectorised expressions or .apply as last resort</div>
+    </div>
+  </div>
+
+  <!-- ════════════ SELECTION ════════════ -->
+  <div class="sec frame">
+    <h2>● Selection (.loc / .iloc / query)</h2>
+    <table>
+      <tr><th>Task</th><th>Idiom</th></tr>
+      <tr><td>Single column</td><td><code>df["a"]</code> (Series) · <code>df[["a"]]</code> (DataFrame)</td></tr>
+      <tr><td>Multi-column</td><td><code>df[["a","b"]]</code></td></tr>
+      <tr><td>Label rows</td><td><code>df.loc["r1"]</code> · <code>df.loc[["r1","r3"]]</code></td></tr>
+      <tr><td>Position rows</td><td><code>df.iloc[0]</code> · <code>df.iloc[:5]</code></td></tr>
+      <tr><td>Row + col slice</td><td><code>df.loc[m, ["a","b"]]</code></td></tr>
+      <tr><td>Boolean mask</td><td><code>df[df["x"] &gt; 0]</code></td></tr>
+      <tr><td>Multi-cond</td><td><code>df[(df.a &gt; 0) &amp; (df.b &lt; 5)]</code></td></tr>
+      <tr><td>Query string</td><td><code>df.query("a &gt; 0 and b &lt; 5")</code></td></tr>
+      <tr><td>NaN filter</td><td><code>df[df["a"].notna()]</code></td></tr>
+      <tr><td>Category filter</td><td><code>df[df["region"].isin(["EU","US"])]</code></td></tr>
+      <tr><td>Set via loc</td><td><code>df.loc[mask, "y"] = 0</code></td></tr>
+    </table>
+    <div class="danger"><b>Chained assignment trap:</b> <code>df["x"][mask] = v</code> FAILS in pd 3.x (was warning in 2.x). Always <code>df.loc[mask, "x"] = v</code>.</div>
+  </div>
+
+  <!-- ════════════ GROUPBY ════════════ -->
+  <div class="sec model">
+    <h2>▲ groupby + agg (the workhorse)</h2>
+
+    <div class="p">
+      <div class="name">Single + multi aggregations</div>
+      <div class="py">g = df.groupby("region")
+g["gross"].sum()
+g["gross"].agg(["sum","mean","std","count"])
+g.agg({"gross":"sum", "qty":"mean"})                 # different per column
+g.agg(total=("gross","sum"), avg=("gross","mean"))   # named agg (recommended)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Multi-key + observed=</div>
+      <div class="py">df.groupby(["region","segment"], observed=True).size()
+# observed=True IS RECOMMENDED for categorical keys — pandas 3.x default</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Transform (aligned back)</div>
+      <div class="py">df["z_by_region"] = (df["x"]
+    - df.groupby("region")["x"].transform("mean")
+    ) / df.groupby("region")["x"].transform("std")
+# transform returns a Series with the ORIGINAL index — perfect for feature eng</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Apply (last resort)</div>
+      <div class="py">df.groupby("region").apply(lambda g: g.nlargest(3, "gross"), include_groups=False)
+# include_groups=False is the pd ≥2.2 default — silences the DeprecationWarning</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Common patterns</div>
+      <table>
+        <tr><th>Goal</th><th>Idiom</th></tr>
+        <tr><td>Top-N per group</td><td><code>df.groupby("g")["x"].nlargest(3)</code></td></tr>
+        <tr><td>Cumulative in-group</td><td><code>df.groupby("g")["x"].cumsum()</code></td></tr>
+        <tr><td>Rank in-group</td><td><code>df.groupby("g")["x"].rank(method="dense")</code></td></tr>
+        <tr><td>Fraction of total</td><td><code>x / df.groupby("g")["x"].transform("sum")</code></td></tr>
+        <tr><td>Filter groups</td><td><code>df.groupby("g").filter(lambda g: len(g) &gt; 5)</code></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ════════════ PIVOT / MELT / STACK ════════════ -->
+  <div class="sec model">
+    <h2>▲ pivot / melt (long ↔ wide)</h2>
+
+    <div class="p">
+      <div class="name">pivot_table (long → wide)</div>
+      <div class="py">wide = df.pivot_table(index="date", columns="ticker", values="close",
+                       aggfunc="mean", fill_value=0, observed=True)
+# NOT df.pivot() — pivot_table handles duplicates via aggfunc</div>
+    </div>
+
+    <div class="p">
+      <div class="name">melt (wide → long)</div>
+      <div class="py">long = df.melt(id_vars=["date"], value_vars=["aapl","msft","goog"],
+               var_name="ticker", value_name="close")</div>
+    </div>
+
+    <div class="p">
+      <div class="name">stack / unstack (MultiIndex ↔ wide)</div>
+      <div class="py">df_multi = df.set_index(["region","segment"])
+df_multi.unstack("segment")        # segment values become columns
+df_multi.stack()                   # in pd 3.x future_stack is default (kwarg removed)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">crosstab (counts / contingency)</div>
+      <div class="py">pd.crosstab(df["region"], df["segment"], normalize="index")</div>
+    </div>
+  </div>
+
+  <!-- ════════════ MERGE / JOIN ════════════ -->
+  <div class="sec model">
+    <h2>▲ merge / concat / join</h2>
+
+    <div class="p">
+      <div class="name">merge — the SQL join</div>
+      <div class="py">pd.merge(orders, customers, on="cust_id", how="left")   # ← default: how="inner"
+pd.merge(a, b, left_on="a_id", right_on="b_id", how="outer",
+         indicator=True, suffixes=("_a", "_b"))
+# indicator=True adds "_merge" column: left_only / right_only / both</div>
+      <table>
+        <tr><th>how=</th><th>Behaviour</th></tr>
+        <tr><td>inner</td><td>only matches (default)</td></tr>
+        <tr><td>left / right</td><td>keep left/right; NaN for missing</td></tr>
+        <tr><td>outer</td><td>keep both</td></tr>
+        <tr><td>cross</td><td>Cartesian product</td></tr>
+      </table>
+    </div>
+
+    <div class="p">
+      <div class="name">merge_asof (nearest-key join — time-series critical)</div>
+      <div class="py">pd.merge_asof(trades.sort_values("ts"), quotes.sort_values("ts"),
+                on="ts", by="ticker", direction="backward",
+                tolerance=pd.Timedelta("100ms"))
+# for each trade, find most recent quote &lt;= trade time within tolerance</div>
+    </div>
+
+    <div class="p">
+      <div class="name">concat (stack / column-bind)</div>
+      <div class="py">pd.concat([df1, df2], axis=0, ignore_index=True)   # stack rows
+pd.concat([df1, df2], axis=1)                       # stack cols (align on index)
+pd.concat([df1, df2], keys=["A","B"])               # add MultiIndex level</div>
+    </div>
+
+    <div class="p">
+      <div class="name">join (index-based shortcut)</div>
+      <div class="py">a.join(b, how="left")     # b's index → a's rows; column-wise merge on index</div>
+    </div>
+  </div>
+
+  <!-- ════════════ TIME-SERIES ════════════ -->
+  <div class="sec metric">
+    <h2>◆ Time-series</h2>
+
+    <div class="p">
+      <div class="name">DatetimeIndex — always set + asfreq</div>
+      <div class="py">df["dt"] = pd.to_datetime(df["dt"], utc=True)
+df = df.set_index("dt").sort_index()
+df = df.asfreq("D")                # explicit freq — ESSENTIAL for resample/rolling</div>
+    </div>
+
+    <div class="p">
+      <div class="name">resample (change frequency)</div>
+      <div class="py">df["y"].resample("D").mean()               # downsample
+df["y"].resample("h").last().ffill()      # upsample + fill
+df.resample("1W").agg({"y":"mean", "vol":"sum"})
+# OHLC one-liner:
+df["px"].resample("1D").ohlc()</div>
+      <table>
+        <tr><th>Freq alias</th><th>Meaning</th></tr>
+        <tr><td>D / B</td><td>day / business day</td></tr>
+        <tr><td>W</td><td>week (Sun by default; W-MON etc)</td></tr>
+        <tr><td>MS / ME</td><td>month-start / month-end (pd ≥2.2: "M" deprecated)</td></tr>
+        <tr><td>QS / QE</td><td>quarter</td></tr>
+        <tr><td>YS / YE</td><td>year (was "AS/A")</td></tr>
+        <tr><td>h / min / s / ms</td><td>lower time units (lowercase in pd ≥2.2)</td></tr>
+      </table>
+    </div>
+
+    <div class="p">
+      <div class="name">rolling / expanding / ewm</div>
+      <div class="py">df["ma7"]  = df["y"].rolling(7, min_periods=1).mean()
+df["exp"] = df["y"].expanding().mean()
+df["ewm"] = df["y"].ewm(halflife=5).mean()
+# BEWARE leakage: rolling uses PAST + CURRENT. For features: .shift(1).rolling(7)</div>
+    </div>
+
+    <div class="p">
+      <div class="name">shift / diff / pct_change</div>
+      <div class="py">df["y_lag1"] = df["y"].shift(1)
+df["dy"]     = df["y"].diff()
+df["ret"]    = df["y"].pct_change()
+df["log_ret"] = np.log(df["y"] / df["y"].shift(1))</div>
+    </div>
+
+    <div class="p">
+      <div class="name">Timezone + slicing</div>
+      <div class="py">df.tz_localize("UTC").tz_convert("America/New_York")
+df.loc["2026-01":"2026-06"]         # date-string slicing (inclusive!)
+df.loc[df.index.dayofweek &lt; 5]      # weekdays</div>
+    </div>
+  </div>
+
+  <!-- ════════════ MISSING DATA ════════════ -->
+  <div class="sec cv">
+    <h2>● Missing data (NA / NaN / NaT)</h2>
+    <div class="py">df.isna().sum()                     # per column
+df.dropna(subset=["x"])              # drop rows where x is NA
+df.fillna(0); df.fillna(method="ffill")   # NB: method= deprecated → use .ffill() / .bfill()
+df.ffill(limit=3)                    # forward-fill up to 3 consecutive
+df.interpolate(method="time")        # for DatetimeIndex
+
+# Modern nullable dtypes preserve missingness explicitly:
+df["x"] = df["x"].astype("Int64")      # capital I: nullable int
+df["s"] = df["s"].astype("string")     # nullable string
+# PyArrow-backed for large scale:
+df = df.convert_dtypes(dtype_backend="pyarrow")</div>
+    <div class="danger"><b>Trap:</b> <code>fillna(method="ffill")</code> deprecated since pd 2.1 → use <code>df.ffill()</code>.</div>
+  </div>
+
+  <!-- ════════════ IO ════════════ -->
+  <div class="sec cv">
+    <h2>● IO — read/write</h2>
+    <div class="py"># Parquet — RECOMMENDED (columnar, typed, compressed, fast)
+df.to_parquet("data.parquet", engine="pyarrow", compression="snappy")
+pd.read_parquet("data.parquet", columns=["a","b"])   # column pruning = huge speedup
+
+# CSV — tolerated but verbose (no dtypes, no schema)
+df.to_csv("data.csv", index=False)
+pd.read_csv("data.csv", parse_dates=["dt"], dtype={"id":"int32"})
+
+# SQL — SQLAlchemy engine
+from sqlalchemy import create_engine
+e = create_engine("postgresql+psycopg://user:pw@host/db")
+pd.read_sql("SELECT * FROM trades WHERE dt &gt; '2026-01-01'", e,
+            parse_dates=["dt"], chunksize=100_000)
+df.to_sql("trades", e, if_exists="append", index=False, method="multi")
+
+# Excel — for humans; slow. Multi-sheet:
+with pd.ExcelWriter("out.xlsx") as w:
+    df1.to_excel(w, sheet_name="A"); df2.to_excel(w, sheet_name="B")</div>
+  </div>
+
+  <!-- ════════════ METHOD CHAINING ════════════ -->
+  <div class="sec tune">
+    <h2>▲ Method chaining (readable pipelines)</h2>
+    <div class="py">out = (df
+    .rename(columns={"amt":"amount"})
+    .query("region in ['EU','US'] and status == 'settled'")
+    .assign(month=lambda d: d["dt"].dt.to_period("M"),
+             gross=lambda d: d["amount"] * d["qty"])
+    .groupby(["month","region"], observed=True)
+    .agg(total=("gross","sum"), n=("gross","size"))
+    .reset_index()
+    .sort_values(["month","total"], ascending=[True, False])
+)</div>
+    <div class="callout">Use <code>.assign(x=lambda d: …)</code> so the LAMBDA sees the CURRENT chain state. Direct expressions read the ORIGINAL df.</div>
+    <div class="p">
+      <div class="name">Debug chains: .pipe() + .loc[:] pass-through</div>
+      <div class="py">def peek(d, label): print(label, d.shape); return d
+out = (df.query("...")
+    .pipe(peek, "after query")
+    .groupby("g").sum()
+    .pipe(peek, "after agg"))</div>
+    </div>
+  </div>
+
+  <!-- ════════════ DTYPES + MEMORY ════════════ -->
+  <div class="sec diag">
+    <h2>◆ Dtypes + memory + Arrow backend</h2>
+    <table>
+      <tr><th>Family</th><th>Example</th><th>When</th></tr>
+      <tr><td>numpy int</td><td><code>int32/int64</code></td><td>default; NaN forces float64</td></tr>
+      <tr><td>nullable int</td><td><code>Int64</code> (capital I)</td><td>needs missingness in ints</td></tr>
+      <tr><td>float</td><td><code>float32/float64</code></td><td>float32 halves memory</td></tr>
+      <tr><td>category</td><td><code>"category"</code></td><td>low-cardinality strings; huge speedup</td></tr>
+      <tr><td>string / string[pyarrow]</td><td><code>"string"</code></td><td>modern; enables .str vec ops</td></tr>
+      <tr><td>datetime64[ns]</td><td>datetime</td><td>tz-aware via <code>tz_localize</code></td></tr>
+      <tr><td>PyArrow-backed</td><td><code>dtype_backend="pyarrow"</code></td><td>large data · nullable everywhere · fast str</td></tr>
+    </table>
+    <div class="py">df.memory_usage(deep=True).sum() / 1e6   # MB
+# Aggressive downcast:
+df["x"] = pd.to_numeric(df["x"], downcast="float")
+df["region"] = df["region"].astype("category")</div>
+  </div>
+
+  <!-- ════════════ MATPLOTLIB ════════════ -->
+  <div class="sec deploy">
+    <h2>◆ matplotlib · fig/ax pattern</h2>
+    <div class="py">import matplotlib.pyplot as plt
+
+# ALWAYS explicit fig, ax — never rely on plt.state
+fig, ax = plt.subplots(figsize=(10, 4))
+ax.plot(df.index, df["y"], label="observed", lw=1.2)
+ax.plot(df.index, df["y_hat"], label="model", ls="--")
+ax.set_xlabel("date"); ax.set_ylabel("value")
+ax.set_title("Fit vs actual"); ax.legend(); ax.grid(alpha=0.3)
+fig.tight_layout(); fig.savefig("fit.png", dpi=150); plt.close(fig)
+
+# Grid of subplots
+fig, axes = plt.subplots(2, 3, figsize=(14, 6), sharex=True)
+for ax, col in zip(axes.flat, df.columns[:6]):
+    ax.hist(df[col].dropna(), bins=40); ax.set_title(col)
+fig.tight_layout()
+
+# Twin y-axis (two scales)
+fig, ax = plt.subplots()
+ax.plot(df.index, df["price"], color="C0"); ax.set_ylabel("price")
+ax2 = ax.twinx();  ax2.plot(df.index, df["volume"], color="C1"); ax2.set_ylabel("vol")</div>
+    <div class="p">
+      <div class="name">pandas .plot (matplotlib-backed shortcuts)</div>
+      <div class="py">df["y"].plot(kind="line", ax=ax)               # returns the ax
+df.plot.scatter(x="x", y="y", c="cat", cmap="tab10")
+df.plot.bar(stacked=True); df.hist(bins=30, figsize=(12, 8))
+df.boxplot(column="x", by="region")            # by= = grouping</div>
+    </div>
+    <div class="rf"><b>Prefer</b> the fig/ax pattern for anything you'll save or reuse. Use <code>.plot()</code> shortcuts for quick EDA only.</div>
+  </div>
+
+  <!-- ════════════ PERFORMANCE ════════════ -->
+  <div class="sec deploy">
+    <h2>◆ Performance patterns</h2>
+    <ul class="tight">
+      <li><b>NEVER iterate rows</b> — vectorised ops are 100-1000× faster</li>
+      <li><b>Category dtype</b> — 10× memory reduction + faster groupby on strings</li>
+      <li><b>Filter early</b> — <code>df.query()</code> before any groupby</li>
+      <li><b>Column selection</b> — <code>read_parquet(columns=[…])</code> for column pruning</li>
+      <li><b><code>eval</code> / <code>query</code></b> for large frames — numexpr backend, avoids intermediates</li>
+      <li><b>PyArrow backend</b> — <code>dtype_backend="pyarrow"</code>; faster strings, native nullable</li>
+      <li><b>Sort once</b>; keep sorted (index-based ops assume sorted)</li>
+      <li><b>Chunked read</b> — <code>read_csv(chunksize=100_000)</code> or <code>read_sql(chunksize=)</code></li>
+    </ul>
+  </div>
+
+  <!-- ════════════ TESTING ════════════ -->
+  <div class="sec deploy">
+    <h2>◆ Testing (asserts + fixtures)</h2>
+    <div class="py">import pandas as pd
+from pandas.testing import assert_frame_equal, assert_series_equal, assert_index_equal
+
+assert_frame_equal(a, b, check_dtype=False, check_exact=False, rtol=1e-5)
+assert_series_equal(a["x"], b["x"], check_names=False)
+# Test that operations don't mutate input:
+before = df.copy()
+transform(df); assert_frame_equal(df, before)  # ← input unchanged
+
+# Fixture pattern (deterministic small df for pytest):
+def make_df():
+    return pd.DataFrame({"x": [1, 2, 3], "y": [0.1, 0.2, 0.3]},
+                         index=pd.date_range("2026-01-01", periods=3, freq="D"))</div>
+  </div>
+
+  <!-- ════════════ TRAPS ════════════ -->
+  <div class="sec trap">
+    <h2>▲ Top traps (6-month memory)</h2>
+    <ul class="tight">
+      <li><b>Chained assignment</b> <code>df["a"][mask] = v</code> — silently no-ops in pd 3.x (CoW). Use <code>df.loc[mask, "a"] = v</code>.</li>
+      <li><b>SettingWithCopyWarning</b> — was pd &lt;2.x; CoW eliminated it. If you see it, you're on legacy pandas.</li>
+      <li><b><code>inplace=True</code></b> — inconsistent, disables chaining, no perf win. Prefer reassignment.</li>
+      <li><b><code>df.append()</code></b> — REMOVED in pd 2.x. Use <code>pd.concat([df, row])</code>.</li>
+      <li><b><code>pd.get_dummies</code> in prod</b> — train-vs-serve column drift. Use sklearn <code>OneHotEncoder</code>.</li>
+      <li><b>Datetime freq "M"</b> — deprecated in pd ≥2.2. Use "ME" (month-end) or "MS" (month-start).</li>
+      <li><b>Hour "H"</b> — deprecated → lowercase "h". Same for "T"→"min", "S"→"s".</li>
+      <li><b><code>fillna(method="ffill")</code></b> — deprecated. Use <code>df.ffill()</code> / <code>df.bfill()</code>.</li>
+      <li><b>Rolling leakage</b> — <code>df["y"].rolling(7).mean()</code> includes CURRENT row. For features: <code>.shift(1).rolling(7).mean()</code>.</li>
+      <li><b>Groupby on category without <code>observed=True</code></b> — creates rows for unused combinations; huge memory blow-up.</li>
+      <li><b>Merging on unsorted DatetimeIndex</b> for <code>merge_asof</code> — silently wrong. Sort both sides first.</li>
+      <li><b>Reading CSV without dtype</b> — pandas infers; dates become object, ints become float on any NaN.</li>
+      <li><b><code>df.values</code> in new code</b> — use <code>.to_numpy()</code>; <code>.values</code> is legacy + type-unsafe.</li>
+      <li><b>Timezone naïveté</b> — mixing naïve + tz-aware raises. Localize on read.</li>
+      <li><b>Copy vs view uncertainty</b> — <code>df.copy()</code> if you need a guaranteed independent frame.</li>
+    </ul>
+  </div>
+
+  <!-- ════════════ QUICK REFERENCE ════════════ -->
+  <div class="sec master">
+    <h2>◆ Quick-reference (recall in 5 seconds)</h2>
+    <table>
+      <tr><th>Task</th><th>Canonical pattern</th></tr>
+      <tr><td>Enable CoW</td><td><code>pd.options.mode.copy_on_write = True</code></td></tr>
+      <tr><td>Read parquet</td><td><code>pd.read_parquet(path, columns=[...])</code></td></tr>
+      <tr><td>Read CSV (typed)</td><td><code>pd.read_csv(p, parse_dates=[...], dtype={...})</code></td></tr>
+      <tr><td>Row/col select</td><td><code>df.loc[mask, ["a","b"]]</code></td></tr>
+      <tr><td>Filter</td><td><code>df.query("a &gt; 0 and b in ['EU','US']")</code></td></tr>
+      <tr><td>Assign new col</td><td><code>df.assign(x=lambda d: d.a * 2)</code></td></tr>
+      <tr><td>Group + agg</td><td><code>df.groupby(k, observed=True).agg(name=("col","sum"))</code></td></tr>
+      <tr><td>In-group feature</td><td><code>df.groupby("g")["x"].transform("mean")</code></td></tr>
+      <tr><td>Long → wide</td><td><code>df.pivot_table(index=, columns=, values=, aggfunc=)</code></td></tr>
+      <tr><td>Wide → long</td><td><code>df.melt(id_vars=[...], value_vars=[...])</code></td></tr>
+      <tr><td>SQL join</td><td><code>pd.merge(a, b, on="k", how="left")</code></td></tr>
+      <tr><td>As-of join</td><td><code>pd.merge_asof(a.sort_values("ts"), b.sort_values("ts"), on="ts", by=)</code></td></tr>
+      <tr><td>Resample</td><td><code>df.resample("D").agg({...})</code></td></tr>
+      <tr><td>Lagged mean</td><td><code>df["y"].shift(1).rolling(7).mean()</code></td></tr>
+      <tr><td>Nullable int</td><td><code>df["x"].astype("Int64")</code></td></tr>
+      <tr><td>Category</td><td><code>df["c"].astype("category")</code></td></tr>
+      <tr><td>Forward fill</td><td><code>df.ffill(limit=3)</code></td></tr>
+      <tr><td>To numpy</td><td><code>df["x"].to_numpy()</code> (not <code>.values</code>)</td></tr>
+      <tr><td>Persist</td><td><code>df.to_parquet(path, compression="snappy")</code></td></tr>
+      <tr><td>matplotlib canonical</td><td><code>fig, ax = plt.subplots(); ax.plot(...); fig.savefig(...)</code></td></tr>
+    </table>
+  </div>
+
+</div> <!-- /cols -->
+
+</body>
+</html>

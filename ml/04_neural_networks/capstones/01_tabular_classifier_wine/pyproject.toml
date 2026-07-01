@@ -1,0 +1,15 @@
+[project]
+name = "tabular-classifier-wine"
+version = "0.1.0"
+description = "NN classifier capstone (Wine dataset, multiclass)"
+requires-python = ">=3.10, <3.14"
+dependencies = [
+    "torch>=2.2",
+    "scikit-learn>=1.4",
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "joblib>=1.4",
+    "matplotlib>=3.8",
+]
+
+# [tool.uv.sources] hoisted to ml/ workspace root — inherited.
