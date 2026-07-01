@@ -87,27 +87,38 @@ class FRA(Instrument):
 class InflationSwap(Instrument):
     notional: float; T: float; breakeven: float; strike: float
     def revalue(self, market):
+        b = self.breakeven + market.infl_shock_bp / 1e4
         dfT = market.df(self.T)
-        return self.notional * dfT * ((1 + self.breakeven)**self.T - (1 + self.strike)**self.T)
+        return self.notional * dfT * ((1 + b)**self.T - (1 + self.strike)**self.T)
 
 # TASK 4 — Linker:  Σ real_cfₜ·(1+b)^t·DF(t)                                              -> 101.1778
 @dataclass(frozen=True)
 class Linker(Instrument):
     times: tuple[float, ...]; real_cfs: tuple[float, ...]; breakeven: float
-    def revalue(self, market): raise NotImplementedError
+    def revalue(self, market):
+        b = self.breakeven + market.infl_shock_bp / 1e4
+        dfs = np.array([market.df(t) for t in self.times])
+        return np.sum(self.real_cfs * ((1+b)**np.asarray(self.times)) * dfs)
 
 # TASK 5 — Annuity Liability:  − Σ payment·(1+b)^t·DF(t),  t=1..years                    -> -46.7900
 @dataclass(frozen=True)
 class AnnuityLiability(Instrument):
     payment: float; years: int; breakeven: float
-    def revalue(self, market): raise NotImplementedError
+    def revalue(self, market):
+        b = self.breakeven + market.infl_shock_bp / 1e4
+        n = np.arange(1, self.years+1)
+        dfs = np.array([market.df(t) for t in n])
+        return -np.sum(self.payment * ((1+b)**n) * dfs)
 
 # TASK 6 — Tenor Basis Swap (receive the basis spread):
 #   b = (basis_bp + market.tenor_basis_bp)/1e4 ;  value = b·notional·Σ tau·DF(t)         -> 0.6607
 @dataclass(frozen=True)
 class TenorBasisSwap(Instrument):
     notional: float; times: tuple[float, ...]; tau: float; basis_bp: float
-    def revalue(self, market): raise NotImplementedError
+    def revalue(self, market):
+        b = (self.basis_bp + market.tenor_basis_bp) / 1e4
+        ann = np.sum([self.tau * market.df(t) for t in self.times])
+        return b * self.notional * ann
 
 # TASK 7 — XCCY Basis Swap (foreign-ccy basis leg; fx-sensitive):
 #   b = (basis_bp + market.xccy_basis_bp)/1e4 ;  fx = fx0·fx_factor()
@@ -115,8 +126,10 @@ class TenorBasisSwap(Instrument):
 @dataclass(frozen=True)
 class XCCYBasisSwap(Instrument):
     foreign_notional: float; fx0: float; times: tuple[float, ...]; tau: float; basis_bp: float
-    def revalue(self, market): raise NotImplementedError
-
+    def revalue(self, market):
+        b = (self.basis_bp + market.xccy_basis_bp) / 1e4
+        ann = np.sum([self.tau * market.df(t) for t in self.times])
+        return self.foreign_notional * self.fx0 * market.fx_factor() * b * ann
 
 class Portfolio:
     def __init__(self, instruments): self._instruments = list(instruments)
