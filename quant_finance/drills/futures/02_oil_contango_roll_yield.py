@@ -44,8 +44,7 @@ import numpy as np
 # ── TASK 1 ─────────────────────────────────────────────────────────────────
 def is_contango(front: float, second: float) -> bool:
     """True if F(second_month) > F(front_month)."""
-    # TODO: implement
-    raise NotImplementedError
+    return second > front
 
 
 # ── TASK 2 ─────────────────────────────────────────────────────────────────
@@ -56,8 +55,9 @@ def roll_yield(front: float, second: float, rolls_per_year: int = 12) -> tuple[f
     annualised     = per_roll * rolls_per_year
     Contango → both NEGATIVE for a passive long.
     """
-    # TODO: implement
-    raise NotImplementedError
+    per_roll = (front - second) / front
+    ann = per_roll * rolls_per_year
+    return per_roll, ann
 
 
 # ── TASK 3 ─────────────────────────────────────────────────────────────────
@@ -68,8 +68,7 @@ def calendar_spread_pnl(basis_initial: float, basis_final: float,
     PnL per spread per unit = basis_final - basis_initial.
     Total $ PnL = pnl_per_spread * n_spreads * multiplier.
     """
-    # TODO: implement
-    raise NotImplementedError
+    return n_spreads * multiplier * (basis_final - basis_initial)
 
 
 # ── TASK 4 ─────────────────────────────────────────────────────────────────
@@ -77,8 +76,7 @@ def implied_storage_minus_convenience(S: float, F: float, r: float, T: float) ->
     """Back out (u - y) from F = S * exp((r + u - y) * T):
         (u - y) = ln(F/S) / T - r
     """
-    # TODO: implement
-    raise NotImplementedError
+    return (np.log(F / S) / T) - r
 
 
 # ── GRADING ────────────────────────────────────────────────────────────────

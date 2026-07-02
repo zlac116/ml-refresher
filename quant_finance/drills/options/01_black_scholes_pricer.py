@@ -55,18 +55,38 @@ class BSMGreeks:
     theta: float
 
 
+def _d1_d2(S: float, K: float, T: float, r: float, sigma:float) -> tuple[float, float]:
+    d1 = (np.log(S/K) + (r + 0.5*sigma**2)*T) / (sigma*np.sqrt(T))
+    return d1, d1 - sigma*np.sqrt(T)
+
+
 # ── TASK 1 ─────────────────────────────────────────────────────────────────
 def bsm_call(S: float, K: float, T: float, r: float, sigma: float) -> BSMGreeks:
     """European call under BSM, no dividends. Return BSMGreeks."""
-    # TODO: implement
-    raise NotImplementedError
+    d1, d2 = _d1_d2(S, K, T, r, sigma)
+    nd1 = norm.cdf(d1)
+    nd2 = norm.cdf(d2)
+    price = S*nd1 - K*np.exp(-r*T)*nd2
+    gamma = norm.pdf(d1) / (S * sigma * np.sqrt(T))
+    vega = S * norm.pdf(d1) * np.sqrt(T)
+    theta = -(S*norm.pdf(d1)*sigma) / (2*np.sqrt(T)) - r*K*np.exp(-r*T)*nd2
+    return BSMGreeks(
+        price=price, delta=nd1, gamma=gamma, vega=vega, theta=theta
+    )
+
 
 
 # ── TASK 2 ─────────────────────────────────────────────────────────────────
 def bsm_put(S: float, K: float, T: float, r: float, sigma: float) -> BSMGreeks:
     """European put under BSM, no dividends. Return BSMGreeks."""
-    # TODO: implement
-    raise NotImplementedError
+    d1, d2 = _d1_d2(S, K, T, r, sigma)
+    price = K*np.exp(-r*T)*norm.cdf(-d2) - S*norm.cdf(-d1)
+    gamma = norm.pdf(d1) / (S * sigma * np.sqrt(T))
+    vega = S * norm.pdf(d1) * np.sqrt(T)
+    theta = -(S*norm.pdf(d1)*sigma) / (2*np.sqrt(T)) + r*K*np.exp(-r*T)*norm.cdf(-d2)
+    return BSMGreeks(
+        price=price, delta=norm.cdf(d1) - 1, gamma=gamma, vega=vega, theta=theta
+    )
 
 
 # ── GRADING ────────────────────────────────────────────────────────────────
@@ -96,4 +116,31 @@ if __name__ == "__main__":
     print(f"vega         = {c.vega:.6f}")
     print(f"theta call   = {c.theta:.6f}")
     print(f"theta put    = {p.theta:.6f}")
-    print("\n✓ All checks passed.")
+    print("\n✓ Case 1 (T=1) checks passed.")
+
+    # ── Case 2: non-unit T pins down the vega ×/÷ ambiguity ──────────────
+    # At T=1, the buggy `S·φ/√T` and canonical `S·φ·√T` coincide (both = S·φ).
+    # At T=4 they differ by 4×: canonical vega = 62.45, buggy = 15.61. A
+    # single test point can't distinguish two functions that happen to agree
+    # there — this second case pins the vega formula down. It also catches
+    # the theta `σ/(2√T)` term and the `√T` factor in d₁/d₂ scaling.
+    S, K, T, r, sigma = 100.0, 100.0, 4.0, 0.05, 0.20
+    c2 = bsm_call(S, K, T, r, sigma)
+    p2 = bsm_put (S, K, T, r, sigma)
+
+    assert abs(c2.price -  25.213326) < 1e-5, c2.price
+    assert abs(p2.price -   7.086402) < 1e-5, p2.price
+    assert abs(c2.delta -   0.758036) < 1e-5, c2.delta
+    assert abs(p2.delta -  -0.241964) < 1e-5, p2.delta
+    assert abs(c2.gamma -   0.007806) < 1e-5, c2.gamma
+    assert abs(c2.vega  -  62.450787) < 1e-4, c2.vega     # flags S·φ/√T bug
+    assert abs(c2.theta -  -4.090785) < 1e-4, c2.theta
+    assert abs(p2.theta -   0.002869) < 1e-4, p2.theta
+
+    # Symmetry (same for T=1 case)
+    assert abs(c2.gamma - p2.gamma) < 1e-12
+    assert abs(c2.vega  - p2.vega ) < 1e-12
+
+    print(f"[T=4] call={c2.price:.6f} put={p2.price:.6f} "
+          f"vega={c2.vega:.6f} theta_c={c2.theta:.6f}")
+    print("\n✓ Case 2 (T=4) checks passed.")
