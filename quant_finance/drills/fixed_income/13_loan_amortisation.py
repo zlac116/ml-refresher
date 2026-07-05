@@ -60,20 +60,20 @@ def amortisation_schedule(principal: float, annual_rate_nominal: float,
     r = annual_rate_nominal / 12
     pmt = (principal * r) / (1 - (1 + r)**-n)
 
-    result = {
-        "balance": np.zeros(n + 1),
-        "interest": np.zeros(n),
-        "principal": np.zeros(n)
+    schedule = {
+        "balance": np.empty(n+1),
+        "interest": np.empty(n),
+        "principal": np.empty(n),
     }
 
-    result["balance"][0] = principal
+    schedule["balance"][0] = principal
 
     for i in range(n):
-        result["interest"][i] = result["balance"][i] * r
-        result["principal"][i] = pmt - result["interest"][i]
-        result["balance"][i + 1] = result["balance"][i] - result["principal"][i]
+        schedule["interest"][i] = schedule["balance"][i] * r
+        schedule["principal"][i] = pmt - schedule["interest"][i]
+        schedule["balance"][i+1] = schedule["balance"][i] - schedule["principal"][i]
 
-    return result
+    return schedule
 
 
 # ── TASK 3 ─────────────────────────────────────────────────────────────────
