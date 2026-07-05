@@ -36,13 +36,12 @@ from scipy.optimize import brentq
 # ── TASK 1 ─────────────────────────────────────────────────────────────────
 def dirty_price(face: float, coupon: float, ytm: float, T: float, freq: int) -> float:
     """Present value of all remaining cashflows assuming we're at a coupon date."""
-    # TODO: implement
-    n = int(T * freq)
-    t = np.arange(1, n + 1) / freq
-    cf = np.full(n, face * coupon / freq)
-    cf[-1] += face
-    discount = (1 + ytm / freq) ** (freq * t)
-    return np.sum(cf / discount)
+    n = int(T*freq)
+    times = np.arange(1, n+1) / freq
+    cfs = np.full(n, coupon*face) / freq
+    cfs[-1] += face
+    dfs = np.array([1 / (1 + ytm/freq)**(t*freq) for t in times])
+    return np.sum(cfs * dfs)
 
 
 # ── TASK 2 ─────────────────────────────────────────────────────────────────

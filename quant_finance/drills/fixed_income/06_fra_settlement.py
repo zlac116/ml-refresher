@@ -50,8 +50,9 @@ def fra_settlement_payment(notional: float, contracted_rate: float,
     where δ = days_period / basis.
     Positive payment → buyer receives.
     """
-    delta = days_period / 360
-    return notional * (fixing_rate - contracted_rate) * delta / (1 + fixing_rate * delta)
+    delta = days_period / basis
+    DFt = 1 / (1 + fixing_rate * delta)
+    return notional * (fixing_rate - contracted_rate) * delta * DFt
 
 
 # ── TASK 2 ─────────────────────────────────────────────────────────────────

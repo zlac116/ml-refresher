@@ -48,6 +48,18 @@ def interp_par_rates(tenors: np.ndarray, par_rates: np.ndarray,
     Use numpy.interp.
     """
     return np.interp(all_years, tenors, par_rates)
+    # assert np.all(np.diff(tenors) > 0)
+    # assert len(tenors) == len(par_rates)
+    # result = np.empty_like(all_years, dtype=np.float64)
+    # for i, t in enumerate(all_years):
+    #     if t <= tenors[0]: result[i] = par_rates[0]; continue
+    #     if t >= tenors[-1]: result[i] = par_rates[-1]; continue
+    #     hi = np.searchsorted(tenors, t, side="right")
+    #     lo = hi - 1
+    #     w = (t - tenors[lo]) / (tenors[hi] - tenors[lo]) 
+    #     result[i] = par_rates[lo] + w * (par_rates[hi] - par_rates[lo])
+
+    # return result
 
 
 # ── TASK 2 ─────────────────────────────────────────────────────────────────
@@ -71,9 +83,9 @@ def bootstrap_discount_factors(par_rates: np.ndarray,
     n = len(par_rates)
     D = np.empty(n)
     weighted_prior_sum = 0.0
-    for k, (c, dk) in enumerate(zip(par_rates, deltas)):
-        D[k] = (1 - c * weighted_prior_sum) / (1 + c * dk)
-        weighted_prior_sum += dk * D[k]
+    for i, (c, d) in enumerate(zip(par_rates, deltas)):
+        D[i] = (1 - c * weighted_prior_sum) / (1 + c * d)
+        weighted_prior_sum += d * D[i]
     return D
 
 

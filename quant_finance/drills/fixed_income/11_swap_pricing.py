@@ -65,9 +65,7 @@ def pv_floating_leg(notional: float, discount_factors: np.ndarray) -> float:
 def pv_swap_receive_fixed(notional: float, fixed_rate: float,
                           deltas: np.ndarray, discount_factors: np.ndarray) -> float:
     """PV from the receive-fixed perspective = PV_fix - PV_float."""
-    pv_fixed = pv_fixed_leg(notional, fixed_rate, deltas, discount_factors)
-    pv_float = pv_floating_leg(notional, discount_factors)
-    return pv_fixed - pv_float
+    return pv_fixed_leg(notional, fixed_rate, deltas, discount_factors) - pv_floating_leg(notional, discount_factors)
 
 
 # ── TASK 4 ─────────────────────────────────────────────────────────────────
@@ -83,11 +81,9 @@ def swap_dv01(notional: float, fixed_rate: float,
 
     Use: D = exp(-z * T) to convert zero rates to discount factors.
     """
-    df_base = np.exp(-zero_rates * tenors)
-    df_up = np.exp(-(zero_rates + bump) * tenors)
-    pv_base = pv_swap_receive_fixed(notional, fixed_rate, deltas, df_base)
-    pv_up = pv_swap_receive_fixed(notional, fixed_rate, deltas, df_up)
-    return pv_base - pv_up
+    p_base = pv_swap_receive_fixed(notional, fixed_rate, deltas, np.exp(-zero_rates*tenors))
+    p_up = pv_swap_receive_fixed(notional, fixed_rate, deltas, np.exp(-(zero_rates + bump)*tenors))
+    return p_base - p_up
 
 
 # ── GRADING ────────────────────────────────────────────────────────────────

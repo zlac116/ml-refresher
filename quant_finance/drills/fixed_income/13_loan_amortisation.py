@@ -41,9 +41,9 @@ def monthly_payment(principal: float, annual_rate_nominal: float, years: int) ->
 
     Use the annuity formula with r = annual_rate_nominal / 12 and n = years*12.
     """
-    r = annual_rate_nominal / 12 # monthly rate
-    n = years * 12 # number of payments
-    return principal * r * ((1 + r)**n) / ((1 + r)**n - 1)
+    r = annual_rate_nominal / 12
+    n = years * 12
+    return (principal * r) / (1 - (1 + r)**-n)
 
 
 # ── TASK 2 ─────────────────────────────────────────────────────────────────
@@ -58,7 +58,7 @@ def amortisation_schedule(principal: float, annual_rate_nominal: float,
     """
     n = years * 12
     r = annual_rate_nominal / 12
-    pmt = principal * r * ((1 +r)**n) / ((1 + r)**n - 1)
+    pmt = (principal * r) / (1 - (1 + r)**-n)
 
     result = {
         "balance": np.zeros(n + 1),

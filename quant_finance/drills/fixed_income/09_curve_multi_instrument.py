@@ -59,11 +59,11 @@ def bootstrap_swap_DFs(par_rates: np.ndarray, deltas: np.ndarray) -> np.ndarray:
 
     D[k] = (1 - c * sum_{i<k} delta_i * D[i]) / (1 + c * delta[k])
     """
-    D = np.empty(len(par_rates))
-    weighted_prior_sum = 0.0
-    for i, (c, dk) in enumerate(zip(par_rates, deltas)):
-        D[i] = (1 - c * weighted_prior_sum) / (1 + c * dk)
-        weighted_prior_sum += dk * D[i]
+    D = np.empty_like(par_rates)
+    weighted_sum = 0.0
+    for i, (c, d) in enumerate(zip(par_rates, deltas)):
+        D[i] = (1 - c * weighted_sum) / (1 + c * d)
+        weighted_sum += d * D[i]
     return D
 
 
@@ -99,7 +99,6 @@ def interp_linear_in_zero(pillars_T: np.ndarray, pillars_D: np.ndarray,
     z2 = -np.log(pillars_D[1]) / pillars_T[1]
     z_at_T = z1 + (T_eval - pillars_T[0]) / (pillars_T[1] - pillars_T[0]) * (z2 - z1)
     return float(np.exp(-z_at_T * T_eval))
-
 
 # ── GRADING ────────────────────────────────────────────────────────────────
 if __name__ == "__main__":

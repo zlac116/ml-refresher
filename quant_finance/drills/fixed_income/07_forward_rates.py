@@ -36,13 +36,13 @@ import numpy as np
 # ── TASK 1 ─────────────────────────────────────────────────────────────────
 def discount_factors_from_zeros(zero_T: np.ndarray, zero_r: np.ndarray) -> np.ndarray:
     """D(0, T) = exp(-r(T) * T). Vectorise across tenors."""
-    return np.exp(-zero_r * zero_T)
+    return np.exp(-zero_r*zero_T)
 
 
 # ── TASK 2 ─────────────────────────────────────────────────────────────────
 def forward_rate_zero_form(r1: float, T1: float, r2: float, T2: float) -> float:
     """f(T1, T2) = (r2 * T2 - r1 * T1) / (T2 - T1)."""
-    return (r2 * T2 - r1 * T1) / (T2 - T1)
+    return (r2*T2 - r1*T1) / (T2 -T1)
 
 
 # ── TASK 3 ─────────────────────────────────────────────────────────────────

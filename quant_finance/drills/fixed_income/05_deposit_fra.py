@@ -39,7 +39,7 @@ import numpy as np
 # ── TASK 1 ─────────────────────────────────────────────────────────────────
 def deposit_interest_act360(notional: float, rate: float, days: int) -> float:
     """Simple interest on an ACT/360 deposit."""
-    return notional * (1 + rate * days / 360 - 1)
+    return notional * rate * (days / 360) 
 
 
 # ── TASK 2 ─────────────────────────────────────────────────────────────────
@@ -54,7 +54,7 @@ def fra_rate(r_short: float, days_short: int,
     t_short = days_short / 360
     t_long  = days_long  / 360
     delta = t_long - t_short
-    return (r_long * t_long - r_short * t_short) / (delta * (1 + r_short * t_short))
+    return ((1 + r_long*t_long) / (1 + r_short*t_short) - 1) / delta
 
 
 # ── GRADING ────────────────────────────────────────────────────────────────

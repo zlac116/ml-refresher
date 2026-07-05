@@ -58,9 +58,7 @@ def par_swap_rate(discount_factors: np.ndarray, deltas: np.ndarray) -> float:
 
     where A = sum_i delta_i * D(0, T_i).
     """
-    annuity = annuity_factor(deltas, discount_factors)
-    pv_float = (1 - discount_factors[-1])
-    return pv_float / annuity
+    return (1 - discount_factors[-1]) / annuity_factor(deltas, discount_factors)
 
 
 # ── TASK 3 ─────────────────────────────────────────────────────────────────
@@ -76,7 +74,6 @@ def verify_bootstrap_consistency(par_rates: np.ndarray, deltas: np.ndarray,
     error = np.empty(n)
     for i in range(n):
         error[i] = np.abs(par_rates[i] - par_swap_rate(discount_factors[:i+1], deltas[:i+1]))
-    
     return all(error < atol)
 
 
