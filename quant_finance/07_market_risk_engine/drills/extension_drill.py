@@ -204,7 +204,7 @@ class HistoricalVaREngine:
         return [self.portfolio.value(s.apply(base)) - v0 for s in self.scenarios]
     def var(self, base: Market, conf: float = 0.995) -> float:
         p = sorted(self.pnl_vector(base))
-        return -p[int((1 - conf) * len(p))]
+        return -p[int((1 - conf) * len(p))]  # -np.percentile(p, (1 - conf)*100)
 
     # ═══════════════════════════════════════════════════════════════════════
     # TASK 5 — Expected Shortfall (average loss in the tail)
@@ -213,8 +213,9 @@ class HistoricalVaREngine:
     # ═══════════════════════════════════════════════════════════════════════
     def expected_shortfall(self, base: Market, conf: float = 0.995) -> float:
         pnls_sorted = sorted(self.pnl_vector(base))
-        k = int(len(pnls_sorted) * (1 - conf))
-        return -np.mean(pnls_sorted[:k + 1])
+        k = int(len(pnls_sorted)*(1-conf))
+        return -np.mean(pnls_sorted[:k+1])
+
 
 # ═══════════════════════════════════════════════════════════════════════════
 # GRADING

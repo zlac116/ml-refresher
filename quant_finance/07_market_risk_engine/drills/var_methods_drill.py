@@ -77,11 +77,7 @@ class MultiMethodVaR:
     #   EXPECTED: 99.5% -> 6.5238 ,  99% -> 5.8919
     # ═══════════════════════════════════════════════════════════════════════
     def parametric_var(self, conf=0.995):
-        s = np.array(self.sensitivities())
-        cov = self.covariance()
-        pnl_var = s @ cov @ s
-        pnl_std = np.sqrt(pnl_var)
-        return norm.ppf(conf) * pnl_std
+        raise NotImplementedError
 
     # ═══════════════════════════════════════════════════════════════════════
     # TASK 2 — Monte Carlo VaR (Cholesky -> simulate -> FULL revalue -> percentile)
@@ -93,11 +89,7 @@ class MultiMethodVaR:
     #   EXPECTED (n_paths=10000, seed=42): 99.5% -> 6.3411 , 99% -> 5.8760
     # ═══════════════════════════════════════════════════════════════════════
     def monte_carlo_var(self, conf=0.995, n_paths=10000, seed=42):
-        L = np.linalg.cholesky(self.covariance())
-        rng = np.random.default_rng(seed)
-        sims = rng.standard_normal(size=(n_paths, 4)) @ L.T
-        pnl_k = np.array([self.pf.value(e.Scenario(*s).apply(self.base)) - self.V0 for s in sims])
-        return float(-np.percentile(pnl_k, (1-conf) * 100))
+        raise NotImplementedError
 
 # ═══════════════════════════════════════════════════════════════════════════
 # GRADING

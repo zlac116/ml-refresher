@@ -40,26 +40,26 @@ import numpy as np
 def _cashflows(face: float, coupon: float, ytm: float, T: float, freq: int):
     """Return (times in years, cashflows, per-period yield)."""
     n = int(T * freq)
-    times = np.arange(1, n + 1) / freq
-    cf = np.full(n, face * coupon / freq)
-    cf[-1] += face
-    return times, cf, ytm / freq
+    times = np.array([t for t in range(1, n+1)]) / freq
+    cashflows = np.full_like(times, coupon * face) / freq
+    cashflows[-1] += face
+    return times, cashflows, ytm / freq
 
 
 # ── TASK 1 ─────────────────────────────────────────────────────────────────
 def bond_price(face: float, coupon: float, ytm: float, T: float, freq: int) -> float:
     """Price a fixed-coupon bond at YTM (annualised, compounded `freq` times)."""
-    t, cf, ytm = _cashflows(face, coupon, ytm, T, freq)
-    discount = (1 + ytm) ** (freq * t)
-    return np.sum(cf / discount)
+    t, cf, y_per = _cashflows(face, coupon, ytm, T, freq)
+    dfs = (1 + y_per) ** (-freq * t)
+    return np.sum(cf * dfs)
 
 
 # ── TASK 2 ─────────────────────────────────────────────────────────────────
 def macaulay_duration(face: float, coupon: float, ytm: float, T: float, freq: int) -> float:
     """Macaulay duration in years."""
-    t, cf, ytm = _cashflows(face, coupon, ytm, T, freq)
-    pv = cf / (1 + ytm) ** (t * freq)
-    return np.sum(t * pv) / np.sum(pv)
+    t, cf, y_per = _cashflows(face, coupon, ytm, T, freq)
+    pvs = cf * (1 + y_per)**(-freq*t)
+    return np.sum(pvs * t) / np.sum(pvs)
 
 
 # ── TASK 3 ─────────────────────────────────────────────────────────────────
@@ -76,13 +76,11 @@ def convexity(face: float, coupon: float, ytm: float, T: float, freq: int) -> fl
     where k_i = i (the period index, 1..n).
     """
     t, cf, y_per = _cashflows(face, coupon, ytm, T, freq)
-    pv = cf / (1 + y_per) ** (freq * t)
-    P = np.sum(pv)
-    return np.sum(pv * t *(t + 1/freq)) / np.sum(P *(1 + y_per)**2)
+    pvs = cf * (1 + y_per)**(-freq*t)
+    P = np.sum(pvs)
+    return np.sum(pvs * t * (t + 1/freq)) / (P * (1 + y_per)**2)
 
     
-
-
 # ── TASK 5 ─────────────────────────────────────────────────────────────────
 def predict_dprice(price: float, mod_dur: float, convex: float, dy: float) -> float:
     """Predicted dP = -mod_dur * dy * P + 0.5 * convex * dy^2 * P."""

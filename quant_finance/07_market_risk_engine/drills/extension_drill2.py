@@ -220,9 +220,12 @@ class HistoricalVaREngine:
         self.portfolio = portfolio; self.scenarios = scenarios
     def pnl_vector(self, base):
         v0 = self.portfolio.value(base)
-        return [self.portfolio.value(s.apply(base)) - v0 for s in self.scenarios]
+        return np.array([self.portfolio.value(s.apply(base)) - v0 for s in self.scenarios])
+
     def var(self, base, conf=0.995):
-        p = sorted(self.pnl_vector(base)); return -p[int((1 - conf) * len(p))]
+        p = sorted(self.pnl_vector(base))
+        k = int(len(p)*(1-conf))
+        return -p[k]
 
     # TASK 12 — sensitivity path (finite-difference bumps of the whole portfolio):
     #   s_rate   = V(rate +1bp) − V(base)             # replace(base, rate_bump_bp=base.rate_bump_bp+1)
@@ -233,21 +236,19 @@ class HistoricalVaREngine:
     def sensitivities(self, base):
         v0 = self.portfolio.value(base)
         return (
-            self.portfolio.value(replace(base, rate_bump_bp=base.rate_bump_bp + 1)) - v0,
-            self.portfolio.value(replace(base, spread_bump_bp=base.spread_bump_bp + 1)) - v0,
-            (self.portfolio.value(replace(base, vol_shock=base.vol_shock + 0.01)) - v0) / 0.01,
-            (self.portfolio.value(replace(base, fx_shock=base.fx_shock + 0.01)) - v0) / 0.01,
+            self.portfolio.value(replace(base, rate_bump_bp=base.rate_bump_bp + 1.0)) - v0,
+            self.portfolio.value(replace(base, spread_bump_bp=base.spread_bump_bp + 1.0)) - v0,
+            (self.portfolio.value(replace(base, vol_shock=base.vol_shock + 0.01)) - v0)*100,
+            (self.portfolio.value(replace(base, fx_shock=base.fx_shock + 0.01)) - v0)*100,
         )
+    
     def estimate_pnl(self, base):
-        s_rate, s_spread, s_rv, s_fxv = self.sensitivities(base)
-        pnl = []
-        for s in self.scenarios:
-            pnl.append(s.d_rate_bp*s_rate + s.d_spread_bp*s_spread + s.d_vol*s_rv + s.fx_ret*s_fxv)
-        return pnl
-
+        sr, ss, sv, sf = self.sensitivities(base)
+        return np.array([s.d_rate_bp*sr + s.d_spread_bp*ss + s.d_vol*sv + s.fx_ret*sf for s in self.scenarios])
 
     def var_sensitivity(self, base, conf=0.995):
-        p = sorted(self.estimate_pnl(base)); return -p[int((1 - conf) * len(p))]
+        p = sorted(self.estimate_pnl(base))
+        return -p[int(len(p) * (1 - conf))]
 
 
 if __name__ == "__main__":
