@@ -90,6 +90,30 @@ Rates up ⇒ a receiver swap loses value ⇒ posts VM ⇒ day-1 outflow. This is
 ```
 A deflation shock (`Δinfl < 0`) is a loss ⇒ outflow.
 
+**3b. FX forward** (SELL N foreign forward at strike K, maturity T) — GBP MTM:
+
+```
+MTM = N·K·DF_dom(T) − N·S·DF_for(T)          # receive GBP strike, deliver foreign
+```
+`S` = spot (GBP per foreign); `K` = par forward `S·DF_for(T)/DF_dom(T)` so base MTM ≈ 0.
+Two liquidity items: **(i)** stress VM = ΔMTM (GBP depreciation ⇒ a sold-foreign forward
+loses ⇒ posts VM ⇒ `<=1m` outflow); **(ii)** the **gross settlement** at T — receive `K·N`
+GBP *and* deliver `N` foreign — both legs hit the ladder (settlement/Herstatt risk), even
+though they nearly net.
+
+**3c. Cross-currency (XCCY) swap** (pay foreign / receive GBP) — GBP MTM:
+
+```
+MTM = PV_gbp − S · PV_for
+   PV_gbp = Σ c_gbp·N_gbp·τ·DF_dom(t_i) + N_gbp·DF_dom(T)     # receive-GBP leg
+   PV_for = Σ c_for·N_for·τ·DF_for(t_i) + N_for·DF_for(T)     # pay-foreign leg
+   N_gbp  = N_for · S₀   (notionals matched at inception spot)
+```
+Liquidity items: **(i)** stress VM = ΔMTM, dominated by the **principal re-exchange** and
+so highly FX-sensitive (GBP depreciation ⇒ the pay-foreign leg costs more ⇒ VM outflow);
+**(ii)** periodic coupons in each currency *and* the **gross principal re-exchange at T**
+all flow through the ladder in their own currency.
+
 **4. Bond / gilt value** (own cashflows discounted on shocked curve + spread):
 
 ```
@@ -181,8 +205,8 @@ rm -f data/inputs/*.csv && uv run python run.py
 |---|---|---|
 | `discount_factors.csv` | `month` (1..720), `GBP`,`USD`,`EUR`,`JPY` | continuously-compounded DFs from a Nelson-Siegel zero curve per ccy |
 | `fx_rates.csv` | `currency`, `gbp_per_unit` | base spot; FX shock scales the foreign legs |
-| `deals.csv` | `deal_id`,`compartment`,`currency`,`product_type`,`notional`,`rate`,`start_month`,`maturity_month`,`freq_months`,`haircut` | static data for revaluation; `compartment` drives LQR vs LQ |
-| `cashflows.csv` | `deal_id`,`month`,`amount` (+in/−out),`flow_category` | projected nominal cash → the base ladder |
+| `deals.csv` | `deal_id`,`compartment`,`currency`,`product_type`,`notional`,`rate`,`start_month`,`maturity_month`,`freq_months`,`haircut`,`rate2` | static data for revaluation; `compartment` drives LQR vs LQ. `rate2` = GBP-leg coupon (XCCY) or strike (FX forward) |
+| `cashflows.csv` | `deal_id`,`month`,`amount` (+in/−out),`currency`,`flow_category` | projected nominal cash → the base ladder. **Per-flow `currency`** because FX/XCCY legs settle in two currencies |
 | `stress_scenarios.csv` | `scenario_id`, per-factor shocks, `description` | rate/credit/gilt/FX/inflation + haircut add-ons |
 | `template_*_blank.csv` | line codes + empty buckets | the PRA "blank pack" the engine fills |
 
@@ -212,6 +236,9 @@ The drill is honest about its simplifications (also listed in `analysis_deep_div
 - **Annuity run-off** — linear-decline proxy, not actuarial mortality.
 - **Swaps** — single-curve valuation (no OIS/tenor basis); inflation swap via a duration
   approximation rather than a full inflation curve.
+- **FX forwards / XCCY swaps** — priced off covered interest parity with a flat cross-currency
+  basis of zero; VM assumed fully cash-collateralised daily (real CSAs have thresholds, MTAs,
+  and non-cash collateral). Gross settlement legs are shown in full (no PvP netting assumed).
 - **Gilts** — treated purely as counterbalancing (monetise-now), so their redemptions are
   *not* also added to the inflow ladder (avoids double counting).
 

@@ -135,6 +135,30 @@ class LiquidityStressEngine:
             pv += cf * self.shocked_df(deal["currency"], m, s)
         return pv
 
+    def fx_forward_mtm(self, deal, spot: float, rate_bp: float) -> float:
+        """MTM (GBP) of a SOLD foreign forward (receive GBP strike, deliver foreign)
+        at maturity T:  MTM = N*K*DF_dom(T) - N*spot*DF_for(T).
+        `spot` = GBP per foreign (pass base for base MTM, shocked for stressed)."""
+        N, K, T, ccy = deal["notional"], deal["rate2"], int(deal["maturity_month"]), deal["currency"]
+        return (N * K * self.shocked_df("GBP", T, rate_bp)
+                - N * spot * self.shocked_df(ccy, T, rate_bp))
+
+    def xccy_swap_mtm(self, deal, spot: float, rate_bp: float) -> float:
+        """MTM (GBP) of a pay-foreign / receive-GBP cross-currency swap:
+        MTM = PV(GBP leg) - spot * PV(foreign leg), both legs incl. principal.
+        Notionals matched at inception spot (N_gbp = N_for * base spot)."""
+        N_for, ccy = deal["notional"], deal["currency"]
+        freq, T = int(deal["freq_months"]), int(deal["maturity_month"])
+        tau = freq / 12.0
+        c_for, c_gbp = deal["rate"], deal["rate2"]
+        N_gbp = N_for * float(self.fx[ccy])                  # fixed at inception spot
+        pay_months = np.arange(freq, T + 1, freq)
+        gbp_pv = sum(c_gbp * N_gbp * tau * self.shocked_df("GBP", m, rate_bp) for m in pay_months)
+        gbp_pv += N_gbp * self.shocked_df("GBP", T, rate_bp)
+        for_pv = sum(c_for * N_for * tau * self.shocked_df(ccy, m, rate_bp) for m in pay_months)
+        for_pv += N_for * self.shocked_df(ccy, T, rate_bp)
+        return gbp_pv - spot * for_pv
+
     # ------------------------------------------------------------------ #
     # Counterbalancing capacity (a STOCK, in GBP) per compartment.        #
     # ------------------------------------------------------------------ #
@@ -162,16 +186,18 @@ class LiquidityStressEngine:
         L = {c: np.zeros(N_BUCKETS) for c in codes}
 
         # ---- (a) BASE contractual cashflows from cashflows.csv -------------
-        deal_ccy = self.deals.set_index("deal_id")["currency"].to_dict()
         deal_cmp = self.deals.set_index("deal_id")["compartment"].to_dict()
         cat_to_code = {"INSURANCE_OUT": "O1", "ASSET_IN": "I2",
-                       "REPO_IN": "I5", "REPO_OUT": "O3"}
+                       "REPO_IN": "I5", "REPO_OUT": "O3",
+                       # FX forward / XCCY gross settlement legs -> derivative lines
+                       "FX_SETTLE_IN": "I4", "FX_SETTLE_OUT": "O2",
+                       "XCCY_IN": "I4", "XCCY_OUT": "O2"}
         cf = self.cashflows[self.cashflows["deal_id"].map(deal_cmp) == compartment]
         for _, r in cf.iterrows():
             code = cat_to_code[r["flow_category"]]
             b = month_to_bucket(r["month"])
-            # base ladder is nominal; foreign contractual flows converted at scn FX
-            L[code][b] += r["amount"] * self.gbp(deal_ccy[r["deal_id"]], scn)
+            # base ladder is nominal; each flow converted at its OWN currency's (shocked) FX
+            L[code][b] += r["amount"] * self.gbp(r["currency"], scn)
 
         # ---- (b) STRESS overlay: derivative VM + repo haircut top-ups ------
         if not scn.is_base:
@@ -187,6 +213,15 @@ class LiquidityStressEngine:
                     dmtm = self.inflation_swap_mtm_change(d, scn.infl_bp)
                     vm = dmtm * self.gbp(d["currency"], scn)
                     (L["I4"] if vm >= 0 else L["O2"])[IMMEDIATE] += vm
+                elif pt == "FX_FORWARD":
+                    # FX-sensitive VM: revalue at shocked spot & curves vs base
+                    dmtm = (self.fx_forward_mtm(d, self.gbp(d["currency"], scn), scn.rate_bp)
+                            - self.fx_forward_mtm(d, float(self.fx[d["currency"]]), 0.0))
+                    (L["I4"] if dmtm >= 0 else L["O2"])[IMMEDIATE] += dmtm
+                elif pt == "XCCY_SWAP":
+                    dmtm = (self.xccy_swap_mtm(d, self.gbp(d["currency"], scn), scn.rate_bp)
+                            - self.xccy_swap_mtm(d, float(self.fx[d["currency"]]), 0.0))
+                    (L["I4"] if dmtm >= 0 else L["O2"])[IMMEDIATE] += dmtm
                 elif pt == "REPO":
                     # lender raises haircut -> post extra collateral now (outflow)
                     topup = d["notional"] * scn.repo_haircut_addon

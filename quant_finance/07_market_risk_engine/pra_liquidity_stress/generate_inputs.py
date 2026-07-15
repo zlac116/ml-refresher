@@ -114,6 +114,15 @@ DEALS = [
     ("D15", "NON_MAP",         "JPY", "RECEIVER_SWAP",     5.0e10, None,    0, 120,  6, 0.0),
     ("D16", "NON_MAP",         "GBP", "CASH",              0.60e9, 0.0,    0,   0,  0, 0.0),
     ("D17", "NON_MAP",         "GBP", "REPO",              0.30e9, 0.045, 1,   1,  0, 0.02),
+
+    # --- FX forwards & cross-currency swaps -------------------------------- #
+    # XCCY hedges the USD bond D03 back to GBP (pay USD coupons+principal /
+    # receive GBP). FX forwards hedge the FX on foreign asset holdings by
+    # SELLING the foreign currency forward. `rate` = foreign leg coupon (XCCY);
+    # `rate2` (added in build_deals) = GBP leg coupon (XCCY) or strike (FX fwd).
+    ("D19", "MAP1_RETIREMENT", "USD", "XCCY_SWAP",         1.5e9, 0.045,  1, 300,  6, 0.0),
+    ("D20", "MAP2_BULK",       "EUR", "FX_FORWARD",        1.2e9, 0.0,     1,   6,  0, 0.0),
+    ("D21", "NON_MAP",         "USD", "FX_FORWARD",        0.5e9, 0.0,     1,   3,  0, 0.0),
 ]
 
 DEAL_COLS = ["deal_id", "compartment", "currency", "product_type", "notional",
@@ -135,14 +144,30 @@ def build_deals(dfs, fx):
     rows = []
     for d in DEALS:
         row = dict(zip(DEAL_COLS, d))
-        # For swaps, set the stored fixed_rate to the base-curve par rate so that
-        # BASE MTM ~ 0 and the stress VM is a clean read of the shock effect.
-        if row["product_type"] == "RECEIVER_SWAP":
-            cdf = dfs[["month", row["currency"]]].rename(columns={row["currency"]: "_df"})
-            row["rate"] = round(float(par_swap_rate(cdf, row["maturity_month"],
-                                                    row["freq_months"])), 6)
+        row["rate2"] = np.nan                     # 2nd rate: GBP leg (XCCY) / strike (FX fwd)
+        pt = row["product_type"]
+        T, freq, ccy = int(row["maturity_month"]), int(row["freq_months"] or 0), row["currency"]
+
+        if pt == "RECEIVER_SWAP":
+            # par fixed rate -> BASE MTM ~ 0, so stress VM is a clean read of the shock
+            cdf = dfs[["month", ccy]].rename(columns={ccy: "_df"})
+            row["rate"] = round(float(par_swap_rate(cdf, T, freq)), 6)
+
+        elif pt == "FX_FORWARD":
+            # par forward strike (GBP per foreign) via covered interest parity:
+            #   K = S * DF_for(T) / DF_dom(T)   -> BASE MTM ~ 0
+            s = float(fx.set_index("currency").loc[ccy, "gbp_per_unit"])
+            k = s * float(dfs.loc[dfs.month == T, ccy].iloc[0]) / float(dfs.loc[dfs.month == T, "GBP"].iloc[0])
+            row["rate2"] = round(k, 6)
+
+        elif pt == "XCCY_SWAP":
+            # GBP leg coupon = GBP par swap rate for the maturity (foreign leg
+            # coupon is the stored `rate`). Notionals matched at inception spot.
+            gdf = dfs[["month", "GBP"]].rename(columns={"GBP": "_df"})
+            row["rate2"] = round(float(par_swap_rate(gdf, T, freq)), 6)
+
         rows.append(row)
-    out = pd.DataFrame(rows, columns=DEAL_COLS)
+    out = pd.DataFrame(rows, columns=DEAL_COLS + ["rate2"])
     out.to_csv(INPUTS / "deals.csv", index=False)
     return out
 
@@ -153,10 +178,13 @@ def build_deals(dfs, fx):
 #    Swaps/gilts/cash produce NO base ladder cash (their liquidity risk is     #
 #    stress VM / is a counterbalancing stock) — they live only in deals.csv.   #
 # --------------------------------------------------------------------------- #
-def expand_cashflows(deals):
+def expand_cashflows(deals, fx):
+    # each cashflow carries its OWN currency, because FX forwards and XCCY swaps
+    # settle two legs in two different currencies within a single deal.
+    spot = fx.set_index("currency")["gbp_per_unit"]
     rows = []
     for _, d in deals.iterrows():
-        pt, n = d["product_type"], d["notional"]
+        pt, n, ccy = d["product_type"], d["notional"], d["currency"]
         if pt == "ANNUITY_LIABILITY":
             # [ASSUMPTION] linearly-declining monthly payment to zero at maturity
             # (crude run-off proxy for mortality). p0 = 2N/T so payments sum to N.
@@ -164,22 +192,37 @@ def expand_cashflows(deals):
             p0 = 2.0 * n / T
             for m in range(1, T + 1):
                 amt = -p0 * (1 - (m - 1) / T)
-                rows.append((d["deal_id"], m, round(amt, 2), "INSURANCE_OUT"))
+                rows.append((d["deal_id"], m, round(amt, 2), ccy, "INSURANCE_OUT"))
         elif pt == "CORP_BOND":
             cpn = n * d["rate"] * (d["freq_months"] / 12.0)
             mat = int(d["maturity_month"])
             for m in range(int(d["freq_months"]), mat + 1, int(d["freq_months"])):
                 amt = cpn + (n if m == mat else 0.0)         # coupon; +principal at maturity
-                rows.append((d["deal_id"], m, round(amt, 2), "ASSET_IN"))
+                rows.append((d["deal_id"], m, round(amt, 2), ccy, "ASSET_IN"))
         elif pt == "REPO":
             # cash raised now, repaid (with interest) at maturity
-            rate = d["rate"]
             mat = int(d["maturity_month"])
-            rows.append((d["deal_id"], int(d["start_month"]), round(n, 2), "REPO_IN"))
-            repay = n * (1 + rate * mat / 12.0)
-            rows.append((d["deal_id"], mat, round(-repay, 2), "REPO_OUT"))
+            rows.append((d["deal_id"], int(d["start_month"]), round(n, 2), ccy, "REPO_IN"))
+            repay = n * (1 + d["rate"] * mat / 12.0)
+            rows.append((d["deal_id"], mat, round(-repay, 2), ccy, "REPO_OUT"))
+        elif pt == "FX_FORWARD":
+            # SELL foreign forward at strike K: at T receive K*N in GBP, deliver N foreign.
+            # Gross legs are a real liquidity (settlement) event even though they ~net.
+            mat, K = int(d["maturity_month"]), d["rate2"]
+            rows.append((d["deal_id"], mat, round(K * n, 2), "GBP", "FX_SETTLE_IN"))
+            rows.append((d["deal_id"], mat, round(-n, 2), ccy, "FX_SETTLE_OUT"))
+        elif pt == "XCCY_SWAP":
+            # pay foreign / receive GBP. Notionals matched at inception spot.
+            mat, freq = int(d["maturity_month"]), int(d["freq_months"])
+            tau = freq / 12.0
+            n_gbp = n * float(spot[ccy])                     # GBP notional (fixed at inception)
+            for m in range(freq, mat + 1, freq):
+                gbp_cf = d["rate2"] * n_gbp * tau + (n_gbp if m == mat else 0.0)
+                for_cf = d["rate"] * n * tau + (n if m == mat else 0.0)
+                rows.append((d["deal_id"], m, round(gbp_cf, 2), "GBP", "XCCY_IN"))
+                rows.append((d["deal_id"], m, round(-for_cf, 2), ccy, "XCCY_OUT"))
         # GILT / CASH / RECEIVER_SWAP / INFLATION_SWAP -> no base ladder cashflow
-    cf = pd.DataFrame(rows, columns=["deal_id", "month", "amount", "flow_category"])
+    cf = pd.DataFrame(rows, columns=["deal_id", "month", "amount", "currency", "flow_category"])
     cf.to_csv(INPUTS / "cashflows.csv", index=False)
     return cf
 
@@ -219,10 +262,10 @@ BUCKET_LABELS = ["<=1m", "1-3m", "3-6m", "6-12m", "1-2y", "2-3y",
 DETAILED_ROWS = [
     ("I1", "Inflow", "Insurance & reinsurance inflows"),
     ("I2", "Inflow", "Asset cashflows (bond coupons & redemptions)"),
-    ("I4", "Inflow", "Derivative receipts (positive variation margin)"),
+    ("I4", "Inflow", "Derivative & FX receipts (VM + FX/XCCY settlement)"),
     ("I5", "Inflow", "Secured financing raised (repo cash-in)"),
     ("O1", "Outflow", "Annuity & claims payments"),
-    ("O2", "Outflow", "Derivative payments (variation margin posted)"),
+    ("O2", "Outflow", "Derivative & FX payments (VM + FX/XCCY settlement)"),
     ("O3", "Outflow", "Repo repayments & haircut top-ups"),
     ("N",  "Derived", "Net contractual mismatch (period)"),
     ("CUM", "Derived", "Cumulative net mismatch"),
@@ -233,7 +276,7 @@ DETAILED_ROWS = [
 # Short template (~150 data points): condensed lines x 11 buckets + headline block.
 SHORT_ROWS = [
     ("S1", "Net insurance flow"),
-    ("S2", "Net derivative / variation-margin flow"),
+    ("S2", "Net derivative & FX flow (VM + FX/XCCY settlement)"),
     ("S3", "Net secured-financing flow"),
     ("S4", "Counterbalancing capacity (opening stock)"),
     ("S5", "Net liquidity position (cumulative + counterbalancing)"),
@@ -259,7 +302,7 @@ def main():
     dfs = build_discount_factors()
     fx = build_fx()
     deals = build_deals(dfs, fx)
-    expand_cashflows(deals)
+    expand_cashflows(deals, fx)
     build_scenarios()
     build_blank_templates()
     print(f"Inputs written to {INPUTS}")

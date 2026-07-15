@@ -1,6 +1,6 @@
 line_code,line_item,<=1m,1-3m,3-6m,6-12m,1-2y,2-3y,3-5y,5-10y,10-20y,20-30y,30-60y
 S1,Net insurance flow,,,,,,,,,,,
-S2,Net derivative / variation-margin flow,,,,,,,,,,,
+S2,Net derivative & FX flow (VM + FX/XCCY settlement),,,,,,,,,,,
 S3,Net secured-financing flow,,,,,,,,,,,
 S4,Counterbalancing capacity (opening stock),,,,,,,,,,,
 S5,Net liquidity position (cumulative + counterbalancing),,,,,,,,,,,
