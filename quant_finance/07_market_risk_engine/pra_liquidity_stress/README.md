@@ -61,12 +61,14 @@ Negative ⇒ the compartment can't fund its cumulative outflows from its own liq
 
 All figures are in GBP; foreign legs are multiplied by the (shocked) FX rate. `t = month/12`.
 
-**1. Discount curve** — inputs are DFs; the zero rate is implied `z(t) = −ln DF(t) / t`.
-A parallel curve shock of `s` bp reprices every DF in closed form:
+**1. Discount curve** — **annual (discrete) compounding** throughout (Just's convention,
+not continuous). Spot rate implied from a DF, and DF rebuilt from a shocked spot:
 
 ```
-DF_shocked(t) = DF(t) · exp(−(s/10000) · t)          # z → z + s
+z(t)          = DF(t)^(−1/t) − 1                      # DF → annually-compounded spot
+DF_shocked(t) = (1 + z(t) + s/10000)^(−t)             # spot → DF after an s-bp shock
 ```
+(Contrast the continuous convention `z = −ln DF / t`, `DF = e^(−z·t)` — *not* used here.)
 
 **2. Receiver swap MTM** (receive-fixed / pay-float, single curve, from DFs only):
 
@@ -83,12 +85,18 @@ VM = MTM(shocked) − MTM(base)     →  <=1m bucket   (VM<0 = post cash / outfl
 ```
 Rates up ⇒ a receiver swap loses value ⇒ posts VM ⇒ day-1 outflow. This is the LDI margin-call channel.
 
-**3. Inflation swap VM** (receive-inflation, duration approximation):
+**3. Inflation swap VM** (receive-inflation zero-coupon swap, repriced on the shocked
+**nominal** curve — so it responds to **both** rate and inflation shocks):
 
 ```
-ΔMTM ≈ N · D_infl · (Δinfl/10000),   D_infl ≈ 0.8 · maturity_years
+MTM = N · DF_nom(T) · [ (1+π)^T − (1+b)^T ]
+   b = contracted breakeven (deal.rate),  π = b + Δinfl/10000
+VM  = MTM(rate_bp, Δinfl) − MTM(0, 0)     →  <=1m bucket
 ```
-A deflation shock (`Δinfl < 0`) is a loss ⇒ outflow.
+The rate shock enters through `DF_nom(T)`; the inflation shock through `π`. A deflation
+shock (`Δinfl < 0`) is a loss to the receiver ⇒ outflow. Note: at par (`π=b`) a *pure*
+rate move gives ≈0 — correct, a par inflation swap has ~no standalone rate DV01; the rate
+effect shows up by discounting the inflation-driven payoff (i.e. in combined scenarios).
 
 **3b. FX forward** (SELL N foreign forward at strike K, maturity T) — GBP MTM:
 
@@ -234,8 +242,9 @@ The drill is honest about its simplifications (also listed in `analysis_deep_div
 - **Template taxonomy & code mapping** — line items and the exact LQ/LQR codes are
   reconstructed; confirm against the real pack.
 - **Annuity run-off** — linear-decline proxy, not actuarial mortality.
-- **Swaps** — single-curve valuation (no OIS/tenor basis); inflation swap via a duration
-  approximation rather than a full inflation curve.
+- **Swaps** — single-curve valuation (no OIS/tenor basis). Inflation swap uses a flat
+  breakeven projection (no seasonality / inflation term structure), repriced on the
+  nominal curve.
 - **FX forwards / XCCY swaps** — priced off covered interest parity with a flat cross-currency
   basis of zero; VM assumed fully cash-collateralised daily (real CSAs have thresholds, MTAs,
   and non-cash collateral). Gross settlement legs are shown in full (no PvP netting assumed).

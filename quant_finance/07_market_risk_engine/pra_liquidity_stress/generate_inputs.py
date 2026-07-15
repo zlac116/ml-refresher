@@ -45,7 +45,7 @@ NS_PARAMS = {                    # (b0,      b1,      b2,     tau)
 
 
 def nelson_siegel(t_years, b0, b1, b2, tau):
-    """Zero rate (continuously compounded) at t years."""
+    """Zero (spot) rate at t years — interpreted as ANNUALLY compounded."""
     x = t_years / tau
     # limit of (1-e^-x)/x as x->0 is 1; guard the t=0 point.
     loading = np.where(x == 0, 1.0, (1 - np.exp(-x)) / np.where(x == 0, 1.0, x))
@@ -58,7 +58,7 @@ def build_discount_factors():
     df = pd.DataFrame({"month": months})
     for ccy in CCYS:
         z = nelson_siegel(t, *NS_PARAMS[ccy])
-        df[ccy] = np.exp(-z * t)          # continuously-compounded discount factor
+        df[ccy] = (1.0 + z) ** (-t)       # ANNUAL (discrete) compounding: DF = (1+z)^-t
     df.to_csv(INPUTS / "discount_factors.csv", index=False)
     return df
 
@@ -107,7 +107,7 @@ DEALS = [
     ("D18", "MAP2_BULK",       "GBP", "CORP_BOND",         2.8e9, 0.042,  1, 420,  6, 0.0),
     ("D10", "MAP2_BULK",       "GBP", "GILT",              0.40e9, 0.035, 1,  60,  6, 0.025),
     ("D11", "MAP2_BULK",       "GBP", "RECEIVER_SWAP",     2.5e9, None,    0, 240,  6, 0.0),
-    ("D12", "MAP2_BULK",       "GBP", "INFLATION_SWAP",    1.5e9, None,    0, 360,  6, 0.0),
+    ("D12", "MAP2_BULK",       "GBP", "INFLATION_SWAP",    1.5e9, 0.030,   0, 360,  6, 0.0),
     ("D13", "MAP2_BULK",       "GBP", "CASH",              0.10e9, 0.0,    0,   0,  0, 0.0),
 
     ("D14", "NON_MAP",         "GBP", "CORP_BOND",         0.50e9, 0.045,  1,  60,  6, 0.0),

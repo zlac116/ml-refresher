@@ -79,12 +79,22 @@ class LiquidityStressEngine:
         month = int(np.clip(month, 1, self.dfs.index.max()))
         return float(self.dfs.loc[month, ccy])
 
-    def shocked_df(self, ccy: str, month: int, spread_bp: float = 0.0) -> float:
-        """DF under a parallel curve shift of `spread_bp` basis points.
-        z -> z + s  ==>  DF' = DF * exp(-s * t).  (t in years)"""
+    def zero_rate(self, ccy: str, month: int) -> float:
+        """Annually-compounded spot rate implied by the base DF:  z = DF^(-1/t) - 1."""
         month = int(np.clip(month, 1, self.dfs.index.max()))
         t = month / 12.0
-        return self._base_df(ccy, month) * np.exp(-(spread_bp / 1e4) * t)
+        return self._base_df(ccy, month) ** (-1.0 / t) - 1.0
+
+    def shocked_df(self, ccy: str, month: int, spread_bp: float = 0.0) -> float:
+        """DF under a parallel spot-rate shift of `spread_bp` bp, ANNUAL compounding.
+        spot z = DF^(-1/t) - 1  ==>  DF' = (1 + z + s)^(-t).  (t in years)
+        Matches Just's discrete-compounding DF<->spot convention (not continuous)."""
+        month = int(np.clip(month, 1, self.dfs.index.max()))
+        if spread_bp == 0.0:
+            return self._base_df(ccy, month)              # exact, no round-trip
+        t = month / 12.0
+        z = self.zero_rate(ccy, month)
+        return (1.0 + z + spread_bp / 1e4) ** (-t)
 
     def gbp(self, ccy: str, scn: Scenario) -> float:
         """GBP per unit of `ccy` after applying the FX shock (sterling depreciation
@@ -112,14 +122,25 @@ class LiquidityStressEngine:
         float_pv = N * (1.0 - self.shocked_df(deal["currency"], mat, rate_bp))
         return fixed_pv - float_pv
 
-    def inflation_swap_mtm_change(self, deal, infl_bp: float) -> float:
-        """Change in MTM (deal ccy) of a receive-inflation swap for an inflation
-        shock, via a simple inflation-duration approximation.
-        [ASSUMPTION] D_infl ~ 0.8 * maturity(years); receive-inflation gains when
-        inflation rises, so a deflation shock (infl_bp<0) is a loss (VM outflow)."""
+    def inflation_swap_mtm(self, deal, rate_bp: float, infl_bp: float) -> float:
+        """MTM (deal ccy) of a receive-inflation zero-coupon inflation swap:
+
+            MTM = N · DF_nom(T) · [ (1+π)^T − (1+b)^T ]
+
+        b = contracted breakeven (deal['rate']); π = b + inflation shock (the projected
+        breakeven). Discounted on the NOMINAL curve, so it responds to BOTH the rate
+        shock (through DF_nom) and the inflation shock (through π).
+
+        Note: for a par swap (π=b) a *pure* rate move gives ~0 — which is correct. A par
+        inflation swap has ~no standalone rate DV01; the rate effect materialises by
+        discounting the inflation-driven payoff, i.e. in any scenario that also moves
+        inflation (e.g. COMBINED_PRA). Deflation (infl_bp<0) is a loss to the receiver."""
         N = deal["notional"]
-        d_infl = 0.8 * (deal["maturity_month"] / 12.0)
-        return N * d_infl * (infl_bp / 1e4)
+        T = deal["maturity_month"] / 12.0
+        b = deal["rate"]                                  # contracted breakeven
+        pi = b + infl_bp / 1e4                            # shocked projected breakeven
+        df = self.shocked_df(deal["currency"], int(deal["maturity_month"]), rate_bp)
+        return N * df * ((1 + pi) ** T - (1 + b) ** T)
 
     def bond_value(self, deal, rate_bp: float, extra_spread_bp: float) -> float:
         """PV (deal ccy) of a bond/gilt's own cashflows discounted at the shocked
@@ -210,7 +231,9 @@ class LiquidityStressEngine:
                     vm = dmtm * self.gbp(d["currency"], scn)     # +receive / -post
                     (L["I4"] if vm >= 0 else L["O2"])[IMMEDIATE] += vm
                 elif pt == "INFLATION_SWAP":
-                    dmtm = self.inflation_swap_mtm_change(d, scn.infl_bp)
+                    # reprice on the shocked NOMINAL curve -> responds to rate AND inflation
+                    dmtm = (self.inflation_swap_mtm(d, scn.rate_bp, scn.infl_bp)
+                            - self.inflation_swap_mtm(d, 0.0, 0.0))
                     vm = dmtm * self.gbp(d["currency"], scn)
                     (L["I4"] if vm >= 0 else L["O2"])[IMMEDIATE] += vm
                 elif pt == "FX_FORWARD":
