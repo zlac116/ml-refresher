@@ -1,0 +1,7 @@
+scenario_id,rate_bp,credit_bp,gilt_bp,fx_gbp_depr_pct,infl_bp,gilt_haircut_addon,repo_haircut_addon,description
+BASE,0,0,0,0.0,0,0.0,0.0,No shock — as-reported base position
+RATES_UP_100,100,0,10,0.0,0,0.01,0.01,Parallel +100bp rates (LDI-style margin call)
+RATES_DOWN_100,-100,0,-10,0.0,0,0.0,0.0,Parallel -100bp rates
+CREDIT_WIDEN,0,150,50,0.0,0,0.03,0.03,"Credit +150 / gilt +50, haircuts widen"
+INFLATION_DOWN,0,0,0,0.0,-75,0.0,0.0,Deflation shock -75bp (inflation-swap VM)
+COMBINED_PRA,100,150,50,10.0,-50,0.04,0.04,"Headline combined: rates+100, credit+150, gilt+50, GBP -10%, infl-50, haircuts widen"

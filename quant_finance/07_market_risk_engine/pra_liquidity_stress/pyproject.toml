@@ -1,0 +1,10 @@
+[project]
+name = "pra-liquidity-stress"
+version = "0.1.0"
+description = "End-to-end PRA insurer liquidity stress engine: populate LQ.01.01 / LQR.01.01 / LQR.02.01 cashflow-mismatch templates from discount factors + deal cashflows, base and stressed."
+requires-python = ">=3.12, <3.14"
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "tabulate>=0.9",
+]

@@ -1,0 +1,12 @@
+line_code,section,line_item,<=1m,1-3m,3-6m,6-12m,1-2y,2-3y,3-5y,5-10y,10-20y,20-30y,30-60y
+I1,Inflow,Insurance & reinsurance inflows,,,,,,,,,,,
+I2,Inflow,Asset cashflows (bond coupons & redemptions),,,,,,,,,,,
+I4,Inflow,Derivative receipts (positive variation margin),,,,,,,,,,,
+I5,Inflow,Secured financing raised (repo cash-in),,,,,,,,,,,
+O1,Outflow,Annuity & claims payments,,,,,,,,,,,
+O2,Outflow,Derivative payments (variation margin posted),,,,,,,,,,,
+O3,Outflow,Repo repayments & haircut top-ups,,,,,,,,,,,
+N,Derived,Net contractual mismatch (period),,,,,,,,,,,
+CUM,Derived,Cumulative net mismatch,,,,,,,,,,,
+CBC,Derived,Counterbalancing capacity (opening stock),,,,,,,,,,,
+SURV,Derived,Cumulative mismatch + counterbalancing,,,,,,,,,,,

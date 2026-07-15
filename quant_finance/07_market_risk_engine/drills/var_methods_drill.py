@@ -77,7 +77,9 @@ class MultiMethodVaR:
     #   EXPECTED: 99.5% -> 6.5238 ,  99% -> 5.8919
     # ═══════════════════════════════════════════════════════════════════════
     def parametric_var(self, conf=0.995):
-        raise NotImplementedError
+        s, S = self.sensitivities(), self.covariance()
+        pnl_std = np.sqrt(s @ S @ s)
+        return pnl_std * norm.ppf(conf)
 
     # ═══════════════════════════════════════════════════════════════════════
     # TASK 2 — Monte Carlo VaR (Cholesky -> simulate -> FULL revalue -> percentile)
@@ -89,7 +91,12 @@ class MultiMethodVaR:
     #   EXPECTED (n_paths=10000, seed=42): 99.5% -> 6.3411 , 99% -> 5.8760
     # ═══════════════════════════════════════════════════════════════════════
     def monte_carlo_var(self, conf=0.995, n_paths=10000, seed=42):
-        raise NotImplementedError
+        L = np.linalg.cholesky(self.covariance())
+        rng = np.random.default_rng(seed)
+        draws = rng.standard_normal((n_paths, 4)) @ L.T
+        pnl_k = np.array([self.pf.value(e.Scenario(*d).apply(self.base)) - self.V0 for d in draws])
+        return -np.percentile(pnl_k, (1 - conf) * 100)
+
 
 # ═══════════════════════════════════════════════════════════════════════════
 # GRADING
