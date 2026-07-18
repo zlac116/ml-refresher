@@ -1,0 +1,25 @@
+# Tolerances per (trade_type, metric) — FX forwards & swaps (minimal).
+#
+# Rule fields:
+#   basis      : 'bp_notional' | 'abs' | 'rel'  (which diff to test)
+#   warn/fail  : thresholds on that basis (bp of notional, ccy, or fraction)
+#   abs_floor  : ccy amount below which a diff always PASSes (kills div-by-tiny)
+#
+# Lookup: <trade_type>.<metric> -> <trade_type>.default -> default.
+# base_pv marked tighter than impact (sensitivity carries more convention noise).
+
+default:
+  basis: bp_notional
+  warn: 1.0
+  fail: 5.0
+  abs_floor: 1.0
+
+fx_forward:
+  base_pv: {basis: bp_notional, warn: 0.2, fail: 1.0, abs_floor: 1.0}
+  impact:  {basis: bp_notional, warn: 0.5, fail: 2.0, abs_floor: 1.0}
+  default: {basis: bp_notional, warn: 0.5, fail: 2.0, abs_floor: 1.0}
+
+fx_swap:
+  base_pv: {basis: bp_notional, warn: 0.3, fail: 1.5, abs_floor: 1.0}
+  impact:  {basis: bp_notional, warn: 1.0, fail: 3.0, abs_floor: 1.0}
+  default: {basis: bp_notional, warn: 1.0, fail: 3.0, abs_floor: 1.0}

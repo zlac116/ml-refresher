@@ -1,0 +1,31 @@
+# Canonical stress scenarios — FX forwards & swaps (minimal).
+#
+# The single biggest source of false breaks is a shock-convention mismatch vs
+# Bloomberg. Pin the exact convention on BOTH sides. The shock params below drive
+# the in-house reference engine (engine_adapter.apply_stress); bbg_shock is the
+# equivalent BBG action a reviewer must confirm is the same.
+#
+# scenario_id MUST match the ids emitted by both adapters.
+
+BASE:
+  desc: "Base valuation, no shock"
+  applies_to: all
+  bbg_shock: "none"
+  convention_note: "Same valuation date, same fixings, same curves & fx0."
+
+FX_SPOT_UP_1PCT:
+  desc: "FX spot +1% on all non-GBP legs"
+  applies_to: [fx_forward, fx_swap]
+  fx_mult: 1.01          # multiplicative on fx0
+  bbg_shock: "shift FX spot +1%"
+  convention_note: "MULTIPLICATIVE. fx0 = GBP per 1 unit ccy. Confirm BBG quote
+    direction matches — inverted convention flips the impact sign. Forward points
+    held constant here."
+
+RATES_UP_1BP:
+  desc: "Parallel +1bp on all discount curves (both legs)"
+  applies_to: [fx_forward, fx_swap]
+  dfs_shift_bp: 1        # additive bp on zero rate, all ccy curves
+  bbg_shock: "shift curves +1bp parallel"
+  convention_note: "1bp = 0.0001 additive to the zero rate. Bump BOTH ccy
+    discount curves. Sign: rates UP."

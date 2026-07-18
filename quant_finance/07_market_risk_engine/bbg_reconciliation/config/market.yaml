@@ -1,0 +1,12 @@
+# Base market inputs for the in-house engine (FX fwd/swap minimal build).
+reporting_ccy: GBP
+as_of: 2026-07-18
+
+# Input files under data/inhouse/ (swap for your production exports).
+cashflows_file: cashflows.csv          # flat all-deals table
+discount_curves_file: discount_curves.csv  # ccy, date, df
+
+# fx0: reporting-ccy units per 1 unit of ccy.
+fx:
+  GBP: 1.0
+  USD: 0.79

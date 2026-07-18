@@ -1,0 +1,13 @@
+# Sample trades — FX forwards & swaps only (1 each). trade_id == deal_no in the
+# cashflow table. `instrument` (optional) further filters the deal's rows.
+fx_forward:
+  - trade_id: DEMO_FXFWD_01
+    ccy: GBP
+    notional: 31250000
+    params: {instrument: FX_FORWARD}
+
+fx_swap:
+  - trade_id: DEMO_FXSWAP_01
+    ccy: GBP
+    notional: 62500000
+    params: {instrument: FX_SWAP}

@@ -1,0 +1,7 @@
+trade_type,metric,n,pass,warn,fail,na,max_abs_bp
+fx_forward,base_pv,1.0,1.0,0.0,0.0,0.0,0.14576265600025654
+fx_forward,impact,3.0,3.0,0.0,0.0,0.0,0.04372402390599251
+fx_forward,stressed_pv,3.0,3.0,0.0,0.0,0.0,0.1894914528000355
+fx_swap,base_pv,1.0,1.0,0.0,0.0,0.0,0.0008298135035973974
+fx_swap,impact,3.0,3.0,0.0,0.0,0.0,0.0002538387268525548
+fx_swap,stressed_pv,3.0,3.0,0.0,0.0,0.0,0.0010836522304452955

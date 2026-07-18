@@ -1,0 +1,355 @@
+<!doctype html><html><head><meta charset="utf-8">
+<title>BBG Reconciliation Pack — 2026-07-18</title>
+<style>
+ body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;margin:2rem;color:#1f2328}
+ h1{font-size:1.4rem} h2{font-size:1.1rem;margin-top:2rem;border-bottom:1px solid #d0d7de;padding-bottom:.3rem}
+ table{border-collapse:collapse;font-size:.82rem;margin-top:.5rem}
+ th,td{padding:.3rem .6rem;text-align:right;border-bottom:1px solid #eaecef}
+ th{background:#f6f8fa;text-align:right} td:first-child,th:first-child{text-align:left}
+ .kpi{display:inline-block;padding:.6rem 1rem;margin-right:.6rem;border-radius:6px;background:#f6f8fa}
+ .big{font-size:1.6rem;font-weight:700}
+ .banner{padding:.6rem 1rem;border-radius:6px;font-weight:700;color:#fff;display:inline-block}
+</style></head><body>
+<h1>Treasury Valuation — Bloomberg Reconciliation Pack</h1>
+<p>Valuation date: <b>2026-07-18</b> &nbsp;|&nbsp; Independent benchmark: <b>Bloomberg</b>
+ &nbsp;|&nbsp; Scope: base PV + stress impacts across all trade types.</p>
+<p class="banner" style="background:#1a7f37">OVERALL: PASS</p>
+<div style="margin-top:1rem">
+ <span class="kpi"><div class="big">14</div>rows</span>
+ <span class="kpi"><div class="big" style="color:#1a7f37">14</div>pass</span>
+ <span class="kpi"><div class="big" style="color:#9a6700">0</div>warn</span>
+ <span class="kpi"><div class="big" style="color:#cf222e">0</div>fail</span>
+ <span class="kpi"><div class="big" style="color:#57606a">0</div>n/a</span>
+</div>
+<h2>1. Pass-rate matrix (trade type × metric)</h2>
+<table class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>trade_type</th>
+      <th>metric</th>
+      <th>n</th>
+      <th>pass</th>
+      <th>warn</th>
+      <th>fail</th>
+      <th>na</th>
+      <th>max_abs_bp</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>fx_forward</td>
+      <td>base_pv</td>
+      <td>1.0</td>
+      <td>1.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.1458</td>
+    </tr>
+    <tr>
+      <td>fx_forward</td>
+      <td>impact</td>
+      <td>3.0</td>
+      <td>3.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.04372</td>
+    </tr>
+    <tr>
+      <td>fx_forward</td>
+      <td>stressed_pv</td>
+      <td>3.0</td>
+      <td>3.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.1895</td>
+    </tr>
+    <tr>
+      <td>fx_swap</td>
+      <td>base_pv</td>
+      <td>1.0</td>
+      <td>1.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0008298</td>
+    </tr>
+    <tr>
+      <td>fx_swap</td>
+      <td>impact</td>
+      <td>3.0</td>
+      <td>3.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0002538</td>
+    </tr>
+    <tr>
+      <td>fx_swap</td>
+      <td>stressed_pv</td>
+      <td>3.0</td>
+      <td>3.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.001084</td>
+    </tr>
+  </tbody>
+</table>
+<h2>2. Breaks &amp; warnings (exceptions only)</h2>
+<p><i>No breaks or warnings.</i></p>
+<h2>3. Full detail</h2>
+<table class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>trade_id</th>
+      <th>trade_type</th>
+      <th>ccy</th>
+      <th>notional</th>
+      <th>scenario_id</th>
+      <th>metric</th>
+      <th>inhouse</th>
+      <th>bbg</th>
+      <th>diff_abs</th>
+      <th>diff_rel</th>
+      <th>diff_bp</th>
+      <th>tol_basis</th>
+      <th>threshold</th>
+      <th>status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>DEMO_FXFWD_01</td>
+      <td>fx_forward</td>
+      <td>GBP</td>
+      <td>31250000.0</td>
+      <td>BASE</td>
+      <td>base_pv</td>
+      <td>-1.139e+07</td>
+      <td>-1.139e+07</td>
+      <td>455.5</td>
+      <td>4e-05</td>
+      <td>0.1458</td>
+      <td>bp_notional</td>
+      <td>1</td>
+      <td><span style="color:#1a7f37;font-weight:600">PASS</span></td>
+    </tr>
+    <tr>
+      <td>DEMO_FXFWD_01</td>
+      <td>fx_forward</td>
+      <td>GBP</td>
+      <td>31250000.0</td>
+      <td>BASE</td>
+      <td>impact</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td></td>
+      <td>0</td>
+      <td>bp_notional</td>
+      <td>2</td>
+      <td><span style="color:#1a7f37;font-weight:600">PASS</span></td>
+    </tr>
+    <tr>
+      <td>DEMO_FXFWD_01</td>
+      <td>fx_forward</td>
+      <td>GBP</td>
+      <td>31250000.0</td>
+      <td>BASE</td>
+      <td>stressed_pv</td>
+      <td>-1.139e+07</td>
+      <td>-1.139e+07</td>
+      <td>592.2</td>
+      <td>5.2e-05</td>
+      <td>0.1895</td>
+      <td>bp_notional</td>
+      <td>2</td>
+      <td><span style="color:#1a7f37;font-weight:600">PASS</span></td>
+    </tr>
+    <tr>
+      <td>DEMO_FXFWD_01</td>
+      <td>fx_forward</td>
+      <td>GBP</td>
+      <td>31250000.0</td>
+      <td>FX_SPOT_UP_1PCT</td>
+      <td>impact</td>
+      <td>1.951e+05</td>
+      <td>1.95e+05</td>
+      <td>126.5</td>
+      <td>0.0006487</td>
+      <td>0.04048</td>
+      <td>bp_notional</td>
+      <td>2</td>
+      <td><span style="color:#1a7f37;font-weight:600">PASS</span></td>
+    </tr>
+    <tr>
+      <td>DEMO_FXFWD_01</td>
+      <td>fx_forward</td>
+      <td>GBP</td>
+      <td>31250000.0</td>
+      <td>FX_SPOT_UP_1PCT</td>
+      <td>stressed_pv</td>
+      <td>-1.119e+07</td>
+      <td>-1.119e+07</td>
+      <td>582</td>
+      <td>5.2e-05</td>
+      <td>0.1862</td>
+      <td>bp_notional</td>
+      <td>2</td>
+      <td><span style="color:#1a7f37;font-weight:600">PASS</span></td>
+    </tr>
+    <tr>
+      <td>DEMO_FXFWD_01</td>
+      <td>fx_forward</td>
+      <td>GBP</td>
+      <td>31250000.0</td>
+      <td>RATES_UP_1BP</td>
+      <td>impact</td>
+      <td>286.8</td>
+      <td>150.2</td>
+      <td>136.6</td>
+      <td>0.9097</td>
+      <td>0.04372</td>
+      <td>bp_notional</td>
+      <td>2</td>
+      <td><span style="color:#1a7f37;font-weight:600">PASS</span></td>
+    </tr>
+    <tr>
+      <td>DEMO_FXFWD_01</td>
+      <td>fx_forward</td>
+      <td>GBP</td>
+      <td>31250000.0</td>
+      <td>RATES_UP_1BP</td>
+      <td>stressed_pv</td>
+      <td>-1.139e+07</td>
+      <td>-1.139e+07</td>
+      <td>592.1</td>
+      <td>5.2e-05</td>
+      <td>0.1895</td>
+      <td>bp_notional</td>
+      <td>2</td>
+      <td><span style="color:#1a7f37;font-weight:600">PASS</span></td>
+    </tr>
+    <tr>
+      <td>DEMO_FXSWAP_01</td>
+      <td>fx_swap</td>
+      <td>GBP</td>
+      <td>62500000.0</td>
+      <td>BASE</td>
+      <td>base_pv</td>
+      <td>-1.297e+05</td>
+      <td>-1.297e+05</td>
+      <td>5.186</td>
+      <td>4e-05</td>
+      <td>0.0008298</td>
+      <td>bp_notional</td>
+      <td>1.5</td>
+      <td><span style="color:#1a7f37;font-weight:600">PASS</span></td>
+    </tr>
+    <tr>
+      <td>DEMO_FXSWAP_01</td>
+      <td>fx_swap</td>
+      <td>GBP</td>
+      <td>62500000.0</td>
+      <td>BASE</td>
+      <td>impact</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+      <td></td>
+      <td>0</td>
+      <td>bp_notional</td>
+      <td>3</td>
+      <td><span style="color:#1a7f37;font-weight:600">PASS</span></td>
+    </tr>
+    <tr>
+      <td>DEMO_FXSWAP_01</td>
+      <td>fx_swap</td>
+      <td>GBP</td>
+      <td>62500000.0</td>
+      <td>BASE</td>
+      <td>stressed_pv</td>
+      <td>-1.297e+05</td>
+      <td>-1.297e+05</td>
+      <td>6.742</td>
+      <td>5.2e-05</td>
+      <td>0.001079</td>
+      <td>bp_notional</td>
+      <td>3</td>
+      <td><span style="color:#1a7f37;font-weight:600">PASS</span></td>
+    </tr>
+    <tr>
+      <td>DEMO_FXSWAP_01</td>
+      <td>fx_swap</td>
+      <td>GBP</td>
+      <td>62500000.0</td>
+      <td>FX_SPOT_UP_1PCT</td>
+      <td>impact</td>
+      <td>4,836</td>
+      <td>4,835</td>
+      <td>1.304</td>
+      <td>0.0002698</td>
+      <td>0.0002087</td>
+      <td>bp_notional</td>
+      <td>3</td>
+      <td><span style="color:#1a7f37;font-weight:600">PASS</span></td>
+    </tr>
+    <tr>
+      <td>DEMO_FXSWAP_01</td>
+      <td>fx_swap</td>
+      <td>GBP</td>
+      <td>62500000.0</td>
+      <td>FX_SPOT_UP_1PCT</td>
+      <td>stressed_pv</td>
+      <td>-1.248e+05</td>
+      <td>-1.248e+05</td>
+      <td>6.491</td>
+      <td>5.2e-05</td>
+      <td>0.001039</td>
+      <td>bp_notional</td>
+      <td>3</td>
+      <td><span style="color:#1a7f37;font-weight:600">PASS</span></td>
+    </tr>
+    <tr>
+      <td>DEMO_FXSWAP_01</td>
+      <td>fx_swap</td>
+      <td>GBP</td>
+      <td>62500000.0</td>
+      <td>RATES_UP_1BP</td>
+      <td>impact</td>
+      <td>-588.3</td>
+      <td>-589.9</td>
+      <td>1.586</td>
+      <td>0.002689</td>
+      <td>0.0002538</td>
+      <td>bp_notional</td>
+      <td>3</td>
+      <td><span style="color:#1a7f37;font-weight:600">PASS</span></td>
+    </tr>
+    <tr>
+      <td>DEMO_FXSWAP_01</td>
+      <td>fx_swap</td>
+      <td>GBP</td>
+      <td>62500000.0</td>
+      <td>RATES_UP_1BP</td>
+      <td>stressed_pv</td>
+      <td>-1.302e+05</td>
+      <td>-1.303e+05</td>
+      <td>6.773</td>
+      <td>5.2e-05</td>
+      <td>0.001084</td>
+      <td>bp_notional</td>
+      <td>3</td>
+      <td><span style="color:#1a7f37;font-weight:600">PASS</span></td>
+    </tr>
+  </tbody>
+</table>
+<p style="color:#57606a;font-size:.75rem;margin-top:2rem">
+ Model-risk note: this pack is benchmarking / outcomes-analysis evidence (SR 11-7 /
+ PRA SS1/23). It reconciles the in-house engine to Bloomberg on frozen inputs for a
+ sample of trades; it is not a full independent revaluation. Breaks are classified by
+ tolerance, not root-caused — see the RCA workflow in the README.</p>
+</body></html>
