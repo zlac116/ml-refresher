@@ -3,6 +3,11 @@
 How to run the reconciliation and diagnose breaks. Scope: FX forwards & swaps;
 scenarios = BASE, +100bp all, +100bp GBP-only, −100bp GBP-only.
 
+**Trade scope:** the recon (summary + detail) only covers `trade_id`s present
+in `data/bbg/bbg_canonical.csv`. An in-house trade never sent to BBG is
+excluded entirely — not shown as a break. A `trade_id` BBG has but in-house
+doesn't still surfaces as a genuine N/A coverage break.
+
 ## Run order
 - `python capture_inhouse.py` — harvest in-house base + 3 stressed PVs → `data/inhouse/inhouse_canonical.csv`.
 - Export the same trades + scenarios from BBG → `data/bbg/bbg_canonical.csv` (match `scenario_id` exactly).

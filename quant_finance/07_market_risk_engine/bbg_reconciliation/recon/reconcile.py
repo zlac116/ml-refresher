@@ -7,6 +7,11 @@ Output is a wide recon frame, one row per (trade_id, scenario_id, metric):
 
 Status ∈ {PASS, WARN, FAIL, N/A}.  N/A = one side missing (a coverage break,
 not a value break — flagged separately so it's never silently a pass).
+
+Scope: the recon is bounded to whatever trade_ids appear in the BBG input. An
+in-house trade never sent to BBG for this sample is out of scope and excluded
+entirely — it is NOT a coverage break. A trade_id BBG has but in-house doesn't
+still surfaces as a genuine N/A coverage break.
 """
 
 import numpy as np
@@ -18,8 +23,17 @@ PASS, WARN, FAIL, NA = "PASS", "WARN", "FAIL", "N/A"
 
 
 def merge_sources(inhouse: pd.DataFrame, bbg: pd.DataFrame) -> pd.DataFrame:
-    """Outer-join the two canonical frames on (trade, scenario, metric)."""
-    left = inhouse.rename(columns={schema.VALUE: "inhouse"})
+    """Outer-join the two canonical frames on (trade, scenario, metric),
+    scoped to trade_ids present in `bbg`.
+
+    In-house trades outside the BBG sample are dropped before the join so they
+    never appear as spurious N/A rows. A BBG trade_id with no in-house match at
+    all still comes through as N/A — a real coverage break.
+    """
+    bbg_trade_ids = bbg[schema.TRADE_ID].unique()
+    scoped_inhouse = inhouse[inhouse[schema.TRADE_ID].isin(bbg_trade_ids)]
+
+    left = scoped_inhouse.rename(columns={schema.VALUE: "inhouse"})
     right = bbg.rename(columns={schema.VALUE: "bbg"})[schema.KEY_COLS + ["bbg"]]
     merged = left.merge(right, on=schema.KEY_COLS, how="outer")
     # Recover meta (trade_type/ccy/notional) for BBG-only rows from either side.
