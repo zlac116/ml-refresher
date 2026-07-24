@@ -11,9 +11,12 @@ Feed the output into the real engine's base + stress run (scoped to just the
 sample trades) to get BBG-consistent base and stressed PVs through the
 engine's own mechanics.
 
+Array indexing is confirmed 0-based: month 1 -> arr[0].
+
 TODO before running — confirm against the real files, or the patch silently
 lands in the wrong slot:
-  - date_to_month_index(): the exact bucketing formula, and 0- vs 1-indexing
+  - date_to_month_index(): the calendar-month bucketing rule itself (day-based
+    vs calendar-month diff, rounding vs floor) — indexing base is settled
   - BBG_DATE_COL / BBG_DF_COL: exact column names in the BBG data file
   - CCY_TO_CURVE: extend for any currency beyond GBP/USD/EUR present in the
     sample trades
@@ -47,9 +50,13 @@ CCY_TO_CURVE = {
 
 
 def date_to_month_index(cf_date: pd.Timestamp, as_of: pd.Timestamp) -> int:
-    """TODO: MUST match the engine's own bucketing exactly — confirm the
-    formula and indexing before trusting this."""
-    return (cf_date.year - as_of.year) * 12 + (cf_date.month - as_of.month)
+    """0-based array index: month 1 (first bucket after as_of) -> arr[0].
+    TODO: the calendar-month-diff bucketing rule itself still needs
+    confirming against the engine's own source (day-based vs calendar-month,
+    rounding vs floor)."""
+    months_elapsed = (cf_date.year - as_of.year) * 12 + (cf_date.month - as_of.month)
+    month_number = max(1, months_elapsed)   # month 1 = first bucket, no month 0
+    return month_number - 1                 # 0-based index
 
 
 def build_overrides(cashflows: pd.DataFrame, bbg_dfs: pd.DataFrame) -> dict:
@@ -99,7 +106,7 @@ def patch_npz(npz_path: str, overrides: dict, out_path: str) -> None:
             raise KeyError(f"No curve array named {curve!r} in npz — actual keys: {list(dfs.keys())}")
         arr = dfs[curve].copy()
         for month_idx, bbg_val in month_map.items():
-            arr[month_idx] = bbg_val        # TODO: confirm 0- vs 1-indexing against engine
+            arr[month_idx] = bbg_val        # 0-based index, from date_to_month_index()
         dfs[curve] = arr
     np.savez(out_path, **dfs)
 
