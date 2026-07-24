@@ -34,6 +34,7 @@ OUT_PATH = "data/inhouse/discount_factors_bbg_fx.npz"
 # Cashflow file columns — confirmed
 CF_DEAL_COL = "Deal No"
 CF_DATE_COL = "Cash Flow Date"
+CF_CCY_COL = "CCY"                          # TODO: confirm exact column name in cashflow file
 
 # BBG data file columns — Deal No and CCY confirmed; date/DF columns TODO confirm
 BBG_DEAL_COL = "Deal No"
@@ -61,9 +62,11 @@ def date_to_month_index(cf_date: pd.Timestamp, as_of: pd.Timestamp) -> int:
 
 def build_overrides(cashflows: pd.DataFrame, bbg_dfs: pd.DataFrame) -> dict:
     """{curve_name: {month_index: bbg_df}}, scoped to Deal Nos present in the
-    BBG file. Raises on a collision (two cashflows landing in the same bucket
-    with different BBG DFs) and warns on any BBG deal that never matched a
-    cashflow row (a silent-gap risk otherwise)."""
+    BBG file. Joins on (Deal No, Cash Flow Date, CCY) — date alone is not a
+    unique key, since an FX swap's GBP and EUR legs commonly settle on the
+    same date for the same deal. Raises on a collision (two cashflows landing
+    in the same bucket with different BBG DFs) and warns on any BBG deal that
+    never matched a cashflow row (a silent-gap risk otherwise)."""
     bbg_deal_nos = set(bbg_dfs[BBG_DEAL_COL].unique())
     cf = cashflows[cashflows[CF_DEAL_COL].isin(bbg_deal_nos)]
 
@@ -73,14 +76,16 @@ def build_overrides(cashflows: pd.DataFrame, bbg_dfs: pd.DataFrame) -> dict:
         match = bbg_dfs[
             (bbg_dfs[BBG_DEAL_COL] == row[CF_DEAL_COL])
             & (bbg_dfs[BBG_DATE_COL] == row[CF_DATE_COL])
+            & (bbg_dfs[BBG_CCY_COL] == row[CF_CCY_COL])
         ]
         if match.empty:
             raise ValueError(
-                f"No BBG DF for Deal No {row[CF_DEAL_COL]} on {row[CF_DATE_COL].date()}"
+                f"No BBG DF for Deal No {row[CF_DEAL_COL]} / {row[CF_CCY_COL]} "
+                f"on {row[CF_DATE_COL].date()}"
             )
         matched_deal_nos.add(row[CF_DEAL_COL])
 
-        ccy = match[BBG_CCY_COL].iloc[0]
+        ccy = row[CF_CCY_COL]
         if ccy not in CCY_TO_CURVE:
             raise KeyError(f"No curve mapping for CCY {ccy!r} — extend CCY_TO_CURVE")
         curve = CCY_TO_CURVE[ccy]
